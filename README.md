@@ -6,6 +6,7 @@ Plateforme de génération et de diffusion de rapports OSINT pour services d’e
 
 - **Base de données** : PostgreSQL 16 orchestré via Docker Compose.
 - **Backend** : Node.js (TypeScript), Express 5, Prisma ORM, Zod pour la validation, Argon2 + JWT pour l’authentification.
+- **Frontend** : Vue 3 + Vite + TypeScript, Tailwind CSS & DaisyUI (thème personnalisé) avec Pinia & Vue Router.
 - **Sécurité** : Permissions RBAC, journalisation Pino, chiffrement applicatif des données sensibles (AES-256-GCM via coffre logiciel).
 - **Rapports OSINT** : Modélisation Prisma des rapports, modules dynamiques, pièces jointes et versions. Les schémas de validation sont décrits dans `backend/src/modules/reports` et la structure métier détaillée dans `docs/report-template.md`.
 
@@ -40,6 +41,19 @@ Plateforme de génération et de diffusion de rapports OSINT pour services d’e
 	```bash
 	npm run dev
 	```
+
+### Frontend Vue 3
+
+1. Installer les dépendances :
+	```bash
+	cd frontend
+	npm install
+	```
+2. Lancer le serveur de développement :
+	```bash
+	npm run dev
+	```
+3. L’application est accessible sur `http://localhost:5173`. Les requêtes `/api` sont automatiquement proxyfées vers le backend (`VITE_API_URL`).
 
 L’API écoute par défaut sur `http://localhost:4000` et expose `/health` pour une vérification rapide.
 
@@ -122,6 +136,7 @@ La base est exposée sur `localhost:${POSTGRES_PORT:-5432}` (par défaut 5432) a
 - **Structure métier des rapports** : [`docs/report-template.md`](docs/report-template.md)
 - **Spécification API rapports** : [`docs/api-reports.md`](docs/api-reports.md)
 - **Chiffrement & coffre logiciel** : [`docs/security/vault.md`](docs/security/vault.md)
+- **Frontend Vue 3** : [`frontend/README.md`](frontend/README.md)
 - **Modules backend** : `backend/src/modules/`
 
 Contribuez à la documentation dès que de nouveaux endpoints ou processus sont ajoutés afin de garder l’équipe alignée.
