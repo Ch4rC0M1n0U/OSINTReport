@@ -116,6 +116,23 @@ describe("ReportController", () => {
     const moduleId = moduleRes.body.module.id as string;
     expect(moduleRes.body.module.slug).toBe("entite-principale");
 
+    const moduleAttachmentRes = await authRequest(accessToken)
+      .post(`/api/reports/${reportId}/attachments`)
+      .send({
+        moduleId,
+        type: "document",
+        storageKey: "s3://bucket/rapport-intro.pdf",
+        fileName: "rapport-intro.pdf",
+        mimeType: "application/pdf",
+        fileSize: 2048,
+      })
+      .expect(201);
+
+    expect(moduleAttachmentRes.body.attachment.storageKey).toBe("s3://bucket/rapport-intro.pdf");
+
+    const vaultItemsAfterAttachment = await prisma.vaultItem.count();
+    expect(vaultItemsAfterAttachment).toBe(1);
+
     const updated = await authRequest(accessToken)
       .patch(`/api/reports/${reportId}/modules/${moduleId}`)
       .send({ headline: "Résumé", slug: "entite-maj" })
@@ -130,6 +147,9 @@ describe("ReportController", () => {
 
     const modules = await prisma.reportModule.findMany({ where: { reportId } });
     expect(modules).toHaveLength(0);
+
+    const vaultItemsAfterDelete = await prisma.vaultItem.count();
+    expect(vaultItemsAfterDelete).toBe(0);
   });
 
   it("enregistre une pièce jointe liée au rapport", async () => {
@@ -156,8 +176,19 @@ describe("ReportController", () => {
       mimeType: "image/png",
       type: "image",
     });
+    expect(attachmentRes.body.attachment.storageKey).toBe("s3://bucket/capture.png");
 
     const attachments = await prisma.reportAttachment.findMany({ where: { reportId: report.id } });
     expect(attachments).toHaveLength(1);
+    expect(attachments[0]?.storageKey).toMatch(/^vault:/);
+
+    const vaultItems = await prisma.vaultItem.findMany();
+    expect(vaultItems).toHaveLength(1);
+
+    const detailRes = await authRequest(accessToken)
+      .get(`/api/reports/${report.id}`)
+      .expect(200);
+
+    expect(detailRes.body.report.attachments[0].storageKey).toBe("s3://bucket/capture.png");
   });
 });

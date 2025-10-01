@@ -140,6 +140,8 @@ Supprime le module ciblé ainsi que ses pièces jointes et `ResearchRecord` asso
 
 Réponse `201` avec l’objet `ReportAttachment`. Erreurs possibles : `400` si `moduleId` inconnu ou hors du rapport, `404` si le rapport est introuvable.
 
+> ℹ️ **Chiffrement** : `storageKey` est renvoyé en clair dans la réponse, mais la base stocke un pointeur `vault:{id}` vers l’élément chiffré (`VaultItem`).
+
 ## Codes d’erreur communs
 
 | Code | Signification |

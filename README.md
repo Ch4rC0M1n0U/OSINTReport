@@ -6,7 +6,7 @@ Plateforme de génération et de diffusion de rapports OSINT pour services d’e
 
 - **Base de données** : PostgreSQL 16 orchestré via Docker Compose.
 - **Backend** : Node.js (TypeScript), Express 5, Prisma ORM, Zod pour la validation, Argon2 + JWT pour l’authentification.
-- **Sécurité** : Permissions RBAC, journalisation Pino, chiffrement des données sensibles (module à venir).
+- **Sécurité** : Permissions RBAC, journalisation Pino, chiffrement applicatif des données sensibles (AES-256-GCM via coffre logiciel).
 - **Rapports OSINT** : Modélisation Prisma des rapports, modules dynamiques, pièces jointes et versions. Les schémas de validation sont décrits dans `backend/src/modules/reports` et la structure métier détaillée dans `docs/report-template.md`.
 
 ## Prérequis
@@ -73,6 +73,8 @@ Les migrations Prisma se trouvent dans `backend/prisma/migrations`. Les dernièr
 - Colonnes métadonnées supplémentaires sur `Report` (`caseNumber`, `reportNumber`, `issuedAt`, etc.).
 - Champs `slug` et `title` sur `ReportModule`.
 - Nouvelle table `ReportAttachment` pour tracer les pièces jointes liées aux modules ou au rapport global.
+- Table `KeyStore` pour stocker les clés de chiffrement applicatif (clé active + historiques).
+- Table `VaultItem` pour conserver les secrets chiffrés (références pièces jointes, données sensibles des modules, etc.).
 
 Un schéma détaillé de la structure des rapports est disponible dans `docs/report-template.md`.
 
@@ -89,7 +91,7 @@ Les routes sont montées sous `/reports` (voir `backend/src/routes/index.ts`) et
 | `POST` | `/reports/:reportId/modules` | `REPORTS_WRITE` | Ajout d’un module structuré au rapport. |
 | `PATCH` | `/reports/:reportId/modules/:moduleId` | `REPORTS_WRITE` | Mise à jour partielle d’un module (payload JSON, position, slug...). |
 | `DELETE` | `/reports/:reportId/modules/:moduleId` | `REPORTS_WRITE` | Suppression d’un module et de ses ressources associées. |
-| `POST` | `/reports/:reportId/attachments` | `REPORTS_WRITE` | Enregistrement d’une pièce jointe (clé de stockage, métadonnées, expiration). |
+| `POST` | `/reports/:reportId/attachments` | `REPORTS_WRITE` | Enregistrement d’une pièce jointe (clé de stockage, métadonnées, expiration). La clé est chiffrée côté serveur et stockée sous forme de pointeur vault. |
 
 Les schémas Zod correspondants (`createReportSchema`, `updateReportSchema`, `createModuleSchema`, etc.) se trouvent dans `backend/src/modules/reports/report.validation.ts`. Une description détaillée des champs d’entrée/sortie est fournie dans `docs/api-reports.md`.
 
@@ -119,6 +121,7 @@ La base est exposée sur `localhost:${POSTGRES_PORT:-5432}` (par défaut 5432) a
 
 - **Structure métier des rapports** : [`docs/report-template.md`](docs/report-template.md)
 - **Spécification API rapports** : [`docs/api-reports.md`](docs/api-reports.md)
+- **Chiffrement & coffre logiciel** : [`docs/security/vault.md`](docs/security/vault.md)
 - **Modules backend** : `backend/src/modules/`
 
 Contribuez à la documentation dès que de nouveaux endpoints ou processus sont ajoutés afin de garder l’équipe alignée.

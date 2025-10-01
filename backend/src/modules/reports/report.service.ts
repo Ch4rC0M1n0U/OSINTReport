@@ -1,4 +1,6 @@
 import createError from "http-errors";
+import type { Prisma } from "@prisma/client";
+
 import { prisma } from "@shared/prisma";
 import {
   CreateModuleInput,
@@ -8,8 +10,41 @@ import {
   UpdateModuleInput,
   UpdateReportInput,
 } from "@modules/reports/report.validation";
+import { VaultService } from "@modules/security/vault.service";
 
 export class ReportService {
+  private static async resolveAttachmentSecret<T extends { storageKey: string }>(
+    attachment: T,
+    client?: Prisma.TransactionClient
+  ): Promise<T> {
+    if (!VaultService.isPointer(attachment.storageKey)) {
+      return attachment;
+    }
+
+    const storageKey = await VaultService.revealString(attachment.storageKey, client);
+    return {
+      ...attachment,
+      storageKey,
+    };
+  }
+
+  private static async resolveAttachments<
+    T extends { attachments: Array<{ storageKey: string }> }
+  >(entity: T, client?: Prisma.TransactionClient): Promise<T> {
+    if (!entity.attachments?.length) {
+      return entity;
+    }
+
+    const decrypted = await Promise.all(
+      entity.attachments.map((attachment) => this.resolveAttachmentSecret(attachment, client))
+    );
+
+    return {
+      ...entity,
+      attachments: decrypted,
+    };
+  }
+
   static async listReports(query: ListReportsQuery) {
     const { limit, offset, orderBy, order, status, search } = query;
 
@@ -117,7 +152,21 @@ export class ReportService {
       throw createError(404, "Rapport introuvable");
     }
 
-    return report;
+    const [reportLevelAttachments, moduleWithSecrets] = await Promise.all([
+      Promise.all(report.attachments.map((attachment) => this.resolveAttachmentSecret(attachment))),
+      Promise.all(
+        report.modules.map(async (module) => {
+          const withAttachments = await this.resolveAttachments(module);
+          return withAttachments;
+        })
+      ),
+    ]);
+
+    return {
+      ...report,
+      attachments: reportLevelAttachments,
+      modules: moduleWithSecrets,
+    };
   }
 
   static async updateReport(reportId: string, input: UpdateReportInput) {
@@ -224,6 +273,11 @@ export class ReportService {
       throw createError(404, "Module introuvable pour ce rapport");
     }
 
+    const attachments = await prisma.reportAttachment.findMany({ where: { moduleId } });
+    await Promise.all(
+      attachments.map((attachment) => VaultService.deletePointer(attachment.storageKey))
+    );
+
     await prisma.reportAttachment.deleteMany({ where: { moduleId } });
     await prisma.researchRecord.deleteMany({ where: { reportModuleId: moduleId } });
 
@@ -240,18 +294,32 @@ export class ReportService {
       }
     }
 
-    return prisma.reportAttachment.create({
-      data: {
+  return prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+      const vaultItem = await VaultService.storeString(
         reportId,
-        moduleId: input.moduleId ?? null,
-        type: input.type,
-        storageKey: input.storageKey,
-        fileName: input.fileName,
-        mimeType: input.mimeType,
-        fileSize: input.fileSize,
-        caption: input.caption ?? null,
-        expiresAt: input.expiresAt ?? null,
-      },
+        "reportAttachment.storageKey",
+        input.storageKey,
+        { expiresAt: input.expiresAt ?? null },
+        tx
+      );
+
+      const storagePointer = VaultService.buildPointer(vaultItem.id);
+
+      const attachment = await tx.reportAttachment.create({
+        data: {
+          reportId,
+          moduleId: input.moduleId ?? null,
+          type: input.type,
+          storageKey: storagePointer,
+          fileName: input.fileName,
+          mimeType: input.mimeType,
+          fileSize: input.fileSize,
+          caption: input.caption ?? null,
+          expiresAt: input.expiresAt ?? null,
+        },
+      });
+
+      return this.resolveAttachmentSecret(attachment, tx);
     });
   }
 
