@@ -1,0 +1,260 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserStatus {
+  PENDING
+  ACTIVE
+  SUSPENDED
+  DEACTIVATED
+}
+
+enum ReportStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum EntityType {
+  PERSON
+  ORGANIZATION
+  TELEPHONE
+  EMAIL
+  ACCOUNT
+  ADDRESS
+  OTHER
+}
+
+model User {
+  id           String        @id @default(uuid())
+  firstName    String
+  lastName     String
+  matricule    String        @unique
+  email        String        @unique
+  passwordHash String
+  roleId       String
+  status       UserStatus    @default(PENDING)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  role         Role          @relation(fields: [roleId], references: [id])
+  sessions     UserSession[]
+  reports      Report[]      @relation("ReportOwner")
+  reportVersions ReportVersion[] @relation("ReportVersionAuthor")
+  auditLogs    AuditLog[]    @relation("AuditLogActor")
+}
+
+model Role {
+  id          String           @id @default(uuid())
+  name        String           @unique
+  description String?
+  users       User[]
+  permissions RolePermission[]
+}
+
+model Permission {
+  id          String           @id @default(uuid())
+  code        String           @unique
+  description String?
+  roles       RolePermission[]
+}
+
+model RolePermission {
+  roleId       String
+  permissionId String
+
+  role       Role       @relation(fields: [roleId], references: [id])
+  permission Permission @relation(fields: [permissionId], references: [id])
+
+  @@id([roleId, permissionId])
+}
+
+model UserSession {
+  id               String   @id @default(uuid())
+  userId           String
+  refreshTokenHash String
+  userAgent        String?
+  ipAddress        String?
+  createdAt        DateTime @default(now())
+  expiresAt        DateTime
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+model Report {
+  id               String         @id @default(uuid())
+  title            String
+  caseNumber       String?
+  reportNumber     String?
+  purpose          String?
+  summary          String?
+  relatedCases     Json?
+  requestingService String?
+  reportingUnit    String?
+  reportingOfficer String?
+  reportingRank    String?
+  issuedAt         DateTime?      @default(now())
+  objectives       Json?
+  status           ReportStatus   @default(DRAFT)
+  ownerId          String
+  dateRangeStart   DateTime?
+  dateRangeEnd     DateTime?
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+
+  owner        User           @relation("ReportOwner", fields: [ownerId], references: [id])
+  modules      ReportModule[]
+  attachments  ReportAttachment[]
+  versions     ReportVersion[]
+  vaultItems   VaultItem[]
+}
+
+model ReportVersion {
+  id          String   @id @default(uuid())
+  reportId    String
+  version     Int
+  snapshot    Json
+  createdById String
+  createdAt   DateTime @default(now())
+
+  report Report @relation(fields: [reportId], references: [id])
+  author User  @relation("ReportVersionAuthor", fields: [createdById], references: [id])
+
+  @@unique([reportId, version])
+}
+
+model ReportModule {
+  id          String      @id @default(uuid())
+  reportId    String
+  type        String
+  slug        String?
+  title       String?
+  headline    String?
+  entityId    String?
+  position    Int         @default(0)
+  payload     Json?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  report        Report    @relation(fields: [reportId], references: [id])
+  entity        Entity?   @relation(fields: [entityId], references: [id])
+  researchItems ResearchRecord[]
+  attachments   ReportAttachment[]
+
+  @@index([reportId])
+  @@index([entityId])
+}
+
+model ReportAttachment {
+  id          String   @id @default(uuid())
+  reportId    String
+  moduleId    String?
+  type        String   @default("image")
+  storageKey  String
+  fileName    String
+  mimeType    String
+  fileSize    Int
+  caption     String?
+  createdAt   DateTime @default(now())
+  expiresAt   DateTime?
+
+  report Report @relation(fields: [reportId], references: [id])
+  module ReportModule? @relation(fields: [moduleId], references: [id])
+
+  @@index([reportId])
+  @@index([moduleId])
+}
+
+model Entity {
+  id        String         @id @default(uuid())
+  label     String
+  type      EntityType
+  notes     String?
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+
+  modules         ReportModule[]
+  researchRecords ResearchRecord[]
+}
+
+model ResearchType {
+  id        String   @id @default(uuid())
+  code      String   @unique
+  label     String
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  researchRecords ResearchRecord[]
+}
+
+model ResearchRecord {
+  id               String    @id @default(uuid())
+  reportModuleId   String
+  entityId         String?
+  researchTypeId   String
+  subtitle         String?
+  details          Json?
+  sensitiveDataRef String? @unique
+  createdAt        DateTime  @default(now())
+
+  module       ReportModule @relation(fields: [reportModuleId], references: [id])
+  entity       Entity?      @relation(fields: [entityId], references: [id])
+  researchType ResearchType @relation(fields: [researchTypeId], references: [id])
+  vaultItem    VaultItem?   @relation("ResearchRecordVault", fields: [sensitiveDataRef], references: [id])
+
+  @@index([reportModuleId])
+  @@index([researchTypeId])
+}
+
+model AuditLog {
+  id           String   @id @default(uuid())
+  actorId      String?
+  action       String
+  resourceType String
+  resourceId   String
+  metadata     Json?
+  ipAddress    String?
+  createdAt    DateTime @default(now())
+
+  actor  User?   @relation("AuditLogActor", fields: [actorId], references: [id])
+
+  @@index([actorId])
+  @@index([resourceType])
+  @@index([resourceId])
+}
+
+model KeyStore {
+  id          String     @id @default(uuid())
+  label       String     @unique
+  encryptedKey String
+  active      Boolean    @default(true)
+  createdAt   DateTime   @default(now())
+  rotatedAt   DateTime?
+
+  vaultItems VaultItem[]
+}
+
+model VaultItem {
+  id              String    @id @default(uuid())
+  reportId        String
+  keyId           String
+  cipherText      String
+  field           String
+  createdAt       DateTime  @default(now())
+  expiresAt       DateTime?
+
+  report     Report    @relation(fields: [reportId], references: [id])
+  key        KeyStore  @relation(fields: [keyId], references: [id])
+  researchRecord ResearchRecord? @relation("ResearchRecordVault")
+
+  @@index([reportId])
+  @@index([keyId])
+}

@@ -1,0 +1,6 @@
+.env
+backend/.env
+backend/node_modules/
+backend/dist/
+postgres-data/
+*.log
