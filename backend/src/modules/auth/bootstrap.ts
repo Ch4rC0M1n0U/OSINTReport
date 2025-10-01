@@ -1,5 +1,5 @@
 import { prisma } from "@shared/prisma";
-import { hashPassword } from "@shared/password";
+import { hashPassword, verifyPassword } from "@shared/password";
 import { logger } from "@config/logger";
 import { env } from "@config/env";
 
@@ -125,16 +125,37 @@ async function ensureAdminAccount(roleMap: Map<string, { id: string }>) {
   });
 
   if (existing) {
+    const updates: {
+      roleId?: string;
+      status?: "ACTIVE";
+      passwordHash?: string;
+    } = {};
+
     if (existing.roleId !== adminRole.id || existing.status !== "ACTIVE") {
+      updates.roleId = adminRole.id;
+      updates.status = "ACTIVE";
+    }
+
+    const passwordMatches = await verifyPassword(existing.passwordHash, env.ADMIN_PASSWORD).catch(
+      () => false
+    );
+
+    if (!passwordMatches) {
+      updates.passwordHash = await hashPassword(env.ADMIN_PASSWORD);
+    }
+
+    if (Object.keys(updates).length > 0) {
       await prisma.user.update({
         where: { id: existing.id },
-        data: {
-          roleId: adminRole.id,
-          status: "ACTIVE",
-        },
+        data: updates,
       });
-      logger.info({ email: adminEmail }, "Compte administrateur synchronisé");
+
+      logger.info(
+        { email: adminEmail, passwordReset: Boolean(updates.passwordHash) },
+        "Compte administrateur synchronisé"
+      );
     }
+
     return;
   }
 

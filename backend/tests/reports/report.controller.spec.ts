@@ -191,4 +191,49 @@ describe("ReportController", () => {
 
     expect(detailRes.body.report.attachments[0].storageKey).toBe("s3://bucket/capture.png");
   });
+
+  it("renvoie un résumé dashboard avec les indicateurs clés", async () => {
+    const reports = await Promise.all(
+      ["Rapport A", "Rapport B", "Rapport C"].map((title) =>
+        authRequest(accessToken).post("/api/reports").send({ title }).expect(201)
+      )
+    );
+
+    const reportIds = reports.map((res) => res.body.report.id as string);
+
+    await authRequest(accessToken)
+      .patch(`/api/reports/${reportIds[1]}`)
+      .send({ status: "PUBLISHED" })
+      .expect(200);
+
+    await authRequest(accessToken)
+      .patch(`/api/reports/${reportIds[2]}`)
+      .send({ status: "ARCHIVED" })
+      .expect(200);
+
+    const dashboardRes = await authRequest(accessToken)
+      .get("/api/reports/dashboard")
+      .expect(200);
+
+    expect(dashboardRes.body).toMatchObject({
+      totals: {
+        all: 3,
+        draft: 1,
+        published: 1,
+        archived: 1,
+      },
+    });
+
+    const distribution = dashboardRes.body.statusDistribution as Array<{ status: string; count: number }>;
+    const byStatus = Object.fromEntries(distribution.map((item) => [item.status, item.count]));
+    expect(byStatus.DRAFT).toBe(1);
+    expect(byStatus.PUBLISHED).toBe(1);
+    expect(byStatus.ARCHIVED).toBe(1);
+
+    expect(dashboardRes.body.recentReports).toHaveLength(3);
+
+    const timeline = dashboardRes.body.timeline as Array<{ date: string; count: number }>;
+    expect(timeline.length).toBeGreaterThan(0);
+    expect(timeline.some((entry) => entry.count >= 1)).toBe(true);
+  });
 });

@@ -48,28 +48,28 @@ export class ReportService {
   static async listReports(query: ListReportsQuery) {
     const { limit, offset, orderBy, order, status, search } = query;
 
-    type ReportWhereInput = NonNullable<Parameters<typeof prisma.report.findMany>[0]>["where"];
-    const where: ReportWhereInput = {};
+    const where = {
+      ...(status ? { status } : {}),
+      ...(search
+        ? {
+            OR: [
+              { title: { contains: search, mode: "insensitive" } },
+              { caseNumber: { contains: search, mode: "insensitive" } },
+              { reportNumber: { contains: search, mode: "insensitive" } },
+              { requestingService: { contains: search, mode: "insensitive" } },
+            ],
+          }
+        : {}),
+    };
 
-    if (status) {
-      where.status = status;
-    }
-
-    if (search) {
-      where.OR = [
-        { title: { contains: search, mode: "insensitive" } },
-        { caseNumber: { contains: search, mode: "insensitive" } },
-        { reportNumber: { contains: search, mode: "insensitive" } },
-        { requestingService: { contains: search, mode: "insensitive" } },
-      ];
-    }
+    const orderByField = orderBy ?? "issuedAt";
 
     const [items, total] = await prisma.$transaction([
       prisma.report.findMany({
         where,
         orderBy: {
-          [orderBy ?? "issuedAt"]: order,
-        } as NonNullable<Parameters<typeof prisma.report.findMany>[0]>["orderBy"],
+          [orderByField]: order,
+        },
         skip: offset,
         take: limit,
         include: {
@@ -92,6 +92,139 @@ export class ReportService {
       limit,
       offset,
     };
+  }
+
+  static async getDashboardSummary() {
+    const windowDays = 30;
+    const now = new Date();
+    const startDate = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+    startDate.setUTCDate(startDate.getUTCDate() - (windowDays - 1));
+
+    type StatusKey = "DRAFT" | "PUBLISHED" | "ARCHIVED";
+
+    const statusGroups = await prisma.report.groupBy({
+      by: ["status"],
+      _count: { _all: true },
+    });
+
+    const recentReports = (await prisma.report.findMany({
+      orderBy: { updatedAt: "desc" },
+      take: 5,
+      select: {
+        id: true,
+        title: true,
+        status: true,
+        issuedAt: true,
+        updatedAt: true,
+        owner: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+          },
+        },
+      },
+    })) as Array<{
+      id: string;
+      title: string;
+      status: StatusKey;
+      issuedAt: Date | null;
+      updatedAt: Date;
+      owner: { id: string; firstName: string; lastName: string };
+    }>;
+
+    const timelineRows = await prisma.$queryRaw<Array<{ date: Date; count: bigint }>>`
+      SELECT date_trunc('day', "createdAt")::date AS date,
+             COUNT(*)::bigint AS count
+      FROM "Report"
+      WHERE "createdAt" >= ${startDate}
+      GROUP BY 1
+      ORDER BY 1
+    `;
+
+    const totals = {
+      all: 0,
+      draft: 0,
+      published: 0,
+      archived: 0,
+    };
+
+    for (const group of statusGroups) {
+      const count = Number(group._count._all ?? 0);
+      totals.all += count;
+
+      switch (group.status) {
+        case "DRAFT":
+          totals.draft = count;
+          break;
+        case "PUBLISHED":
+          totals.published = count;
+          break;
+        case "ARCHIVED":
+          totals.archived = count;
+          break;
+        default:
+          break;
+      }
+    }
+
+    const statusLabels: Record<StatusKey, string> = {
+      DRAFT: "Brouillons",
+      PUBLISHED: "Publiés",
+      ARCHIVED: "Archivés",
+    } as const;
+
+    const distribution = (Object.keys(statusLabels) as StatusKey[]).map((status) => {
+      const count =
+        status === "DRAFT"
+          ? totals.draft
+          : status === "PUBLISHED"
+          ? totals.published
+          : totals.archived;
+
+      return {
+        status,
+        label: statusLabels[status],
+        count,
+        percentage: totals.all === 0 ? 0 : Number(((count / totals.all) * 100).toFixed(1)),
+      };
+    });
+
+    const timelineMap = new Map<string, number>();
+    for (const row of timelineRows) {
+      const isoDate = row.date.toISOString().slice(0, 10);
+      timelineMap.set(isoDate, Number(row.count));
+    }
+
+    const timeline: Array<{ date: string; count: number }> = [];
+    for (let i = 0; i < windowDays; i += 1) {
+      const current = new Date(startDate);
+      current.setUTCDate(startDate.getUTCDate() + i);
+      const isoDate = current.toISOString().slice(0, 10);
+      timeline.push({
+        date: isoDate,
+        count: timelineMap.get(isoDate) ?? 0,
+      });
+    }
+
+    return {
+      generatedAt: now.toISOString(),
+      totals,
+      statusDistribution: distribution,
+      recentReports: recentReports.map((report) => ({
+        id: report.id,
+        title: report.title,
+        status: report.status,
+        issuedAt: report.issuedAt,
+        updatedAt: report.updatedAt,
+        owner: {
+          id: report.owner.id,
+          firstName: report.owner.firstName,
+          lastName: report.owner.lastName,
+        },
+      })),
+      timeline,
+    } as const;
   }
 
   static async createReport(input: CreateReportInput, ownerId: string) {
@@ -153,9 +286,13 @@ export class ReportService {
     }
 
     const [reportLevelAttachments, moduleWithSecrets] = await Promise.all([
-      Promise.all(report.attachments.map((attachment) => this.resolveAttachmentSecret(attachment))),
       Promise.all(
-        report.modules.map(async (module) => {
+        report.attachments.map((attachment: typeof report.attachments[number]) =>
+          this.resolveAttachmentSecret(attachment)
+        )
+      ),
+      Promise.all(
+  report.modules.map(async (module: typeof report.modules[number]) => {
           const withAttachments = await this.resolveAttachments(module);
           return withAttachments;
         })
@@ -275,7 +412,9 @@ export class ReportService {
 
     const attachments = await prisma.reportAttachment.findMany({ where: { moduleId } });
     await Promise.all(
-      attachments.map((attachment) => VaultService.deletePointer(attachment.storageKey))
+      attachments.map((attachment: (typeof attachments)[number]) =>
+        VaultService.deletePointer(attachment.storageKey)
+      )
     );
 
     await prisma.reportAttachment.deleteMany({ where: { moduleId } });

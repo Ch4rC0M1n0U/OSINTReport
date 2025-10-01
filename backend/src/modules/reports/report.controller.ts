@@ -11,6 +11,15 @@ import {
 } from "@modules/reports/report.validation";
 
 export class ReportController {
+  static async dashboard(_req: Request, res: Response, next: NextFunction) {
+    try {
+      const summary = await ReportService.getDashboardSummary();
+      res.json(summary);
+    } catch (error) {
+      next(error);
+    }
+  }
+
   static async list(req: Request, res: Response, next: NextFunction) {
     try {
       const query = listReportsQuerySchema.parse(req.query);

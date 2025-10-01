@@ -1,65 +1,36 @@
 <script setup lang="ts">
-import { onMounted, ref, watch } from "vue";
+import { computed, onMounted } from "vue";
+import { storeToRefs } from "pinia";
 import { useDebounceFn } from "@vueuse/core";
 
-import { api } from "@/services/http";
+import { useReportsStore } from "@/stores/reports";
 
-interface ReportSummary {
-  id: string;
-  title: string;
-  status: string;
-  issuedAt: string | null;
-  owner: {
-    firstName: string;
-    lastName: string;
-  };
-}
+const reportsStore = useReportsStore();
+const { items, total, loading, error, search, status, hasNext, hasPrevious } =
+  storeToRefs(reportsStore);
 
-interface PaginatedReports {
-  items: ReportSummary[];
-  total: number;
-  limit: number;
-  offset: number;
-}
+const debouncedFetch = useDebounceFn(() => reportsStore.fetchReports(), 300);
 
-const loading = ref(false);
-const error = ref<string | null>(null);
-const search = ref("");
-const status = ref<string | undefined>(undefined);
-const pagination = ref({ limit: 10, offset: 0 });
-const reports = ref<PaginatedReports>({ items: [], total: 0, limit: 10, offset: 0 });
+const searchModel = computed({
+  get: () => search.value,
+  set: (value: string) => {
+    reportsStore.setSearch(value);
+    debouncedFetch();
+  },
+});
 
-async function fetchReports() {
-  loading.value = true;
-  error.value = null;
-
-  try {
-    const response = await api.get<PaginatedReports>("/reports", {
-      params: {
-        limit: pagination.value.limit,
-        offset: pagination.value.offset,
-        search: search.value || undefined,
-        status: status.value || undefined,
-      },
-    });
-
-    reports.value = response.data;
-  } catch (err) {
-    error.value = "Impossible de charger les rapports";
-  } finally {
-    loading.value = false;
-  }
-}
-
-const debouncedFetch = useDebounceFn(fetchReports, 300);
-
-watch([search, status], () => {
-  pagination.value = { ...pagination.value, offset: 0 };
-  debouncedFetch();
+const statusModel = computed({
+  get: () => status.value ?? "",
+  set: (value: string) => {
+    reportsStore.setStatus(value || undefined);
+    debouncedFetch();
+  },
 });
 
 onMounted(() => {
-  fetchReports();
+  reportsStore.fetchReports().catch(() => {
+    /* already handled in store */
+  });
 });
 
 function formatDate(value: string | null) {
@@ -71,12 +42,11 @@ function formatDate(value: string | null) {
 }
 
 function handlePageChange(direction: 1 | -1) {
-  const nextOffset = pagination.value.offset + direction * pagination.value.limit;
-  if (nextOffset < 0 || nextOffset >= reports.value.total) {
-    return;
+  if (direction === 1) {
+    void reportsStore.goToNextPage();
+  } else {
+    void reportsStore.goToPreviousPage();
   }
-  pagination.value = { ...pagination.value, offset: nextOffset };
-  fetchReports();
 }
 </script>
 
@@ -91,13 +61,13 @@ function handlePageChange(direction: 1 | -1) {
       </div>
       <div class="flex gap-3">
         <input
-          v-model="search"
+          v-model="searchModel"
           class="input input-bordered w-full md:w-72"
           placeholder="Recherche (titre, dossier, service)"
           type="search"
         />
-        <select v-model="status" class="select select-bordered">
-          <option :value="undefined">Tous les statuts</option>
+        <select v-model="statusModel" class="select select-bordered">
+          <option value="">Tous les statuts</option>
           <option value="DRAFT">Brouillon</option>
           <option value="PUBLISHED">Publié</option>
           <option value="ARCHIVED">Archivé</option>
@@ -126,12 +96,12 @@ function handlePageChange(direction: 1 | -1) {
               <tr v-else-if="error">
                 <td colspan="4" class="text-center text-error py-6">{{ error }}</td>
               </tr>
-              <tr v-else-if="reports.items.length === 0">
+              <tr v-else-if="items.length === 0">
                 <td colspan="4" class="text-center py-6 text-base-content/70">
                   Aucun rapport trouvé pour ces critères.
                 </td>
               </tr>
-              <tr v-for="report in reports.items" :key="report.id">
+              <tr v-for="report in items" :key="report.id">
                 <td class="font-medium">
                   {{ report.title }}
                 </td>
@@ -146,19 +116,19 @@ function handlePageChange(direction: 1 | -1) {
         </div>
         <footer class="flex items-center justify-between border-t px-6 py-4 text-sm">
           <span>
-            {{ reports.items.length }} / {{ reports.total }} résultats
+            {{ items.length }} / {{ total }} résultats
           </span>
           <div class="join">
             <button
               class="btn btn-outline btn-sm join-item"
-              :disabled="pagination.offset === 0 || loading"
+              :disabled="!hasPrevious || loading"
               @click="handlePageChange(-1)"
             >
               Précédent
             </button>
             <button
               class="btn btn-outline btn-sm join-item"
-              :disabled="pagination.offset + pagination.limit >= reports.total || loading"
+              :disabled="!hasNext || loading"
               @click="handlePageChange(1)"
             >
               Suivant

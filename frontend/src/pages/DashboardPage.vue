@@ -9,7 +9,12 @@ const navigation = [
   {
     label: "Tableau de bord",
     to: { name: "dashboard" },
-    icon: "home",
+    icon: "dashboard",
+  },
+  {
+    label: "Rapports",
+    to: { name: "reports.list" },
+    icon: "assignment",
   },
 ];
 

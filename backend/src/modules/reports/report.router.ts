@@ -14,6 +14,12 @@ reportRouter.get(
   (req, res, next) => ReportController.list(req, res, next)
 );
 
+reportRouter.get(
+  "/dashboard",
+  requirePermissions(PermissionCode.REPORTS_READ),
+  (req, res, next) => ReportController.dashboard(req, res, next)
+);
+
 reportRouter.post(
   "/",
   requirePermissions(PermissionCode.REPORTS_WRITE),

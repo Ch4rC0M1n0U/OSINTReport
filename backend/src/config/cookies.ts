@@ -8,16 +8,20 @@ export const cookieNames = {
   refreshToken: "or_rt",
 } as const;
 
+const cookieDomain = env.COOKIE_DOMAIN?.trim();
+const shouldAttachDomain =
+  cookieDomain !== undefined &&
+  cookieDomain.length > 0 &&
+  cookieDomain !== "localhost" &&
+  cookieDomain !== "127.0.0.1";
+
 const baseCookieOptions: CookieOptions = {
   httpOnly: true,
   secure: isProd,
   sameSite: "strict",
   path: "/",
+  ...(shouldAttachDomain ? { domain: cookieDomain } : {}),
 };
-
-if (env.COOKIE_DOMAIN) {
-  baseCookieOptions.domain = env.COOKIE_DOMAIN;
-}
 
 export const accessTokenCookieOptions: CookieOptions = {
   ...baseCookieOptions,

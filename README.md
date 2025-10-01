@@ -8,7 +8,7 @@ Plateforme de génération et de diffusion de rapports OSINT pour services d’e
 - **Backend** : Node.js (TypeScript), Express 5, Prisma ORM, Zod pour la validation, Argon2 + JWT pour l’authentification.
 - **Frontend** : Vue 3 + Vite + TypeScript, Tailwind CSS & DaisyUI (thème personnalisé) avec Pinia & Vue Router.
 - **Sécurité** : Permissions RBAC, journalisation Pino, chiffrement applicatif des données sensibles (AES-256-GCM via coffre logiciel).
-- **Rapports OSINT** : Modélisation Prisma des rapports, modules dynamiques, pièces jointes et versions. Les schémas de validation sont décrits dans `backend/src/modules/reports` et la structure métier détaillée dans `docs/report-template.md`.
+- **Rapports OSINT** : Modélisation Prisma des rapports, modules dynamiques, pièces jointes et versions. Les schémas de validation sont décrits dans `backend/src/modules/reports`, la structure métier détaillée dans `docs/report-template.md`, et un tableau de bord analytique consolide les statistiques clés (`/api/reports/dashboard`).
 
 ## Prérequis
 
@@ -80,6 +80,8 @@ Au démarrage, `bootstrapAuth()` crée les permissions, rôles et un compte admi
 
 Assurez-vous de personnaliser ces valeurs avant la mise en production. Le compte est automatiquement activé et associé aux permissions complètes.
 
+> ℹ️ **Cookies d'authentification** : laissez `COOKIE_DOMAIN` vide en développement (Codespaces, localhost…). Si vous définissez cette variable, utilisez un domaine réellement servi par le backend (ex. `api.exemple.fr`). Un domaine `localhost` empêcherait le navigateur de stocker les cookies lorsqu'il accède à l'API via une URL proxifiée (`*.github.dev`).
+
 ### État de la base de données
 
 Les migrations Prisma se trouvent dans `backend/prisma/migrations`. Les dernières évolutions (dossier `20251001120000_reports_enhancements`) introduisent :
@@ -99,6 +101,7 @@ Les routes sont montées sous `/reports` (voir `backend/src/routes/index.ts`) et
 | Méthode | Route | Permission requise | Description |
 | --- | --- | --- | --- |
 | `GET` | `/reports` | `REPORTS_READ` | Liste paginée des rapports avec filtrage par statut ou texte. |
+| `GET` | `/reports/dashboard` | `REPORTS_READ` | Résumé analytique (totaux, distribution des statuts, timeline 30 jours, rapports récents). |
 | `POST` | `/reports` | `REPORTS_WRITE` | Création d’un rapport (métadonnées, objectifs, dates). |
 | `GET` | `/reports/:reportId` | `REPORTS_READ` | Détail complet d’un rapport (modules, pièces jointes, entités liées). |
 | `PATCH` | `/reports/:reportId` | `REPORTS_WRITE` | Mise à jour partielle d’un rapport. |

@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory } from "vue-router";
 
 import DashboardPage from "@/pages/DashboardPage.vue";
+import DashboardHomePage from "@/pages/dashboard/DashboardHomePage.vue";
 import LoginPage from "@/pages/LoginPage.vue";
 import ReportListPage from "@/pages/reports/ReportListPage.vue";
 import { useAuthStore } from "@/stores/auth";
@@ -22,6 +23,11 @@ const router = createRouter({
         {
           path: "",
           name: "dashboard",
+          component: DashboardHomePage,
+        },
+        {
+          path: "reports",
+          name: "reports.list",
           component: ReportListPage,
         },
       ],

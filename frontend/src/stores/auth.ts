@@ -20,6 +20,12 @@ export const useAuthStore = defineStore("auth", () => {
 
   const isAuthenticated = computed(() => Boolean(user.value));
 
+  function clearSession() {
+    user.value = null;
+    initialized.value = true;
+    loading.value = false;
+  }
+
   async function bootstrap() {
     if (initialized.value) return;
 
@@ -55,9 +61,11 @@ export const useAuthStore = defineStore("auth", () => {
   async function logout() {
     try {
       await api.post("/auth/logout");
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.warn("Erreur lors de la déconnexion", err);
     } finally {
-      user.value = null;
-      initialized.value = true;
+      clearSession();
     }
   }
 
@@ -67,6 +75,7 @@ export const useAuthStore = defineStore("auth", () => {
     loading,
     error,
     isAuthenticated,
+    clearSession,
     bootstrap,
     login,
     logout,
