@@ -37,6 +37,7 @@ model User {
   matricule    String        @unique
   email        String        @unique
   passwordHash String
+  avatarUrl    String?
   roleId       String
   status       UserStatus    @default(PENDING)
   createdAt    DateTime      @default(now())
@@ -47,6 +48,7 @@ model User {
   reports      Report[]      @relation("ReportOwner")
   reportVersions ReportVersion[] @relation("ReportVersionAuthor")
   auditLogs    AuditLog[]    @relation("AuditLogActor")
+  passwordResetTokens PasswordResetToken[]
 }
 
 model Role {
@@ -257,4 +259,33 @@ model VaultItem {
 
   @@index([reportId])
   @@index([keyId])
+}
+
+model PasswordResetToken {
+  id        String   @id @default(uuid())
+  userId    String
+  token     String   @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([token])
+  @@index([expiresAt])
+}
+
+model SmtpConfig {
+  id        String   @id @default(uuid())
+  host      String
+  port      Int
+  secure    Boolean  @default(true)
+  username  String
+  password  String
+  fromEmail String
+  fromName  String
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }

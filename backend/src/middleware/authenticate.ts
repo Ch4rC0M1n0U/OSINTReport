@@ -24,6 +24,7 @@ export async function requireAuth(req: Request, _res: Response, next: NextFuncti
       email: user.email,
       firstName: user.firstName,
       lastName: user.lastName,
+      avatarUrl: user.avatarUrl,
     };
 
     next();

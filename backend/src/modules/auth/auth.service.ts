@@ -11,6 +11,7 @@ export type AuthenticatedUser = {
   firstName: string;
   lastName: string;
   email: string;
+  avatarUrl: string | null;
   roleId: string;
   roleName: string;
   permissions: PermissionCode[];
@@ -23,7 +24,17 @@ function mapPermissions(rolePermissions: { permission: { code: string } }[]): Pe
 async function getUserWithRoleByEmail(email: string) {
   return prisma.user.findUnique({
     where: { email: email.toLowerCase() },
-    include: {
+    select: {
+      id: true,
+      firstName: true,
+      lastName: true,
+      email: true,
+      avatarUrl: true,
+      passwordHash: true,
+      roleId: true,
+      status: true,
+      createdAt: true,
+      updatedAt: true,
       role: {
         include: {
           permissions: {
@@ -45,6 +56,7 @@ function buildAuthenticatedUser(user: UserWithRole): AuthenticatedUser {
     firstName: user.firstName,
     lastName: user.lastName,
     email: user.email,
+    avatarUrl: user.avatarUrl,
     roleId: user.roleId,
     roleName: user.role.name,
     permissions: mapPermissions(user.role.permissions),

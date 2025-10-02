@@ -1,0 +1,21 @@
+# Sécurité du répertoire des avatars
+# Empêche l'exploration du répertoire
+Options -Indexes
+
+# Autorise uniquement les fichiers d'images
+<FilesMatch "\.(png|jpg|jpeg|gif|webp)$">
+    Order Allow,Deny
+    Allow from all
+</FilesMatch>
+
+# Bloque l'accès à tous les autres fichiers
+<FilesMatch "^\.">
+    Order Allow,Deny
+    Deny from all
+</FilesMatch>
+
+# Protection contre les injections
+<IfModule mod_headers.c>
+    Header set X-Content-Type-Options "nosniff"
+    Header set Content-Security-Policy "default-src 'self'"
+</IfModule>

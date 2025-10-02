@@ -1,0 +1,11 @@
+# Ignorer tous les avatars uploadés
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.webp
+
+# Sauf le .gitkeep et .htaccess
+!.gitkeep
+!.htaccess
+!.gitignore

@@ -7,6 +7,7 @@ declare global {
       email: string;
       firstName: string;
       lastName: string;
+      avatarUrl: string | null;
       roleId: string;
       roleName: string;
       permissions: PermissionCode[];

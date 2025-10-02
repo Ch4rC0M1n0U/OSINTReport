@@ -8,6 +8,8 @@ interface UserInfo {
   email: string;
   firstName: string;
   lastName: string;
+  matricule: string;
+  avatarUrl: string | null;
   roleName: string;
   permissions: string[];
 }
@@ -26,15 +28,15 @@ export const useAuthStore = defineStore("auth", () => {
     loading.value = false;
   }
 
-  async function bootstrap() {
-    if (initialized.value) return;
+  async function bootstrap(force = false) {
+    if (initialized.value && !force) return;
 
     loading.value = true;
     error.value = null;
 
     try {
-      const response = await api.get<UserInfo>("/auth/me");
-      user.value = response.data;
+      const response = await api.get<{ user: UserInfo }>("/auth/me");
+      user.value = response.data.user;
     } catch (err) {
       user.value = null;
     } finally {
@@ -49,7 +51,18 @@ export const useAuthStore = defineStore("auth", () => {
 
     try {
       await api.post("/auth/login", credentials, { withCredentials: true });
-      await bootstrap();
+      
+      // Fetch user data after successful login
+      try {
+        const response = await api.get<{ user: UserInfo }>("/auth/me");
+        user.value = response.data.user;
+        initialized.value = true;
+      } catch (fetchErr) {
+        // If fetching user data fails after login, clear session
+        user.value = null;
+        initialized.value = true;
+        throw new Error("Erreur lors de la récupération des données utilisateur");
+      }
     } catch (err: unknown) {
       error.value = "Identifiants invalides";
       throw err;
@@ -69,6 +82,10 @@ export const useAuthStore = defineStore("auth", () => {
     }
   }
 
+  function updateUser(updatedUser: UserInfo) {
+    user.value = updatedUser;
+  }
+
   return {
     initialized,
     user,
@@ -79,5 +96,6 @@ export const useAuthStore = defineStore("auth", () => {
     bootstrap,
     login,
     logout,
+    updateUser,
   };
 });

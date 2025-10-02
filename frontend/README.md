@@ -1,6 +1,6 @@
 # OSINTReport Frontend
 
-Application Vue 3 (Vite + TypeScript + Tailwind/DaisyUI) pour la gestion des rapports OSINT.
+Application Vue 3 (Vite + TypeScript + Tailwind/DaisyUI) pour la gestion des rapports OSINT. Le tableau de bord principal propose désormais un menu Administration regroupant les réglages globaux et la gestion des utilisateurs, visible uniquement pour les comptes disposant des permissions adéquates.
 
 ## Scripts principaux
 
@@ -33,7 +33,8 @@ frontend/
 ├─ src/
 │  ├─ assets/            # Styles Tailwind & DaisyUI
 │  ├─ components/        # Composants UI génériques
-│  ├─ pages/             # Pages (login, dashboard, rapports)
+│  ├─ pages/             # Pages (login, dashboard, rapports, administration)
+│  │  └─ admin/          # Sous-pages Administration (réglages, gestion utilisateurs)
 │  ├─ router/            # Vue Router
 │  ├─ services/          # Clients HTTP
 │  └─ stores/            # Pinia stores
@@ -49,6 +50,7 @@ frontend/
 - Le client Axios centralise les appels (`src/services/http.ts`) : toute réponse `401` purge la session et redirige vers `/login` en préservant la route cible.
 - Les rapports sont gérés via le store `reports` (`src/stores/reports.ts`) qui encapsule recherche, pagination et état de chargement autour de `GET /api/reports`.
 - Le tableau de bord analytique s’appuie sur le store `dashboard` (`src/stores/dashboard.ts`) qui consomme `GET /api/reports/dashboard` et expose totaux, distribution des statuts, timeline et rapports récents.
+- La navigation Administration n’est rendue que lorsque l’utilisateur connecté possède la permission `system:admin`; la page Gestion des utilisateurs nécessite en plus `users:read` et prépare l’extension vers des actions `users:write`.
 - Les styles utilisent DaisyUI avec un thème personnalisé `osint`.
 
 ### Tests et qualité
