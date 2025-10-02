@@ -161,17 +161,26 @@ async function ensureAdminAccount(roleMap: Map<string, { id: string }>) {
 
   const passwordHash = await hashPassword(env.ADMIN_PASSWORD);
 
-  await prisma.user.create({
-    data: {
-      firstName: env.ADMIN_FIRST_NAME,
-      lastName: env.ADMIN_LAST_NAME,
-      matricule: env.ADMIN_EMAIL.split("@")[0].toUpperCase(),
-      email: adminEmail,
-      passwordHash,
-      roleId: adminRole.id,
-      status: "ACTIVE",
-    },
-  });
+  try {
+    await prisma.user.create({
+      data: {
+        firstName: env.ADMIN_FIRST_NAME,
+        lastName: env.ADMIN_LAST_NAME,
+        matricule: env.ADMIN_EMAIL.split("@")[0].toUpperCase(),
+        email: adminEmail,
+        passwordHash,
+        roleId: adminRole.id,
+        status: "ACTIVE",
+      },
+    });
 
-  logger.info({ email: adminEmail }, "Compte administrateur initial créé");
+    logger.info({ email: adminEmail }, "Compte administrateur initial créé");
+  } catch (error: any) {
+    // Si l'utilisateur existe déjà (contrainte unique), ignorer
+    if (error.code === 'P2002') {
+      logger.info({ email: adminEmail }, "Compte administrateur déjà existant");
+    } else {
+      throw error;
+    }
+  }
 }

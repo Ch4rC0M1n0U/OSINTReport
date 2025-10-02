@@ -4,6 +4,8 @@ import DashboardPage from "@/pages/DashboardPage.vue";
 import DashboardHomePage from "@/pages/dashboard/DashboardHomePage.vue";
 import LoginPage from "@/pages/LoginPage.vue";
 import RegisterPage from "@/pages/RegisterPage.vue";
+import ForgotPasswordPage from "@/pages/ForgotPasswordPage.vue";
+import ResetPasswordPage from "@/pages/ResetPasswordPage.vue";
 import ProfilePage from "@/pages/ProfilePage.vue";
 import ReportListPage from "@/pages/reports/ReportListPage.vue";
 import AdminSettingsPage from "@/pages/admin/AdminSettingsPage.vue";
@@ -11,6 +13,7 @@ import AdminUsersPage from "@/pages/admin/AdminUsersPage.vue";
 import AdminUserDetailPage from "@/pages/admin/AdminUserDetailPage.vue";
 import AdminUserEditPage from "@/pages/admin/AdminUserEditPage.vue";
 import AdminUserCreatePage from "@/pages/admin/AdminUserCreatePage.vue";
+import SmtpSettingsPage from "@/pages/admin/SmtpSettingsPage.vue";
 import { useAuthStore } from "@/stores/auth";
 
 const router = createRouter({
@@ -26,6 +29,18 @@ const router = createRouter({
       path: "/register",
       name: "register",
       component: RegisterPage,
+      meta: { public: true },
+    },
+    {
+      path: "/forgot-password",
+      name: "forgot-password",
+      component: ForgotPasswordPage,
+      meta: { public: true },
+    },
+    {
+      path: "/reset-password",
+      name: "reset-password",
+      component: ResetPasswordPage,
       meta: { public: true },
     },
     {
@@ -91,6 +106,15 @@ const router = createRouter({
           meta: {
             requiresAuth: true,
             permissions: ["users:write"],
+          },
+        },
+        {
+          path: "admin/smtp",
+          name: "admin.smtp",
+          component: SmtpSettingsPage,
+          meta: {
+            requiresAuth: true,
+            permissions: ["system:admin"],
           },
         },
       ],

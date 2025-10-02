@@ -11,9 +11,13 @@ import { AuthService } from "@modules/auth/auth.service";
 import {
   ChangePasswordInput,
   changePasswordSchema,
+  ForgotPasswordInput,
+  forgotPasswordSchema,
   LoginInput,
   loginSchema,
   registerSchema,
+  ResetPasswordInput,
+  resetPasswordSchema,
 } from "@modules/auth/auth.validation";
 import { verifyRefreshToken } from "@shared/token";
 
@@ -90,6 +94,31 @@ export class AuthController {
       .clearCookie(cookieNames.refreshToken, clearedCookieOptions)
       .status(204)
       .send();
+  }
+
+  static async forgotPassword(req: Request, res: Response) {
+    const payload: ForgotPasswordInput = forgotPasswordSchema.parse(req.body);
+
+    // Appel asynchrone sans attendre pour ne pas révéler si l'email existe
+    AuthService.requestPasswordReset(payload.email).catch((error) => {
+      console.error("Erreur lors de l'envoi de l'email de réinitialisation:", error);
+    });
+
+    // Réponse immédiate pour ne pas révéler si l'email existe
+    res.status(200).json({
+      message:
+        "Si un compte avec cet email existe, un lien de réinitialisation a été envoyé.",
+    });
+  }
+
+  static async resetPassword(req: Request, res: Response) {
+    const payload: ResetPasswordInput = resetPasswordSchema.parse(req.body);
+
+    await AuthService.resetPassword(payload.token, payload.newPassword);
+
+    res.status(200).json({
+      message: "Votre mot de passe a été réinitialisé avec succès. Vous pouvez maintenant vous connecter.",
+    });
   }
 
   private static writeAuthCookies(res: Response, accessToken: string, refreshToken: string) {

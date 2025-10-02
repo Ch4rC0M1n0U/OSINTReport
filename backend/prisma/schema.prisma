@@ -31,23 +31,23 @@ enum EntityType {
 }
 
 model User {
-  id           String        @id @default(uuid())
+  id           String     @id @default(uuid())
   firstName    String
   lastName     String
-  matricule    String        @unique
-  email        String        @unique
+  matricule    String     @unique
+  email        String     @unique
   passwordHash String
   avatarUrl    String?
   roleId       String
-  status       UserStatus    @default(PENDING)
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
+  status       UserStatus @default(PENDING)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
 
-  role         Role          @relation(fields: [roleId], references: [id])
-  sessions     UserSession[]
-  reports      Report[]      @relation("ReportOwner")
-  reportVersions ReportVersion[] @relation("ReportVersionAuthor")
-  auditLogs    AuditLog[]    @relation("AuditLogActor")
+  role                Role                 @relation(fields: [roleId], references: [id])
+  sessions            UserSession[]
+  reports             Report[]             @relation("ReportOwner")
+  reportVersions      ReportVersion[]      @relation("ReportVersionAuthor")
+  auditLogs           AuditLog[]           @relation("AuditLogActor")
   passwordResetTokens PasswordResetToken[]
 }
 
@@ -92,31 +92,50 @@ model UserSession {
 }
 
 model Report {
-  id               String         @id @default(uuid())
-  title            String
-  caseNumber       String?
-  reportNumber     String?
-  purpose          String?
-  summary          String?
-  relatedCases     Json?
+  id                String       @id @default(uuid())
+  title             String
+  caseNumber        String?
+  reportNumber      String?
+  purpose           String?
+  summary           String?
+  relatedCases      Json?
   requestingService String?
-  reportingUnit    String?
-  reportingOfficer String?
-  reportingRank    String?
-  issuedAt         DateTime?      @default(now())
-  objectives       Json?
-  status           ReportStatus   @default(DRAFT)
-  ownerId          String
-  dateRangeStart   DateTime?
-  dateRangeEnd     DateTime?
-  createdAt        DateTime       @default(now())
-  updatedAt        DateTime       @updatedAt
+  reportingUnit     String?
+  reportingOfficer  String?
+  reportingRank     String?
+  issuedAt          DateTime?    @default(now())
+  objectives        Json?
+  status            ReportStatus @default(DRAFT)
+  ownerId           String
+  dateRangeStart    DateTime?
+  dateRangeEnd      DateTime?
 
-  owner        User           @relation("ReportOwner", fields: [ownerId], references: [id])
-  modules      ReportModule[]
-  attachments  ReportAttachment[]
-  versions     ReportVersion[]
-  vaultItems   VaultItem[]
+  // Nouveaux champs pour rapports OSINT
+  investigationContext String? // Contexte de l'enquête
+  legalBasis           String? // Base légale de l'enquête
+  urgencyLevel         String? // ROUTINE, URGENT, CRITICAL
+  classification       String? // PUBLIC, RESTRICTED, CONFIDENTIAL, SECRET
+  keywords             String[] // Mots-clés pour recherche
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  owner       User               @relation("ReportOwner", fields: [ownerId], references: [id])
+  modules     ReportModule[]
+  attachments ReportAttachment[]
+  versions    ReportVersion[]
+  vaultItems  VaultItem[]
+
+  // Relations de corrélation
+  correlations      ReportCorrelation[] @relation("SourceReport")
+  correlatedBy      ReportCorrelation[] @relation("RelatedReport")
+  searchableContent SearchableContent?
+
+  @@index([caseNumber])
+  @@index([reportNumber])
+  @@index([status])
+  @@index([ownerId])
+  @@index([issuedAt])
 }
 
 model ReportVersion {
@@ -128,26 +147,26 @@ model ReportVersion {
   createdAt   DateTime @default(now())
 
   report Report @relation(fields: [reportId], references: [id])
-  author User  @relation("ReportVersionAuthor", fields: [createdById], references: [id])
+  author User   @relation("ReportVersionAuthor", fields: [createdById], references: [id])
 
   @@unique([reportId, version])
 }
 
 model ReportModule {
-  id          String      @id @default(uuid())
-  reportId    String
-  type        String
-  slug        String?
-  title       String?
-  headline    String?
-  entityId    String?
-  position    Int         @default(0)
-  payload     Json?
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
+  id        String   @id @default(uuid())
+  reportId  String
+  type      String
+  slug      String?
+  title     String?
+  headline  String?
+  entityId  String?
+  position  Int      @default(0)
+  payload   Json?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  report        Report    @relation(fields: [reportId], references: [id])
-  entity        Entity?   @relation(fields: [entityId], references: [id])
+  report        Report             @relation(fields: [reportId], references: [id])
+  entity        Entity?            @relation(fields: [entityId], references: [id])
   researchItems ResearchRecord[]
   attachments   ReportAttachment[]
 
@@ -156,19 +175,19 @@ model ReportModule {
 }
 
 model ReportAttachment {
-  id          String   @id @default(uuid())
-  reportId    String
-  moduleId    String?
-  type        String   @default("image")
-  storageKey  String
-  fileName    String
-  mimeType    String
-  fileSize    Int
-  caption     String?
-  createdAt   DateTime @default(now())
-  expiresAt   DateTime?
+  id         String    @id @default(uuid())
+  reportId   String
+  moduleId   String?
+  type       String    @default("image")
+  storageKey String
+  fileName   String
+  mimeType   String
+  fileSize   Int
+  caption    String?
+  createdAt  DateTime  @default(now())
+  expiresAt  DateTime?
 
-  report Report @relation(fields: [reportId], references: [id])
+  report Report        @relation(fields: [reportId], references: [id])
   module ReportModule? @relation(fields: [moduleId], references: [id])
 
   @@index([reportId])
@@ -176,12 +195,12 @@ model ReportAttachment {
 }
 
 model Entity {
-  id        String         @id @default(uuid())
+  id        String     @id @default(uuid())
   label     String
   type      EntityType
   notes     String?
-  createdAt DateTime        @default(now())
-  updatedAt DateTime        @updatedAt
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
 
   modules         ReportModule[]
   researchRecords ResearchRecord[]
@@ -198,14 +217,14 @@ model ResearchType {
 }
 
 model ResearchRecord {
-  id               String    @id @default(uuid())
+  id               String   @id @default(uuid())
   reportModuleId   String
   entityId         String?
   researchTypeId   String
   subtitle         String?
   details          Json?
-  sensitiveDataRef String? @unique
-  createdAt        DateTime  @default(now())
+  sensitiveDataRef String?  @unique
+  createdAt        DateTime @default(now())
 
   module       ReportModule @relation(fields: [reportModuleId], references: [id])
   entity       Entity?      @relation(fields: [entityId], references: [id])
@@ -217,63 +236,92 @@ model ResearchRecord {
 }
 
 model AuditLog {
-  id           String   @id @default(uuid())
-  actorId      String?
-  action       String
-  resourceType String
-  resourceId   String
-  metadata     Json?
-  ipAddress    String?
-  createdAt    DateTime @default(now())
+  id         String   @id @default(uuid())
+  userId     String?
+  action     String // CREATE, UPDATE, DELETE, LOGIN, LOGOUT, etc.
+  resource   String // users, reports, vaults, etc.
+  resourceId String?
+  details    Json? // Additional context about the action
+  ipAddress  String?
+  userAgent  String?
+  timestamp  DateTime @default(now())
 
-  actor  User?   @relation("AuditLogActor", fields: [actorId], references: [id])
+  user User? @relation("AuditLogActor", fields: [userId], references: [id])
 
-  @@index([actorId])
-  @@index([resourceType])
-  @@index([resourceId])
+  @@index([userId])
+  @@index([action])
+  @@index([resource])
+  @@index([timestamp])
+}
+
+// Table de corrélation entre rapports
+model ReportCorrelation {
+  id              String    @id @default(uuid())
+  sourceReportId  String
+  relatedReportId String
+  correlationType String // PHONE, EMAIL, ADDRESS, NAME, ACCOUNT, ORGANIZATION
+  correlationData Json // Données qui ont créé la corrélation
+  confidence      Float // Score de confiance 0-1
+  detectedAt      DateTime  @default(now())
+  verifiedBy      String? // ID de l'utilisateur qui a vérifié
+  verifiedAt      DateTime?
+  notes           String? // Notes de l'enquêteur
+
+  sourceReport  Report @relation("SourceReport", fields: [sourceReportId], references: [id], onDelete: Cascade)
+  relatedReport Report @relation("RelatedReport", fields: [relatedReportId], references: [id], onDelete: Cascade)
+
+  @@unique([sourceReportId, relatedReportId, correlationType])
+  @@index([sourceReportId])
+  @@index([relatedReportId])
+  @@index([correlationType])
+  @@index([confidence])
+  @@index([detectedAt])
+}
+
+// Table pour indexation Meilisearch
+model SearchableContent {
+  id          String   @id @default(uuid())
+  reportId    String   @unique
+  contentHash String // Hash du contenu pour détecter les changements
+  fullText    String   @db.Text // Texte complet indexable
+  entities    Json // Entités extraites (téléphones, emails, adresses, noms)
+  metadata    Json // Métadonnées (dates, lieux, organisations, etc.)
+  indexedAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  report Report @relation(fields: [reportId], references: [id], onDelete: Cascade)
+
+  @@index([reportId])
+  @@index([contentHash])
+  @@index([updatedAt])
 }
 
 model KeyStore {
-  id          String     @id @default(uuid())
-  label       String     @unique
+  id           String    @id @default(uuid())
+  label        String    @unique
   encryptedKey String
-  active      Boolean    @default(true)
-  createdAt   DateTime   @default(now())
-  rotatedAt   DateTime?
+  active       Boolean   @default(true)
+  createdAt    DateTime  @default(now())
+  rotatedAt    DateTime?
 
   vaultItems VaultItem[]
 }
 
 model VaultItem {
-  id              String    @id @default(uuid())
-  reportId        String
-  keyId           String
-  cipherText      String
-  field           String
-  createdAt       DateTime  @default(now())
-  expiresAt       DateTime?
+  id         String    @id @default(uuid())
+  reportId   String
+  keyId      String
+  cipherText String
+  field      String
+  createdAt  DateTime  @default(now())
+  expiresAt  DateTime?
 
-  report     Report    @relation(fields: [reportId], references: [id])
-  key        KeyStore  @relation(fields: [keyId], references: [id])
+  report         Report          @relation(fields: [reportId], references: [id])
+  key            KeyStore        @relation(fields: [keyId], references: [id])
   researchRecord ResearchRecord? @relation("ResearchRecordVault")
 
   @@index([reportId])
   @@index([keyId])
-}
-
-model PasswordResetToken {
-  id        String   @id @default(uuid())
-  userId    String
-  token     String   @unique
-  expiresAt DateTime
-  usedAt    DateTime?
-  createdAt DateTime @default(now())
-
-  user User @relation(fields: [userId], references: [id])
-
-  @@index([userId])
-  @@index([token])
-  @@index([expiresAt])
 }
 
 model SmtpConfig {
@@ -284,8 +332,22 @@ model SmtpConfig {
   username  String
   password  String
   fromEmail String
-  fromName  String
+  fromName  String?
   active    Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model PasswordResetToken {
+  id        String    @id @default(uuid())
+  userId    String
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([expiresAt])
 }

@@ -10,6 +10,8 @@ authRouter.post("/login", AuthController.login);
 authRouter.post("/refresh", AuthController.refresh);
 authRouter.post("/logout", requireAuth, AuthController.logout);
 authRouter.patch("/password", requireAuth, AuthController.changePassword);
+authRouter.post("/forgot-password", AuthController.forgotPassword);
+authRouter.post("/reset-password", AuthController.resetPassword);
 authRouter.post(
   "/register",
   requireAuth,

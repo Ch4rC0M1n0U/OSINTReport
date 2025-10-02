@@ -88,3 +88,65 @@ export const listReportsQuerySchema = z
   })
   .strict();
 export type ListReportsQuery = z.infer<typeof listReportsQuerySchema>;
+
+// Schémas pour les entités
+export const createEntitySchema = z
+  .object({
+    label: z.string().min(1).max(255),
+    type: z.enum([
+      "PERSON",
+      "ORGANIZATION",
+      "TELEPHONE",
+      "EMAIL",
+      "ACCOUNT",
+      "ADDRESS",
+      "OTHER",
+    ]),
+    notes: z.string().optional(),
+  })
+  .strict();
+export type CreateEntityInput = z.infer<typeof createEntitySchema>;
+
+export const updateEntitySchema = createEntitySchema.partial().extend({
+  label: z.string().min(1).max(255).optional(),
+});
+export type UpdateEntityInput = z.infer<typeof updateEntitySchema>;
+
+// Schémas pour les enregistrements de recherche
+export const createResearchRecordSchema = z
+  .object({
+    researchTypeId: z.string().uuid(),
+    entityId: z.string().uuid().optional(),
+    subtitle: z.string().max(255).optional(),
+    details: z.record(z.string(), z.any()).optional(),
+    sensitiveDataRef: z.string().uuid().optional(),
+  })
+  .strict();
+export type CreateResearchRecordInput = z.infer<
+  typeof createResearchRecordSchema
+>;
+
+export const updateResearchRecordSchema = createResearchRecordSchema
+  .partial()
+  .extend({
+    researchTypeId: z.string().uuid().optional(),
+  });
+export type UpdateResearchRecordInput = z.infer<
+  typeof updateResearchRecordSchema
+>;
+
+// Schéma pour réorganiser les modules
+export const reorderModulesSchema = z
+  .object({
+    moduleIds: z.array(z.string().uuid()).min(1),
+  })
+  .strict();
+export type ReorderModulesInput = z.infer<typeof reorderModulesSchema>;
+
+// Schéma pour publier/archiver un rapport
+export const updateReportStatusSchema = z
+  .object({
+    status: z.enum(["DRAFT", "PUBLISHED", "ARCHIVED"]),
+  })
+  .strict();
+export type UpdateReportStatusInput = z.infer<typeof updateReportStatusSchema>;

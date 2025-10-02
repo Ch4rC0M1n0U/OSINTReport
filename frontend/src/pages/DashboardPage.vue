@@ -55,6 +55,12 @@ const adminNavigation = computed(() => {
       icon: "group",
       visible: canManageUsers.value,
     },
+    {
+      label: "Configuration SMTP",
+      to: { name: "admin.smtp" },
+      icon: "mail",
+      visible: canAccessAdmin.value,
+    },
   ]
     .filter((child) => child.visible)
     .map(({ visible, ...rest }) => rest);

@@ -468,4 +468,178 @@ export class ReportService {
       throw createError(404, "Rapport introuvable");
     }
   }
+
+  /**
+   * Réorganise les modules d'un rapport
+   */
+  static async reorderModules(reportId: string, moduleIds: string[]) {
+    await this.ensureReportExists(reportId);
+
+    // Vérifier que tous les modules appartiennent au rapport
+    const modules = await prisma.reportModule.findMany({
+      where: {
+        id: { in: moduleIds },
+        reportId,
+      },
+      select: { id: true },
+    });
+
+    if (modules.length !== moduleIds.length) {
+      throw createError(400, "Certains modules n'appartiennent pas à ce rapport");
+    }
+
+    // Mettre à jour les positions en une transaction
+    await prisma.$transaction(
+      moduleIds.map((moduleId, index) =>
+        prisma.reportModule.update({
+          where: { id: moduleId },
+          data: { position: index },
+        })
+      )
+    );
+
+    return { success: true, message: 'Modules réorganisés avec succès' };
+  }
+
+  /**
+   * Change le statut d'un rapport (DRAFT -> PUBLISHED -> ARCHIVED)
+   */
+  static async updateStatus(
+    reportId: string,
+    status: 'DRAFT' | 'PUBLISHED' | 'ARCHIVED'
+  ) {
+    await this.ensureReportExists(reportId);
+
+    return prisma.report.update({
+      where: { id: reportId },
+      data: { status },
+      include: {
+        owner: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            email: true,
+          },
+        },
+      },
+    });
+  }
+
+  /**
+   * Duplique un rapport (création d'une copie en DRAFT)
+   */
+  static async duplicate(reportId: string, ownerId: string) {
+    const original = await prisma.report.findUnique({
+      where: { id: reportId },
+      include: {
+        modules: {
+          include: {
+            researchItems: true,
+          },
+        },
+      },
+    });
+
+    if (!original) {
+      throw createError(404, "Rapport introuvable");
+    }
+
+    return prisma.$transaction(async (tx) => {
+      // Créer le nouveau rapport
+      const newReport = await tx.report.create({
+        data: {
+          title: `${original.title} (Copie)`,
+          caseNumber: original.caseNumber,
+          reportNumber: null, // Nouveau numéro nécessaire
+          purpose: original.purpose,
+          summary: original.summary,
+          relatedCases: original.relatedCases,
+          requestingService: original.requestingService,
+          reportingUnit: original.reportingUnit,
+          reportingOfficer: original.reportingOfficer,
+          reportingRank: original.reportingRank,
+          objectives: original.objectives,
+          status: 'DRAFT', // Toujours en brouillon
+          ownerId,
+          dateRangeStart: original.dateRangeStart,
+          dateRangeEnd: original.dateRangeEnd,
+          investigationContext: original.investigationContext,
+          legalBasis: original.legalBasis,
+          urgencyLevel: original.urgencyLevel,
+          classification: original.classification,
+          keywords: original.keywords,
+        },
+      });
+
+      // Copier les modules
+      for (const module of original.modules) {
+        const newModule = await tx.reportModule.create({
+          data: {
+            reportId: newReport.id,
+            type: module.type,
+            slug: module.slug,
+            title: module.title,
+            headline: module.headline,
+            entityId: module.entityId,
+            position: module.position,
+            payload: module.payload,
+          },
+        });
+
+        // Copier les research records
+        for (const record of module.researchItems) {
+          await tx.researchRecord.create({
+            data: {
+              reportModuleId: newModule.id,
+              entityId: record.entityId,
+              researchTypeId: record.researchTypeId,
+              subtitle: record.subtitle,
+              details: record.details,
+              // Ne pas copier sensitiveDataRef pour sécurité
+            },
+          });
+        }
+      }
+
+      return newReport;
+    });
+  }
+
+  /**
+   * Récupère les statistiques d'un rapport
+   */
+  static async getReportStats(reportId: string) {
+    await this.ensureReportExists(reportId);
+
+    const [
+      modulesCount,
+      entitiesCount,
+      researchRecordsCount,
+      attachmentsCount,
+      correlationsCount,
+    ] = await Promise.all([
+      prisma.reportModule.count({ where: { reportId } }),
+      prisma.reportModule.count({
+        where: { reportId, entityId: { not: null } },
+      }),
+      prisma.researchRecord.count({
+        where: { module: { reportId } },
+      }),
+      prisma.reportAttachment.count({ where: { reportId } }),
+      prisma.reportCorrelation.count({
+        where: {
+          OR: [{ sourceReportId: reportId }, { relatedReportId: reportId }],
+        },
+      }),
+    ]);
+
+    return {
+      modules: modulesCount,
+      entities: entitiesCount,
+      researchRecords: researchRecordsCount,
+      attachments: attachmentsCount,
+      correlations: correlationsCount,
+    };
+  }
 }

@@ -44,3 +44,20 @@ export const changePasswordSchema = z
   .strict();
 
 export type ChangePasswordInput = z.infer<typeof changePasswordSchema>;
+
+export const forgotPasswordSchema = z
+  .object({
+    email: z.string().email(),
+  })
+  .strict();
+
+export type ForgotPasswordInput = z.infer<typeof forgotPasswordSchema>;
+
+export const resetPasswordSchema = z
+  .object({
+    token: z.string().min(1),
+    newPassword: registerSchema.shape.password,
+  })
+  .strict();
+
+export type ResetPasswordInput = z.infer<typeof resetPasswordSchema>;

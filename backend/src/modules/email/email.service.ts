@@ -1,191 +1,177 @@
-import nodemailer from 'nodemailer';
-import type { Transporter } from 'nodemailer';
-import { prisma } from '../../config/prisma';
-import { logger } from '../../config/logger';
+import nodemailer from "nodemailer";
+import createError from "http-errors";
+import { prisma } from "@shared/prisma";
+import { logger } from "@config/logger";
+
+export interface EmailOptions {
+  to: string;
+  subject: string;
+  text: string;
+  html: string;
+}
 
 export class EmailService {
-  private transporter: Transporter | null = null;
+  /**
+   * Récupère la configuration SMTP active depuis la base de données
+   */
+  private static async getSmtpConfig() {
+    const config = await prisma.smtpConfig.findFirst({
+      where: { active: true },
+      orderBy: { createdAt: "desc" },
+    });
 
-  async getTransporter(): Promise<Transporter | null> {
+    if (!config) {
+      throw createError(503, "Aucune configuration SMTP active trouvée");
+    }
+
+    return config;
+  }
+
+  /**
+   * Crée un transporteur nodemailer avec la configuration SMTP active
+   */
+  private static async createTransporter() {
+    const config = await this.getSmtpConfig();
+
+    return nodemailer.createTransport({
+      host: config.host,
+      port: config.port,
+      secure: config.secure,
+      auth: {
+        user: config.username,
+        pass: config.password,
+      },
+    });
+  }
+
+  /**
+   * Envoie un email en utilisant la configuration SMTP active
+   */
+  static async sendEmail(options: EmailOptions): Promise<void> {
     try {
-      // Récupérer la configuration SMTP active
-      const smtpConfig = await prisma.smtpConfig.findFirst({
-        where: { active: true },
-        orderBy: { createdAt: 'desc' },
+      const config = await this.getSmtpConfig();
+      const transporter = await this.createTransporter();
+
+      await transporter.sendMail({
+        from: config.fromName
+          ? `"${config.fromName}" <${config.fromEmail}>`
+          : config.fromEmail,
+        to: options.to,
+        subject: options.subject,
+        text: options.text,
+        html: options.html,
       });
 
-      if (!smtpConfig) {
-        logger.warn('Aucune configuration SMTP active trouvée');
-        return null;
-      }
-
-      // Créer le transporter
-      this.transporter = nodemailer.createTransport({
-        host: smtpConfig.host,
-        port: smtpConfig.port,
-        secure: smtpConfig.secure,
-        auth: {
-          user: smtpConfig.username,
-          pass: smtpConfig.password,
-        },
-      });
-
-      return this.transporter;
+      logger.info({ to: options.to, subject: options.subject }, "Email envoyé avec succès");
     } catch (error) {
-      logger.error('Erreur lors de la création du transporter email', error);
-      return null;
+      logger.error({ error, to: options.to }, "Échec d'envoi d'email");
+      throw createError(500, "Impossible d'envoyer l'email");
     }
   }
 
-  async sendPasswordResetEmail(
-    to: string,
-    resetToken: string,
-    userName: string
-  ): Promise<boolean> {
+  /**
+   * Teste la connexion SMTP avec une configuration donnée
+   */
+  static async testSmtpConnection(config: {
+    host: string;
+    port: number;
+    secure: boolean;
+    username: string;
+    password: string;
+  }): Promise<boolean> {
     try {
-      const transporter = await this.getTransporter();
-      if (!transporter) {
-        logger.error('Impossible d\'envoyer l\'email : transporter non disponible');
-        return false;
-      }
-
-      const smtpConfig = await prisma.smtpConfig.findFirst({
-        where: { active: true },
-        orderBy: { createdAt: 'desc' },
+      const transporter = nodemailer.createTransport({
+        host: config.host,
+        port: config.port,
+        secure: config.secure,
+        auth: {
+          user: config.username,
+          pass: config.password,
+        },
       });
 
-      if (!smtpConfig) {
-        return false;
-      }
+      await transporter.verify();
+      logger.info({ host: config.host, port: config.port }, "Test de connexion SMTP réussi");
+      return true;
+    } catch (error) {
+      logger.error({ error, host: config.host }, "Test de connexion SMTP échoué");
+      return false;
+    }
+  }
 
-      // URL de réinitialisation (à adapter selon votre configuration)
-      const resetUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/reset-password?token=${resetToken}`;
+  /**
+   * Envoie un email de réinitialisation de mot de passe
+   */
+  static async sendPasswordResetEmail(
+    email: string,
+    firstName: string,
+    resetToken: string,
+    frontendUrl: string
+  ): Promise<void> {
+    const resetLink = `${frontendUrl}/reset-password?token=${resetToken}`;
 
-      const mailOptions = {
-        from: `"${smtpConfig.fromName}" <${smtpConfig.fromEmail}>`,
-        to,
-        subject: 'Réinitialisation de votre mot de passe - OSINTReport',
-        html: `
-          <!DOCTYPE html>
-          <html>
-            <head>
-              <meta charset="utf-8">
-              <style>
-                body {
-                  font-family: Arial, sans-serif;
-                  line-height: 1.6;
-                  color: #333;
-                }
-                .container {
-                  max-width: 600px;
-                  margin: 0 auto;
-                  padding: 20px;
-                }
-                .header {
-                  background-color: #2563eb;
-                  color: white;
-                  padding: 20px;
-                  text-align: center;
-                  border-radius: 5px 5px 0 0;
-                }
-                .content {
-                  background-color: #f9fafb;
-                  padding: 30px;
-                  border: 1px solid #e5e7eb;
-                }
-                .button {
-                  display: inline-block;
-                  background-color: #2563eb;
-                  color: white;
-                  padding: 12px 30px;
-                  text-decoration: none;
-                  border-radius: 5px;
-                  margin: 20px 0;
-                }
-                .footer {
-                  text-align: center;
-                  padding: 20px;
-                  font-size: 12px;
-                  color: #6b7280;
-                }
-                .warning {
-                  background-color: #fef3c7;
-                  border-left: 4px solid #f59e0b;
-                  padding: 12px;
-                  margin: 20px 0;
-                }
-              </style>
-            </head>
-            <body>
-              <div class="container">
-                <div class="header">
-                  <h1>OSINTReport</h1>
-                </div>
-                <div class="content">
-                  <h2>Réinitialisation de mot de passe</h2>
-                  <p>Bonjour <strong>${userName}</strong>,</p>
-                  <p>Vous avez demandé la réinitialisation de votre mot de passe. Cliquez sur le bouton ci-dessous pour définir un nouveau mot de passe :</p>
-                  <div style="text-align: center;">
-                    <a href="${resetUrl}" class="button">Réinitialiser mon mot de passe</a>
-                  </div>
-                  <p>Ou copiez ce lien dans votre navigateur :</p>
-                  <p style="word-break: break-all; color: #2563eb;">${resetUrl}</p>
-                  <div class="warning">
-                    <strong>⚠️ Attention :</strong> Ce lien est valide pendant 1 heure. Si vous n'avez pas demandé cette réinitialisation, ignorez cet email et votre mot de passe restera inchangé.
-                  </div>
-                </div>
-                <div class="footer">
-                  <p>Cet email a été envoyé automatiquement, merci de ne pas y répondre.</p>
-                  <p>&copy; ${new Date().getFullYear()} OSINTReport. Tous droits réservés.</p>
-                </div>
-              </div>
-            </body>
-          </html>
-        `,
-        text: `
-Réinitialisation de mot de passe - OSINTReport
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+          .header { background-color: #2563eb; color: white; padding: 20px; text-align: center; }
+          .content { background-color: #f9fafb; padding: 30px; }
+          .button { display: inline-block; background-color: #2563eb; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; margin: 20px 0; }
+          .footer { text-align: center; padding: 20px; font-size: 12px; color: #6b7280; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1>Réinitialisation de mot de passe</h1>
+          </div>
+          <div class="content">
+            <p>Bonjour ${firstName},</p>
+            <p>Vous avez demandé la réinitialisation de votre mot de passe pour votre compte OSINTReport.</p>
+            <p>Cliquez sur le bouton ci-dessous pour créer un nouveau mot de passe :</p>
+            <p style="text-align: center;">
+              <a href="${resetLink}" class="button">Réinitialiser mon mot de passe</a>
+            </p>
+            <p>Si le bouton ne fonctionne pas, copiez et collez ce lien dans votre navigateur :</p>
+            <p style="word-break: break-all; color: #2563eb;">${resetLink}</p>
+            <p><strong>Ce lien est valide pendant 1 heure.</strong></p>
+            <p>Si vous n'avez pas demandé cette réinitialisation, ignorez simplement cet email. Votre mot de passe restera inchangé.</p>
+          </div>
+          <div class="footer">
+            <p>Cet email a été envoyé automatiquement, merci de ne pas y répondre.</p>
+            <p>&copy; ${new Date().getFullYear()} OSINTReport. Tous droits réservés.</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
 
-Bonjour ${userName},
+    const textContent = `
+Bonjour ${firstName},
 
-Vous avez demandé la réinitialisation de votre mot de passe.
+Vous avez demandé la réinitialisation de votre mot de passe pour votre compte OSINTReport.
 
-Cliquez sur ce lien pour définir un nouveau mot de passe :
-${resetUrl}
+Pour créer un nouveau mot de passe, cliquez sur ce lien :
+${resetLink}
 
 Ce lien est valide pendant 1 heure.
 
-Si vous n'avez pas demandé cette réinitialisation, ignorez cet email et votre mot de passe restera inchangé.
+Si vous n'avez pas demandé cette réinitialisation, ignorez simplement cet email. Votre mot de passe restera inchangé.
 
 ---
 Cet email a été envoyé automatiquement, merci de ne pas y répondre.
 © ${new Date().getFullYear()} OSINTReport. Tous droits réservés.
-        `,
-      };
+    `;
 
-      await transporter.sendMail(mailOptions);
-      logger.info(`Email de réinitialisation envoyé à ${to}`);
-      return true;
-    } catch (error) {
-      logger.error('Erreur lors de l\'envoi de l\'email de réinitialisation', error);
-      return false;
-    }
-  }
-
-  async testConnection(): Promise<boolean> {
-    try {
-      const transporter = await this.getTransporter();
-      if (!transporter) {
-        return false;
-      }
-
-      await transporter.verify();
-      logger.info('Connexion SMTP vérifiée avec succès');
-      return true;
-    } catch (error) {
-      logger.error('Erreur lors de la vérification de la connexion SMTP', error);
-      return false;
-    }
+    await this.sendEmail({
+      to: email,
+      subject: "Réinitialisation de votre mot de passe - OSINTReport",
+      text: textContent.trim(),
+      html: htmlContent,
+    });
   }
 }
-
-export const emailService = new EmailService();

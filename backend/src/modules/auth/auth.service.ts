@@ -303,4 +303,91 @@ export class AuthService {
 
     return buildAuthenticatedUser(user);
   }
+
+  static async requestPasswordReset(email: string): Promise<void> {
+    const user = await prisma.user.findUnique({
+      where: { email: email.toLowerCase() },
+    });
+
+    // Ne pas révéler si l'utilisateur existe ou non pour des raisons de sécurité
+    if (!user) {
+      return;
+    }
+
+    // Générer un token unique
+    const crypto = await import("crypto");
+    const resetToken = crypto.randomBytes(32).toString("hex");
+    const tokenHash = await hashSecret(resetToken);
+
+    // Le token expire dans 1 heure
+    const expiresAt = new Date();
+    expiresAt.setHours(expiresAt.getHours() + 1);
+
+    // Invalider tous les tokens précédents non utilisés
+    await prisma.passwordResetToken.deleteMany({
+      where: {
+        userId: user.id,
+        usedAt: null,
+      },
+    });
+
+    // Créer le nouveau token
+    await prisma.passwordResetToken.create({
+      data: {
+        userId: user.id,
+        tokenHash,
+        expiresAt,
+      },
+    });
+
+    // Envoyer l'email
+    const { EmailService } = await import("@modules/email/email.service");
+    const { env } = await import("@config/env");
+
+    await EmailService.sendPasswordResetEmail(
+      user.email,
+      user.firstName,
+      resetToken,
+      env.FRONTEND_URL
+    );
+  }
+
+  static async resetPassword(token: string, newPassword: string): Promise<void> {
+    const tokenHash = await hashSecret(token);
+
+    const resetToken = await prisma.passwordResetToken.findUnique({
+      where: { tokenHash },
+      include: { user: true },
+    });
+
+    if (!resetToken) {
+      throw createError(400, "Token de réinitialisation invalide ou expiré");
+    }
+
+    if (resetToken.usedAt) {
+      throw createError(400, "Ce token a déjà été utilisé");
+    }
+
+    if (resetToken.expiresAt < new Date()) {
+      throw createError(400, "Ce token a expiré");
+    }
+
+    // Hasher le nouveau mot de passe
+    const passwordHash = await hashPassword(newPassword);
+
+    // Mettre à jour le mot de passe et marquer le token comme utilisé
+    await prisma.$transaction([
+      prisma.user.update({
+        where: { id: resetToken.userId },
+        data: { passwordHash },
+      }),
+      prisma.passwordResetToken.update({
+        where: { id: resetToken.id },
+        data: { usedAt: new Date() },
+      }),
+    ]);
+
+    // Révoquer toutes les sessions de l'utilisateur
+    await this.revokeUserSessions(resetToken.userId);
+  }
 }

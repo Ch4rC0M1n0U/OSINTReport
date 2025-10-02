@@ -133,9 +133,9 @@ async function handleSubmit() {
                 <input type="checkbox" class="checkbox checkbox-sm" />
                 <span class="label-text">Se souvenir de moi</span>
               </label>
-              <a href="#" class="text-sm text-primary hover:underline">
+              <RouterLink to="/forgot-password" class="text-sm text-primary hover:underline">
                 Mot de passe oublié ?
-              </a>
+              </RouterLink>
             </div>
 
             <div v-if="auth.error" class="alert alert-error">

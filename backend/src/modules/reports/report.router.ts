@@ -62,4 +62,65 @@ reportRouter.post(
   (req, res, next) => ReportController.registerAttachment(req, res, next)
 );
 
+reportRouter.post(
+  "/:reportId/modules/reorder",
+  requirePermissions(PermissionCode.REPORTS_WRITE),
+  (req, res, next) => ReportController.reorderModules(req, res, next)
+);
+
+reportRouter.patch(
+  "/:reportId/status",
+  requirePermissions(PermissionCode.REPORTS_WRITE),
+  (req, res, next) => ReportController.updateStatus(req, res, next)
+);
+
+reportRouter.post(
+  "/:reportId/duplicate",
+  requirePermissions(PermissionCode.REPORTS_WRITE),
+  (req, res, next) => ReportController.duplicate(req, res, next)
+);
+
+reportRouter.get(
+  "/:reportId/stats",
+  requirePermissions(PermissionCode.REPORTS_READ),
+  (req, res, next) => ReportController.getStats(req, res, next)
+);
+
+// Routes pour les enregistrements de recherche (research records)
+reportRouter.post(
+  "/modules/:moduleId/research-records",
+  requirePermissions(PermissionCode.REPORTS_WRITE),
+  (req, res, next) => ReportController.createResearchRecord(req, res, next)
+);
+
+reportRouter.get(
+  "/modules/:moduleId/research-records",
+  requirePermissions(PermissionCode.REPORTS_READ),
+  (req, res, next) => ReportController.listResearchRecords(req, res, next)
+);
+
+reportRouter.get(
+  "/research-records/:recordId",
+  requirePermissions(PermissionCode.REPORTS_READ),
+  (req, res, next) => ReportController.getResearchRecord(req, res, next)
+);
+
+reportRouter.patch(
+  "/research-records/:recordId",
+  requirePermissions(PermissionCode.REPORTS_WRITE),
+  (req, res, next) => ReportController.updateResearchRecord(req, res, next)
+);
+
+reportRouter.delete(
+  "/research-records/:recordId",
+  requirePermissions(PermissionCode.REPORTS_WRITE),
+  (req, res, next) => ReportController.deleteResearchRecord(req, res, next)
+);
+
+reportRouter.get(
+  "/research-types",
+  requirePermissions(PermissionCode.REPORTS_READ),
+  (req, res, next) => ReportController.listResearchTypes(req, res, next)
+);
+
 export { reportRouter };
