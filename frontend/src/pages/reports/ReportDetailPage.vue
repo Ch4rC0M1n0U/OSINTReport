@@ -25,6 +25,13 @@ import LegalBasisDisplay from "@/components/shared/LegalBasisDisplay.vue";
 import SummaryModule from "@/components/modules/SummaryModule.vue";
 import ObjectivesModule from "@/components/modules/ObjectivesModule.vue";
 import ConclusionsModule from "@/components/modules/ConclusionsModule.vue";
+import EntityOverviewModule from "@/components/modules/EntityOverviewModule.vue";
+import IdentifierLookupModule from "@/components/modules/IdentifierLookupModule.vue";
+import PlatformAnalysisModule from "@/components/modules/PlatformAnalysisModule.vue";
+import MediaGalleryModule from "@/components/modules/MediaGalleryModule.vue";
+import DataRetentionModule from "@/components/modules/DataRetentionModule.vue";
+import InvestigationLeadsModule from "@/components/modules/InvestigationLeadsModule.vue";
+import SignOffModule from "@/components/modules/SignOffModule.vue";
 
 const route = useRoute();
 const router = useRouter();
@@ -349,6 +356,13 @@ function getModuleComponent(type: ReportModuleType) {
     summary: SummaryModule,
     objectives: ObjectivesModule,
     conclusions: ConclusionsModule,
+    entity_overview: EntityOverviewModule,
+    identifier_lookup: IdentifierLookupModule,
+    platform_analysis: PlatformAnalysisModule,
+    media_gallery: MediaGalleryModule,
+    data_retention: DataRetentionModule,
+    investigation_leads: InvestigationLeadsModule,
+    sign_off: SignOffModule,
   };
   return componentMap[type] || null;
 }
@@ -658,9 +672,8 @@ function getClassificationInfo(classif: string) {
                   <component
                     v-if="getModuleComponent(module.type as ReportModuleType)"
                     :is="getModuleComponent(module.type as ReportModuleType)"
-                    :payload="module.payload || {}"
-                    :module-id="module.id"
-                    @update="(payload: any) => handleUpdateModule(module.id, payload)"
+                    :model-value="module.payload || {}"
+                    @update:model-value="(payload: any) => handleUpdateModule(module.id, payload)"
                   />
                   <div v-else class="text-sm opacity-60 italic">
                     Composant non disponible pour le type "{{ module.type }}"
