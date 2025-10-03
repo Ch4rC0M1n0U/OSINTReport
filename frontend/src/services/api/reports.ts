@@ -62,25 +62,257 @@ export interface CreateReportData {
 
 export interface UpdateReportData extends Partial<CreateReportData> {}
 
-// Types de modules (doit correspondre à REPORT_MODULE_TYPES du backend)
+// ============================================================================
+// TYPES DE MODULES
+// ============================================================================
+
+// Types de modules (synchronisé avec backend)
 export type ReportModuleType =
   | "summary"
   | "entities"
   | "objectives"
-  | "research-summary"
-  | "research-detail"
-  | "identifier-lookup"
-  | "media-gallery"
-  | "data-retention"
+  | "research_summary"
+  | "entity_overview"
+  | "identifier_lookup"
+  | "platform_analysis"
+  | "media_gallery"
+  | "data_retention"
   | "conclusions"
-  | "investigation"
-  | "sign-off";
+  | "investigation_leads"
+  | "sign_off";
+
+// Métadonnées pour l'affichage
+export const MODULE_TYPE_METADATA: Record<
+  ReportModuleType,
+  { label: string; icon: string; description: string; order: number }
+> = {
+  summary: {
+    label: "Résumé des faits",
+    icon: "📋",
+    description: "Bloc de texte riche décrivant le contexte et les faits",
+    order: 1,
+  },
+  entities: {
+    label: "Entités concernées",
+    icon: "👥",
+    description: "Liste des personnes/organisations/identifiants liés",
+    order: 2,
+  },
+  objectives: {
+    label: "Objectifs OSINT",
+    icon: "🎯",
+    description: "Liste des objectifs opérationnels de la recherche",
+    order: 3,
+  },
+  research_summary: {
+    label: "Résumé des recherches",
+    icon: "📊",
+    description: "Résultats globaux et éléments non trouvés",
+    order: 4,
+  },
+  entity_overview: {
+    label: "Vue d'ensemble d'une entité",
+    icon: "🔍",
+    description: "Recherches détaillées concernant une personne/organisation",
+    order: 5,
+  },
+  identifier_lookup: {
+    label: "Recherche d'identifiant",
+    icon: "🔎",
+    description: "Résultats pour un numéro, alias, username, email",
+    order: 6,
+  },
+  platform_analysis: {
+    label: "Analyse de plateforme",
+    icon: "🌐",
+    description: "Résultats sur Facebook, Instagram, X, WhatsApp, etc.",
+    order: 7,
+  },
+  media_gallery: {
+    label: "Galerie média",
+    icon: "🖼️",
+    description: "Collection d'images avec légendes",
+    order: 8,
+  },
+  data_retention: {
+    label: "Données sauvegardées",
+    icon: "💾",
+    description: "Archives de connexions, groupes, abonnements",
+    order: 9,
+  },
+  conclusions: {
+    label: "Conclusions",
+    icon: "✅",
+    description: "Conclusions opérationnelles de l'enquête",
+    order: 10,
+  },
+  investigation_leads: {
+    label: "Pistes d'enquête",
+    icon: "🕵️",
+    description: "Requisitions, plateformes à solliciter, données visées",
+    order: 11,
+  },
+  sign_off: {
+    label: "Signature",
+    icon: "✍️",
+    description: "Date, rédacteur, grade, unité",
+    order: 12,
+  },
+};
+
+// ============================================================================
+// TYPES DE BASE POUR LES PAYLOADS
+// ============================================================================
+
+export type ConfidenceLevel = "confirmed" | "probable" | "possible" | "unknown";
+
+export interface Source {
+  type: "url" | "document" | "database" | "testimony";
+  value: string;
+  note?: string;
+  accessedAt?: string;
+}
+
+export interface Finding {
+  label: string;
+  description: string;
+  confidence?: ConfidenceLevel;
+  sources: Source[];
+  attachments?: string[];
+  relatedEntities?: string[];
+  metadata?: Record<string, any>;
+}
+
+export interface MediaItem {
+  attachmentId: string;
+  caption: string;
+  date?: string;
+  source?: string;
+}
+
+export interface Dataset {
+  label: string;
+  description: string;
+  retentionPolicy: string;
+  location?: string;
+}
+
+export interface InvestigationLead {
+  type: "requisition" | "platform_contact" | "follow_up";
+  platform?: string;
+  legalBasis?: string;
+  dataTargeted?: string[];
+  priority?: "low" | "medium" | "high";
+  notes?: string;
+}
+
+export interface Officer {
+  name: string;
+  rank: string;
+  unit: string;
+  badgeNumber?: string;
+}
+
+// ============================================================================
+// PAYLOADS PAR TYPE DE MODULE
+// ============================================================================
+
+export interface SummaryPayload {
+  content: string;
+}
+
+export interface EntitiesPayload {
+  entities: Array<{
+    entityId: string;
+    role?: string;
+    notes?: string;
+  }>;
+}
+
+export interface ObjectivesPayload {
+  objectives: string[];
+}
+
+export interface ResearchSummaryPayload {
+  summary: string;
+  notFound: string[];
+  methodology?: string;
+  notes?: string;
+}
+
+export interface EntityOverviewPayload {
+  entityId: string;
+  context: string;
+  findings: Finding[];
+  notes?: string;
+}
+
+export interface IdentifierLookupPayload {
+  identifierType: "phone" | "email" | "username" | "rrn" | "alias" | "other";
+  identifierValue: string;
+  findings: Finding[];
+  notes?: string;
+}
+
+export interface PlatformAnalysisPayload {
+  platform:
+    | "facebook"
+    | "instagram"
+    | "x"
+    | "whatsapp"
+    | "telegram"
+    | "linkedin"
+    | "tiktok"
+    | "snapchat"
+    | "other";
+  platformUrl?: string;
+  findings: Finding[];
+  screenshots?: string[];
+  notes?: string;
+}
+
+export interface MediaGalleryPayload {
+  items: MediaItem[];
+  description?: string;
+}
+
+export interface DataRetentionPayload {
+  datasets: Dataset[];
+}
+
+export interface ConclusionsPayload {
+  statements: string[];
+}
+
+export interface InvestigationLeadsPayload {
+  leads: InvestigationLead[];
+}
+
+export interface SignOffPayload {
+  date: string;
+  officer: Officer;
+  additionalNotes?: string;
+}
+
+export type ModulePayload =
+  | SummaryPayload
+  | EntitiesPayload
+  | ObjectivesPayload
+  | ResearchSummaryPayload
+  | EntityOverviewPayload
+  | IdentifierLookupPayload
+  | PlatformAnalysisPayload
+  | MediaGalleryPayload
+  | DataRetentionPayload
+  | ConclusionsPayload
+  | InvestigationLeadsPayload
+  | SignOffPayload;
 
 export interface CreateModuleData {
   type: ReportModuleType;
   title: string;
   entityId?: string;
-  payload?: Record<string, any>;
+  payload?: ModulePayload;
 }
 
 export const reportsApi = {

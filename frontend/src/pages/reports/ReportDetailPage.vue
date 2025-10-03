@@ -1,7 +1,14 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import { reportsApi, type Report, type ReportModule, type ReportStats, type ReportModuleType } from "@/services/api/reports";
+import {
+  reportsApi,
+  type Report,
+  type ReportModule,
+  type ReportStats,
+  type ReportModuleType,
+  MODULE_TYPE_METADATA,
+} from "@/services/api/reports";
 import { correlationsApi, type Correlation } from "@/services/api/correlations";
 import EntitySelector from "@/components/reports/EntitySelector.vue";
 import EntityDialog from "@/components/reports/EntityDialog.vue";
@@ -32,25 +39,20 @@ const moduleForm = ref<{
   entityId: string | undefined;
   payload: Record<string, any>;
 }>({
-  type: "research-detail",
+  type: "summary",
   title: "",
   entityId: undefined,
   payload: {},
 });
 
-const moduleTypes: Array<{ value: ReportModuleType; label: string; icon: string }> = [
-  { value: "summary", label: "Résumé", icon: "📋" },
-  { value: "entities", label: "Entités", icon: "�" },
-  { value: "objectives", label: "Objectifs", icon: "🎯" },
-  { value: "research-summary", label: "Résumé de recherche", icon: "📊" },
-  { value: "research-detail", label: "Détail de recherche", icon: "�" },
-  { value: "identifier-lookup", label: "Recherche d'identifiant", icon: "🔎" },
-  { value: "media-gallery", label: "Galerie média", icon: "�️" },
-  { value: "data-retention", label: "Conservation de données", icon: "�" },
-  { value: "conclusions", label: "Conclusions", icon: "✅" },
-  { value: "investigation", label: "Investigation", icon: "�️" },
-  { value: "sign-off", label: "Signature", icon: "✍️" },
-];
+// Construire la liste des types depuis MODULE_TYPE_METADATA
+const moduleTypes = (Object.keys(MODULE_TYPE_METADATA) as ReportModuleType[])
+  .map((key) => ({
+    value: key,
+    label: MODULE_TYPE_METADATA[key].label,
+    icon: MODULE_TYPE_METADATA[key].icon,
+  }))
+  .sort((a, b) => MODULE_TYPE_METADATA[a.value].order - MODULE_TYPE_METADATA[b.value].order);
 
 onMounted(async () => {
   await loadReport();
@@ -103,7 +105,7 @@ async function detectCorrelations() {
 
 function openModuleDialog() {
   moduleForm.value = {
-    type: "research-detail",
+    type: "summary",
     title: "",
     entityId: undefined,
     payload: {},
@@ -118,12 +120,18 @@ async function handleCreateModule() {
   }
 
   try {
-    await reportsApi.createModule(reportId.value, {
+    const createData: any = {
       type: moduleForm.value.type,
       title: moduleForm.value.title,
       entityId: moduleForm.value.entityId,
-      payload: moduleForm.value.payload,
-    });
+    };
+    
+    // N'envoyer le payload que s'il n'est pas vide
+    if (Object.keys(moduleForm.value.payload).length > 0) {
+      createData.payload = moduleForm.value.payload;
+    }
+    
+    await reportsApi.createModule(reportId.value, createData);
 
     showModuleDialog.value = false;
     await loadReport();

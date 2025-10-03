@@ -51,6 +51,155 @@ export type UpdateReportInput = z.infer<typeof updateReportSchema>;
 
 export const modulePayloadSchema = z.record(z.string(), z.any()).optional();
 
+// ============================================================================
+// SCHÉMAS DE VALIDATION POUR LES PAYLOADS DE MODULES
+// ============================================================================
+
+// Schémas de base
+const sourceSchema = z.object({
+  type: z.enum(["url", "document", "database", "testimony"]),
+  value: z.string().min(1),
+  note: z.string().optional(),
+  accessedAt: z.string().optional(),
+});
+
+const findingSchema = z.object({
+  label: z.string().min(1),
+  description: z.string().min(1),
+  confidence: z.enum(["confirmed", "probable", "possible", "unknown"]).optional(),
+  sources: z.array(sourceSchema).min(1),
+  attachments: z.array(z.string().uuid()).optional(),
+  relatedEntities: z.array(z.string().uuid()).optional(),
+  metadata: z.record(z.string(), z.any()).optional(),
+});
+
+const mediaItemSchema = z.object({
+  attachmentId: z.string().uuid(),
+  caption: z.string().min(1),
+  date: z.string().optional(),
+  source: z.string().optional(),
+});
+
+const datasetSchema = z.object({
+  label: z.string().min(1),
+  description: z.string().min(1),
+  retentionPolicy: z.string().min(1),
+  location: z.string().optional(),
+});
+
+const investigationLeadSchema = z.object({
+  type: z.enum(["requisition", "platform_contact", "follow_up"]),
+  platform: z.string().optional(),
+  legalBasis: z.string().optional(),
+  dataTargeted: z.array(z.string()).optional(),
+  priority: z.enum(["low", "medium", "high"]).optional(),
+  notes: z.string().optional(),
+});
+
+const officerSchema = z.object({
+  name: z.string().min(1),
+  rank: z.string().min(1),
+  unit: z.string().min(1),
+  badgeNumber: z.string().optional(),
+});
+
+// Schémas de payloads par type de module
+export const payloadSchemas = {
+  summary: z.object({
+    content: z.string().min(1),
+  }),
+
+  entities: z.object({
+    entities: z
+      .array(
+        z.object({
+          entityId: z.string().uuid(),
+          role: z.string().optional(),
+          notes: z.string().optional(),
+        })
+      )
+      .min(1),
+  }),
+
+  objectives: z.object({
+    objectives: z.array(z.string().min(1)).min(1),
+  }),
+
+  research_summary: z.object({
+    summary: z.string().min(1),
+    notFound: z.array(z.string()).default([]),
+    methodology: z.string().optional(),
+    notes: z.string().optional(),
+  }),
+
+  entity_overview: z.object({
+    entityId: z.string().uuid(),
+    context: z.string().min(1),
+    findings: z.array(findingSchema).min(1),
+    notes: z.string().optional(),
+  }),
+
+  identifier_lookup: z.object({
+    identifierType: z.enum(["phone", "email", "username", "rrn", "alias", "other"]),
+    identifierValue: z.string().min(1),
+    findings: z.array(findingSchema).min(1),
+    notes: z.string().optional(),
+  }),
+
+  platform_analysis: z.object({
+    platform: z.enum([
+      "facebook",
+      "instagram",
+      "x",
+      "whatsapp",
+      "telegram",
+      "linkedin",
+      "tiktok",
+      "snapchat",
+      "other",
+    ]),
+    platformUrl: z.string().url().optional(),
+    findings: z.array(findingSchema).min(1),
+    screenshots: z.array(z.string().uuid()).optional(),
+    notes: z.string().optional(),
+  }),
+
+  media_gallery: z.object({
+    items: z.array(mediaItemSchema).min(1),
+    description: z.string().optional(),
+  }),
+
+  data_retention: z.object({
+    datasets: z.array(datasetSchema).min(1),
+  }),
+
+  conclusions: z.object({
+    statements: z.array(z.string().min(1)).min(1),
+  }),
+
+  investigation_leads: z.object({
+    leads: z.array(investigationLeadSchema).min(1),
+  }),
+
+  sign_off: z.object({
+    date: z.string(),
+    officer: officerSchema,
+    additionalNotes: z.string().optional(),
+  }),
+};
+
+/**
+ * Valide le payload d'un module selon son type
+ * @throws ZodError si le payload est invalide
+ */
+export function validateModulePayload(type: string, payload: unknown) {
+  const schema = payloadSchemas[type as keyof typeof payloadSchemas];
+  if (!schema) {
+    throw new Error(`Type de module inconnu: ${type}`);
+  }
+  return schema.parse(payload);
+}
+
 export const createModuleSchema = z
   .object({
     type: z.enum(REPORT_MODULE_TYPES),
@@ -59,7 +208,7 @@ export const createModuleSchema = z
     headline: z.string().trim().max(255).optional(),
     entityId: z.string().uuid().optional(),
     position: z.number().int().min(0).optional(),
-    payload: modulePayloadSchema,
+    payload: z.record(z.string(), z.any()).optional(), // Validé séparément par validateModulePayload()
   })
   .strict();
 export type CreateModuleInput = z.infer<typeof createModuleSchema>;

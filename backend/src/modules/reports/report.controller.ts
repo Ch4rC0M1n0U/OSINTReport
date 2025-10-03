@@ -16,6 +16,7 @@ import {
   updateEntitySchema,
   createResearchRecordSchema,
   updateResearchRecordSchema,
+  validateModulePayload, // Nouveau import pour validation des payloads
 } from "@modules/reports/report.validation";
 
 export class ReportController {
@@ -82,6 +83,13 @@ export class ReportController {
   static async createModule(req: Request, res: Response, next: NextFunction) {
     try {
       const payload = createModuleSchema.parse(req.body);
+      
+      // Validation du payload selon le type de module
+      if (payload.payload) {
+        const validatedPayload = validateModulePayload(payload.type, payload.payload);
+        payload.payload = validatedPayload;
+      }
+      
       const module = await ReportService.createModule(req.params.reportId, payload);
       res.status(201).json({ module });
     } catch (error) {
@@ -92,6 +100,13 @@ export class ReportController {
   static async updateModule(req: Request, res: Response, next: NextFunction) {
     try {
       const payload = updateModuleSchema.parse(req.body);
+      
+      // Validation du payload selon le type de module (si fourni)
+      if (payload.type && payload.payload) {
+        const validatedPayload = validateModulePayload(payload.type, payload.payload);
+        payload.payload = validatedPayload;
+      }
+      
       const module = await ReportService.updateModule(
         req.params.reportId,
         req.params.moduleId,
