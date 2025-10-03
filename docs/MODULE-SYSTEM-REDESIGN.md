@@ -1,7 +1,44 @@
 # Refonte du Système de Modules - Alignement avec le Template
 
 **Date**: 3 octobre 2025  
-**Status**: 📋 PLAN DE DÉVELOPPEMENT
+**Status**: � EN COURS - Phase 3 COMPLÈTE + UX Améliorations
+
+## 📊 Progression Globale
+
+| Phase | Description | Status | Date |
+|-------|-------------|--------|------|
+| **Phase 1** | Types & Validation | ✅ COMPLET | 3 oct 2025 |
+| **Phase 2** | Frontend Types | ✅ COMPLET | 3 oct 2025 |
+| **Phase 3** | Composants Simples | ✅ COMPLET | 3 oct 2025 |
+| **Phase 3.1** | WYSIWYG Editor | ✅ COMPLET | 3 oct 2025 |
+| **Phase 3.2** | Fixes Validation | ✅ COMPLET | 3 oct 2025 |
+| **Phase 3.3** | Rendu Markdown | ✅ COMPLET | 3 oct 2025 |
+| **Phase 3.4** | Drag & Drop | ✅ COMPLET | 3 oct 2025 |
+| **Phase 4** | Composants Avancés | ⏳ EN ATTENTE | - |
+| **Phase 5** | Tests & Migration | ⏳ EN ATTENTE | - |
+
+---
+
+## 🆕 Dernières Améliorations UX
+
+### ✅ Phase 3.3 & 3.4 (3 octobre 2025)
+
+**Fonctionnalités ajoutées** :
+1. **Rendu Markdown** : Affichage correct du formatage en mode lecture
+2. **Drag & Drop** : Réorganisation des modules par glisser-déposer
+
+**Détails** : Voir `docs/DRAG-DROP-MARKDOWN.md`
+
+**Changements** :
+- ✅ Nouveau composant `MarkdownRenderer.vue` (utilise `marked`)
+- ✅ Intégration dans SummaryModule, ObjectivesModule, ConclusionsModule
+- ✅ Drag & Drop avec `vuedraggable` dans ReportDetailPage
+- ✅ Poignée de drag (icône hamburger ☰)
+- ✅ Sauvegarde automatique de l'ordre via `reportsApi.reorderModules()`
+
+**Tests** : Voir `docs/TEST-DRAG-DROP-MARKDOWN.md`
+
+---
 
 ## 🎯 Objectif
 

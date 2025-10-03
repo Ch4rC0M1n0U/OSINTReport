@@ -122,7 +122,7 @@ export const payloadSchemas = {
   }),
 
   objectives: z.object({
-    objectives: z.array(z.string().min(1)).min(1),
+    objectives: z.array(z.string().min(1)).default([]),
   }),
 
   research_summary: z.object({
@@ -174,7 +174,7 @@ export const payloadSchemas = {
   }),
 
   conclusions: z.object({
-    statements: z.array(z.string().min(1)).min(1),
+    statements: z.array(z.string().min(1)).default([]),
   }),
 
   investigation_leads: z.object({

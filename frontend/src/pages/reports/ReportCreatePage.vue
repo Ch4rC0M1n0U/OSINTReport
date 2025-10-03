@@ -30,9 +30,9 @@ const error = ref<string | null>(null);
 
 // Options
 const urgencyLevels = [
-  { value: "ROUTINE", label: "Routine", color: "info" },
-  { value: "URGENT", label: "Urgent", color: "warning" },
-  { value: "CRITICAL", label: "Critique", color: "error" },
+  { value: "ROUTINE", label: "Routine", color: "info", icon: "📋" },
+  { value: "URGENT", label: "Urgent", color: "warning", icon: "⚡" },
+  { value: "CRITICAL", label: "Critique", color: "error", icon: "🚨" },
 ];
 
 const classifications = [
@@ -49,6 +49,14 @@ const canGoNext = computed(() => {
     return form.value.investigationContext.trim().length > 0;
   }
   return true;
+});
+
+const urgencyInfo = computed(() => {
+  return urgencyLevels.find(u => u.value === form.value.urgencyLevel) || urgencyLevels[0];
+});
+
+const classificationInfo = computed(() => {
+  return classifications.find(c => c.value === form.value.classification) || classifications[0];
 });
 
 function nextStep() {
@@ -267,7 +275,8 @@ function handleCancel() {
                     'border-base-300 hover:bg-base-200': form.urgencyLevel !== level.value,
                   }"
                 >
-                  {{ level.label }}
+                  <div class="text-2xl mb-1">{{ level.icon }}</div>
+                  <div class="text-sm">{{ level.label }}</div>
                 </div>
               </label>
             </div>
@@ -338,11 +347,15 @@ function handleCancel() {
             <div class="flex gap-4">
               <div>
                 <span class="text-sm opacity-70">Urgence:</span>
-                <span class="ml-2 badge badge-outline">{{ form.urgencyLevel }}</span>
+                <span class="ml-2 badge badge-outline">
+                  {{ urgencyInfo.icon }} {{ urgencyInfo.label }}
+                </span>
               </div>
               <div>
                 <span class="text-sm opacity-70">Classification:</span>
-                <span class="ml-2 badge badge-outline">{{ form.classification }}</span>
+                <span class="ml-2 badge badge-outline">
+                  {{ classificationInfo.icon }} {{ classificationInfo.label }}
+                </span>
               </div>
             </div>
 

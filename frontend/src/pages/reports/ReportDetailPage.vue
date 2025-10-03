@@ -13,9 +13,18 @@ import { correlationsApi, type Correlation } from "@/services/api/correlations";
 import EntitySelector from "@/components/reports/EntitySelector.vue";
 import EntityDialog from "@/components/reports/EntityDialog.vue";
 import CorrelationAlert from "@/components/reports/CorrelationAlert.vue";
+import VueDraggable from "vuedraggable";
+import ModalDialog from "@/components/shared/ModalDialog.vue";
+import { useModal } from "@/composables/useModal";
+
+// Composants de modules
+import SummaryModule from "@/components/modules/SummaryModule.vue";
+import ObjectivesModule from "@/components/modules/ObjectivesModule.vue";
+import ConclusionsModule from "@/components/modules/ConclusionsModule.vue";
 
 const route = useRoute();
 const router = useRouter();
+const modal = useModal();
 
 const reportId = computed(() => route.params.id as string);
 
@@ -31,6 +40,7 @@ const showModuleDialog = ref(false);
 const showEntityDialog = ref(false);
 const showStatsModal = ref(false);
 const showCorrelationsModal = ref(false);
+const showEditInfoDialog = ref(false);
 const exportingPDF = ref(false);
 
 const moduleForm = ref<{
@@ -44,6 +54,19 @@ const moduleForm = ref<{
   entityId: undefined,
   payload: {},
 });
+
+const editInfoForm = ref({
+  title: "",
+  caseNumber: "",
+  investigationService: "",
+  investigationContext: "",
+  urgencyLevel: "ROUTINE" as "ROUTINE" | "URGENT" | "CRITICAL",
+  classification: "CONFIDENTIAL" as "PUBLIC" | "CONFIDENTIAL" | "SECRET",
+  legalBasis: "",
+  keywords: [] as string[],
+});
+
+const keywordInput = ref("");
 
 // Construire la liste des types depuis MODULE_TYPE_METADATA
 const moduleTypes = (Object.keys(MODULE_TYPE_METADATA) as ReportModuleType[])
@@ -91,14 +114,26 @@ async function loadCorrelations() {
 }
 
 async function detectCorrelations() {
-  if (!confirm("Lancer la détection automatique des corrélations ?")) return;
+  const confirmed = await modal.showConfirm(
+    "Lancer la détection automatique des corrélations ?",
+    "Détection automatique",
+    "Lancer",
+    "Annuler"
+  );
+  if (!confirmed) return;
 
   try {
     const detected = await correlationsApi.detect(reportId.value);
-    alert(`${detected.length} corrélation(s) détectée(s) !`);
+    await modal.showSuccess(
+      `${detected.length} corrélation(s) détectée(s) !`,
+      "Détection réussie"
+    );
     await loadCorrelations();
   } catch (err) {
-    alert("Erreur lors de la détection");
+    await modal.showError(
+      "Une erreur est survenue lors de la détection des corrélations.",
+      "Erreur de détection"
+    );
     console.error(err);
   }
 }
@@ -115,7 +150,10 @@ function openModuleDialog() {
 
 async function handleCreateModule() {
   if (!moduleForm.value.title.trim()) {
-    alert("Le titre est obligatoire");
+    await modal.showWarning(
+      "Le titre du module est obligatoire.",
+      "Champ requis"
+    );
     return;
   }
 
@@ -136,49 +174,127 @@ async function handleCreateModule() {
     showModuleDialog.value = false;
     await loadReport();
   } catch (err: any) {
-    alert(err.response?.data?.message || "Erreur lors de la création du module");
+    await modal.showError(
+      err.response?.data?.message || "Une erreur est survenue lors de la création du module.",
+      "Erreur de création"
+    );
     console.error(err);
   }
 }
 
 async function handleDeleteModule(moduleId: string) {
-  if (!confirm("Supprimer ce module ?")) return;
+  const confirmed = await modal.showDangerConfirm(
+    "Êtes-vous sûr de vouloir supprimer ce module ? Cette action est irréversible.",
+    "Supprimer le module",
+    "Supprimer",
+    "Annuler"
+  );
+  if (!confirmed) return;
 
   try {
     await reportsApi.deleteModule(reportId.value, moduleId);
     await loadReport();
   } catch (err) {
-    alert("Erreur lors de la suppression");
+    await modal.showError(
+      "Une erreur est survenue lors de la suppression du module.",
+      "Erreur de suppression"
+    );
     console.error(err);
   }
 }
 
 async function handleChangeStatus(newStatus: "DRAFT" | "PUBLISHED" | "ARCHIVED") {
-  if (!confirm(`Changer le statut vers ${newStatus} ?`)) return;
+  const statusLabels = {
+    DRAFT: "Brouillon",
+    PUBLISHED: "Publié",
+    ARCHIVED: "Archivé"
+  };
+  
+  const confirmed = await modal.showConfirm(
+    `Voulez-vous changer le statut du rapport vers "${statusLabels[newStatus]}" ?`,
+    "Changement de statut",
+    "Confirmer",
+    "Annuler"
+  );
+  if (!confirmed) return;
 
   try {
     await reportsApi.updateStatus(reportId.value, newStatus);
     await loadReport();
   } catch (err) {
-    alert("Erreur lors du changement de statut");
+    await modal.showError(
+      "Une erreur est survenue lors du changement de statut.",
+      "Erreur"
+    );
     console.error(err);
   }
 }
 
 async function handleDuplicate() {
-  if (!confirm("Dupliquer ce rapport ?")) return;
+  const confirmed = await modal.showConfirm(
+    "Voulez-vous créer une copie de ce rapport ?",
+    "Dupliquer le rapport",
+    "Dupliquer",
+    "Annuler"
+  );
+  if (!confirmed) return;
 
   try {
     const newReport = await reportsApi.duplicate(reportId.value);
     router.push({ name: "reports.detail", params: { id: newReport.id } });
   } catch (err) {
-    alert("Erreur lors de la duplication");
+    await modal.showError(
+      "Une erreur est survenue lors de la duplication du rapport.",
+      "Erreur de duplication"
+    );
     console.error(err);
   }
 }
 
 function getModuleIcon(type: string) {
   return moduleTypes.find((t) => t.value === type)?.icon || "📋";
+}
+
+function getModuleComponent(type: ReportModuleType) {
+  const componentMap: Record<string, any> = {
+    summary: SummaryModule,
+    objectives: ObjectivesModule,
+    conclusions: ConclusionsModule,
+  };
+  return componentMap[type] || null;
+}
+
+async function handleUpdateModule(moduleId: string, payload: any) {
+  try {
+    await reportsApi.updateModule(reportId.value, moduleId, { payload });
+    await loadReport();
+    await modal.showSuccess(
+      "Le module a été mis à jour avec succès.",
+      "Module mis à jour"
+    );
+  } catch (err: any) {
+    await modal.showError(
+      err.response?.data?.message || "Une erreur est survenue lors de la mise à jour du module.",
+      "Erreur de mise à jour"
+    );
+    console.error(err);
+  }
+}
+
+async function handleReorderModules() {
+  try {
+    const moduleIds = modules.value.map((m) => m.id);
+    await reportsApi.reorderModules(reportId.value, moduleIds);
+    // Pas besoin de recharger, l'ordre est déjà à jour dans la vue
+  } catch (err: any) {
+    await modal.showError(
+      err.response?.data?.message || "Une erreur est survenue lors du réordonnement des modules.",
+      "Erreur de réordonnement"
+    );
+    console.error(err);
+    // Recharger en cas d'erreur pour rétablir l'ordre correct
+    await loadReport();
+  }
 }
 
 function formatDate(date: string) {
@@ -212,7 +328,10 @@ async function handleExportPDF() {
     document.body.removeChild(link);
     window.URL.revokeObjectURL(url);
   } catch (err: any) {
-    alert(err.response?.data?.message || "Erreur lors de l'export PDF");
+    await modal.showError(
+      err.response?.data?.message || "Une erreur est survenue lors de l'export PDF.",
+      "Erreur d'export"
+    );
     console.error(err);
   } finally {
     exportingPDF.value = false;
@@ -224,6 +343,41 @@ const statusColors = {
   PUBLISHED: "badge-success",
   ARCHIVED: "badge-neutral",
 };
+
+// Métadonnées pour les niveaux d'urgence
+const urgencyLevels = {
+  ROUTINE: { label: "Routine", icon: "📋", color: "badge-info" },
+  URGENT: { label: "Urgent", icon: "⚡", color: "badge-warning" },
+  CRITICAL: { label: "Critique", icon: "🚨", color: "badge-error" },
+};
+
+// Métadonnées pour les classifications
+const classifications = {
+  PUBLIC: { label: "Public", icon: "🌐" },
+  CONFIDENTIAL: { label: "Confidentiel", icon: "🔒" },
+  SECRET: { label: "Secret", icon: "🔐" },
+};
+
+// Options pour les formulaires
+const urgencyOptions = [
+  { value: "ROUTINE", label: "Routine", icon: "📋" },
+  { value: "URGENT", label: "Urgent", icon: "⚡" },
+  { value: "CRITICAL", label: "Critique", icon: "🚨" },
+];
+
+const classificationOptions = [
+  { value: "PUBLIC", label: "Public", icon: "🌐" },
+  { value: "CONFIDENTIAL", label: "Confidentiel", icon: "🔒" },
+  { value: "SECRET", label: "Secret", icon: "🔐" },
+];
+
+function getUrgencyInfo(level: string) {
+  return urgencyLevels[level as keyof typeof urgencyLevels] || urgencyLevels.ROUTINE;
+}
+
+function getClassificationInfo(classif: string) {
+  return classifications[classif as keyof typeof classifications] || classifications.CONFIDENTIAL;
+}
 </script>
 
 <template>
@@ -247,11 +401,11 @@ const statusColors = {
           <span v-if="report.caseNumber" class="badge badge-outline">
             📁 {{ report.caseNumber }}
           </span>
-          <span class="badge badge-outline">
-            {{ report.urgencyLevel }}
+          <span class="badge badge-outline" :class="getUrgencyInfo(report.urgencyLevel).color">
+            {{ getUrgencyInfo(report.urgencyLevel).icon }} {{ getUrgencyInfo(report.urgencyLevel).label }}
           </span>
           <span class="badge badge-outline">
-            🔒 {{ report.classification }}
+            {{ getClassificationInfo(report.classification).icon }} {{ getClassificationInfo(report.classification).label }}
           </span>
         </div>
       </div>
@@ -347,32 +501,76 @@ const statusColors = {
             Aucun module. Commencez par en ajouter un.
           </div>
 
-          <div v-else class="space-y-3">
-            <div
-              v-for="module in modules"
-              :key="module.id"
-              class="border border-base-300 rounded-lg p-4 hover:bg-base-200 transition"
-            >
-              <div class="flex items-start justify-between">
-                <div class="flex-1">
-                  <div class="flex items-center gap-2 mb-1">
-                    <span class="text-xl">{{ getModuleIcon(module.type) }}</span>
-                    <h4 class="font-semibold">{{ module.title }}</h4>
+          <VueDraggable
+            v-else
+            v-model="modules"
+            item-key="id"
+            class="space-y-6"
+            handle=".drag-handle"
+            @end="handleReorderModules"
+          >
+            <template #item="{ element: module }">
+              <div
+                class="border border-base-300 rounded-lg p-6 bg-base-100 hover:shadow-md transition-shadow"
+              >
+                <!-- En-tête du module -->
+                <div class="flex items-start justify-between mb-4 pb-4 border-b border-base-300">
+                  <div class="flex items-center gap-3 flex-1">
+                    <!-- Poignée de drag -->
+                    <div class="drag-handle cursor-move p-2 hover:bg-base-200 rounded" title="Glisser pour réordonner">
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke-width="1.5"
+                        stroke="currentColor"
+                        class="w-5 h-5 opacity-50"
+                      >
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5"
+                        />
+                      </svg>
+                    </div>
+                    <div class="flex-1">
+                      <div class="flex items-center gap-2 mb-1">
+                        <span class="text-2xl">{{ getModuleIcon(module.type) }}</span>
+                        <h4 class="font-bold text-lg">{{ module.title }}</h4>
+                      </div>
+                      <div class="text-sm opacity-70">
+                        {{ MODULE_TYPE_METADATA[module.type as ReportModuleType]?.label || module.type }}
+                      </div>
+                      <div v-if="module.entity" class="text-sm mt-1">
+                        Entité: <span class="badge badge-sm">{{ module.entity.label }}</span>
+                      </div>
+                    </div>
                   </div>
-                  <div class="text-sm opacity-70">{{ module.type }}</div>
-                  <div v-if="module.entity" class="text-sm mt-1">
-                    Entité: <span class="badge badge-sm">{{ module.entity.label }}</span>
+                  <button
+                    class="btn btn-ghost btn-sm btn-circle"
+                    @click="handleDeleteModule(module.id)"
+                    title="Supprimer ce module"
+                  >
+                    🗑️
+                  </button>
+                </div>
+
+                <!-- Contenu du module (composant dynamique) -->
+                <div class="mt-4">
+                  <component
+                    v-if="getModuleComponent(module.type as ReportModuleType)"
+                    :is="getModuleComponent(module.type as ReportModuleType)"
+                    :payload="module.payload || {}"
+                    :module-id="module.id"
+                    @update="(payload: any) => handleUpdateModule(module.id, payload)"
+                  />
+                  <div v-else class="text-sm opacity-60 italic">
+                    Composant non disponible pour le type "{{ module.type }}"
                   </div>
                 </div>
-                <button
-                  class="btn btn-ghost btn-sm btn-circle"
-                  @click="handleDeleteModule(module.id)"
-                >
-                  🗑️
-                </button>
               </div>
-            </div>
-          </div>
+            </template>
+          </VueDraggable>
         </div>
       </div>
     </template>
@@ -511,6 +709,19 @@ const statusColors = {
       :show="showEntityDialog"
       @close="showEntityDialog = false"
       @saved="showEntityDialog = false"
+    />
+    
+    <!-- Modal Dialog réutilisable -->
+    <ModalDialog
+      v-model="modal.isOpen.value"
+      :title="modal.config.value.title"
+      :message="modal.config.value.message"
+      :type="modal.config.value.type"
+      :confirm-text="modal.config.value.confirmText"
+      :cancel-text="modal.config.value.cancelText"
+      :is-confirm="modal.config.value.type === 'confirm' || modal.config.value.type === 'error'"
+      @confirm="modal.handleConfirm"
+      @cancel="modal.handleCancel"
     />
   </div>
 </template>
