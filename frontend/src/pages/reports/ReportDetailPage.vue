@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import { reportsApi, type Report, type ReportModule, type ReportStats } from "@/services/api/reports";
+import { reportsApi, type Report, type ReportModule, type ReportStats, type ReportModuleType } from "@/services/api/reports";
 import { correlationsApi, type Correlation } from "@/services/api/correlations";
 import EntitySelector from "@/components/reports/EntitySelector.vue";
 import EntityDialog from "@/components/reports/EntityDialog.vue";
@@ -26,22 +26,30 @@ const showStatsModal = ref(false);
 const showCorrelationsModal = ref(false);
 const exportingPDF = ref(false);
 
-const moduleForm = ref({
-  type: "phone_analysis",
+const moduleForm = ref<{
+  type: ReportModuleType;
+  title: string;
+  entityId: string | undefined;
+  payload: Record<string, any>;
+}>({
+  type: "research-detail",
   title: "",
-  entityId: undefined as string | undefined,
-  payload: {} as Record<string, any>,
+  entityId: undefined,
+  payload: {},
 });
 
-const moduleTypes = [
-  { value: "phone_analysis", label: "Analyse téléphonique", icon: "📞" },
-  { value: "email_analysis", label: "Analyse email", icon: "📧" },
-  { value: "social_media", label: "Réseaux sociaux", icon: "🌐" },
-  { value: "financial", label: "Analyse financière", icon: "💰" },
-  { value: "address_analysis", label: "Analyse adresse", icon: "📍" },
-  { value: "vehicle", label: "Véhicule", icon: "🚗" },
-  { value: "document", label: "Document", icon: "📄" },
-  { value: "other", label: "Autre", icon: "📋" },
+const moduleTypes: Array<{ value: ReportModuleType; label: string; icon: string }> = [
+  { value: "summary", label: "Résumé", icon: "📋" },
+  { value: "entities", label: "Entités", icon: "�" },
+  { value: "objectives", label: "Objectifs", icon: "🎯" },
+  { value: "research-summary", label: "Résumé de recherche", icon: "📊" },
+  { value: "research-detail", label: "Détail de recherche", icon: "�" },
+  { value: "identifier-lookup", label: "Recherche d'identifiant", icon: "🔎" },
+  { value: "media-gallery", label: "Galerie média", icon: "�️" },
+  { value: "data-retention", label: "Conservation de données", icon: "�" },
+  { value: "conclusions", label: "Conclusions", icon: "✅" },
+  { value: "investigation", label: "Investigation", icon: "�️" },
+  { value: "sign-off", label: "Signature", icon: "✍️" },
 ];
 
 onMounted(async () => {
@@ -95,7 +103,7 @@ async function detectCorrelations() {
 
 function openModuleDialog() {
   moduleForm.value = {
-    type: "phone_analysis",
+    type: "research-detail",
     title: "",
     entityId: undefined,
     payload: {},
@@ -175,7 +183,7 @@ function formatDate(date: string) {
 async function handleExportPDF() {
   exportingPDF.value = true;
   try {
-    const pdfBlob = await reportsApi.exportPDF(reportId.value);
+    const pdfBlob = await reportsApi.exportPDF(report.value!.id);
     
     // Créer un lien de téléchargement
     const url = window.URL.createObjectURL(pdfBlob);
@@ -184,9 +192,9 @@ async function handleExportPDF() {
     
     // Générer le nom de fichier
     const caseNum = report.value?.caseNumber || "NO-CASE";
-    const reportNum = report.value?.reportNumber || report.value?.id.substring(0, 8);
+    const reportIdShort = report.value?.id.substring(0, 8);
     const date = new Date().toISOString().split("T")[0];
-    link.download = `OSINT_${caseNum}_${reportNum}_${date}.pdf`;
+    link.download = `OSINT_${caseNum}_${reportIdShort}_${date}.pdf`;
     
     // Déclencher le téléchargement
     document.body.appendChild(link);

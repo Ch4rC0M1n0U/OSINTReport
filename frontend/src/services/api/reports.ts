@@ -62,8 +62,22 @@ export interface CreateReportData {
 
 export interface UpdateReportData extends Partial<CreateReportData> {}
 
+// Types de modules (doit correspondre à REPORT_MODULE_TYPES du backend)
+export type ReportModuleType =
+  | "summary"
+  | "entities"
+  | "objectives"
+  | "research-summary"
+  | "research-detail"
+  | "identifier-lookup"
+  | "media-gallery"
+  | "data-retention"
+  | "conclusions"
+  | "investigation"
+  | "sign-off";
+
 export interface CreateModuleData {
-  type: string;
+  type: ReportModuleType;
   title: string;
   entityId?: string;
   payload?: Record<string, any>;

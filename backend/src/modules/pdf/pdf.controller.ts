@@ -14,6 +14,7 @@ export class PDFController {
       const { watermark = "true" } = req.query;
 
       logger.info({ reportId, userId: req.user?.id }, "📄 Demande d'export PDF");
+      logger.debug({ reportId, watermark }, "🔍 Paramètres export PDF");
 
       // Vérifier que le rapport existe
       const report = await prisma.report.findUnique({
@@ -38,6 +39,7 @@ export class PDFController {
       // Pour l'instant, on autorise tous les utilisateurs authentifiés avec REPORTS_READ
 
       // Générer le PDF
+      logger.info({ reportId }, "🚀 Lancement génération PDF");
       const pdfBuffer = await PDFService.generatePDF({
         reportId,
         includeWatermark: watermark === "true",
@@ -46,6 +48,7 @@ export class PDFController {
           : "Anonyme",
         officerRank: "Inspecteur", // À améliorer : ajouter le grade dans le modèle User
       });
+      logger.info({ reportId, size: pdfBuffer.length }, "✅ PDF généré avec succès");
 
       // Générer le nom de fichier
       const filename = PDFService.generateFilename({
@@ -65,7 +68,17 @@ export class PDFController {
 
       return res.send(pdfBuffer);
     } catch (error) {
-      logger.error({ err: error }, "❌ Erreur export PDF");
+      logger.error({ err: error, reportId: req.params.reportId }, "❌ Erreur export PDF");
+      
+      // Log détaillé de l'erreur
+      if (error instanceof Error) {
+        logger.error({ 
+          message: error.message, 
+          stack: error.stack,
+          name: error.name 
+        }, "❌ Détails erreur");
+      }
+      
       next(error);
     }
   }

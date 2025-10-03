@@ -6,7 +6,7 @@
 
 import puppeteer from "puppeteer";
 import handlebars from "handlebars";
-import { PDFDocument, rgb, StandardFonts } from "pdf-lib";
+import { PDFDocument, rgb, StandardFonts, degrees } from "pdf-lib";
 import { readFile } from "fs/promises";
 import { join } from "path";
 import { logger } from "@/config/logger";
@@ -84,7 +84,7 @@ export class PDFService {
                 caseNumber: true,
               },
             },
-            targetReport: {
+            relatedReport: {
               select: {
                 id: true,
                 title: true,
@@ -266,7 +266,7 @@ export class PDFService {
         font,
         color: rgb(config.color.r, config.color.g, config.color.b),
         opacity: config.opacity,
-        rotate: { angle: -45, type: 1 },
+        rotate: degrees(-45),
       });
     }
 
@@ -344,7 +344,9 @@ export class PDFService {
 
       // 5. Ajouter le watermark si nécessaire
       if (options.includeWatermark !== false && templateData.hasClassification) {
-        const watermarkConfig = this.getWatermarkConfig(report.classification);
+        const watermarkConfig = this.getWatermarkConfig(
+          report.classification ?? "PUBLIC"
+        );
         if (watermarkConfig) {
           pdfBuffer = await this.addWatermark(Buffer.from(pdfBuffer), watermarkConfig);
           logger.debug(`✅ Watermark "${watermarkConfig.text}" ajouté`);
