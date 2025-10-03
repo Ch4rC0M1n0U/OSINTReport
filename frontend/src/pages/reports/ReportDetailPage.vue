@@ -16,6 +16,9 @@ import CorrelationAlert from "@/components/reports/CorrelationAlert.vue";
 import VueDraggable from "vuedraggable";
 import ModalDialog from "@/components/shared/ModalDialog.vue";
 import { useModal } from "@/composables/useModal";
+import LegalBasisSelector from "@/components/shared/LegalBasisSelector.vue";
+import { parseLegalBasis, LEGAL_ARTICLES, type LegalArticle } from "@/data/legal-basis";
+import LegalArticleDetailModal from "@/components/shared/LegalArticleDetailModal.vue";
 
 // Composants de modules
 import SummaryModule from "@/components/modules/SummaryModule.vue";
@@ -42,6 +45,8 @@ const showStatsModal = ref(false);
 const showCorrelationsModal = ref(false);
 const showEditInfoDialog = ref(false);
 const exportingPDF = ref(false);
+const showArticleDetailModal = ref(false);
+const selectedArticle = ref<LegalArticle | null>(null);
 
 const moduleForm = ref<{
   type: ReportModuleType;
@@ -58,10 +63,10 @@ const moduleForm = ref<{
 const editInfoForm = ref({
   title: "",
   caseNumber: "",
-  investigationService: "",
+  requestingService: "",
   investigationContext: "",
   urgencyLevel: "ROUTINE" as "ROUTINE" | "URGENT" | "CRITICAL",
-  classification: "CONFIDENTIAL" as "PUBLIC" | "CONFIDENTIAL" | "SECRET",
+  classification: "CONFIDENTIAL" as "PUBLIC" | "RESTRICTED" | "CONFIDENTIAL" | "SECRET",
   legalBasis: "",
   keywords: [] as string[],
 });
@@ -230,6 +235,89 @@ async function handleChangeStatus(newStatus: "DRAFT" | "PUBLISHED" | "ARCHIVED")
   }
 }
 
+function openEditInfoDialog() {
+  if (!report.value) return;
+  
+  editInfoForm.value = {
+    title: report.value.title,
+    caseNumber: report.value.caseNumber || "",
+    requestingService: report.value.requestingService || "",
+    investigationContext: report.value.investigationContext,
+    urgencyLevel: report.value.urgencyLevel,
+    classification: report.value.classification,
+    legalBasis: report.value.legalBasis || "",
+    keywords: report.value.keywords ? [...report.value.keywords] : [],
+  };
+  keywordInput.value = "";
+  showEditInfoDialog.value = true;
+}
+
+function addKeyword() {
+  const keyword = keywordInput.value.trim().toLowerCase();
+  if (keyword && !editInfoForm.value.keywords.includes(keyword)) {
+    editInfoForm.value.keywords.push(keyword);
+    keywordInput.value = "";
+  }
+}
+
+function removeKeyword(keyword: string) {
+  editInfoForm.value.keywords = editInfoForm.value.keywords.filter((k) => k !== keyword);
+}
+
+async function handleSaveEditInfo() {
+  if (!editInfoForm.value.title.trim()) {
+    await modal.showWarning(
+      "Le titre du rapport est obligatoire.",
+      "Champ requis"
+    );
+    return;
+  }
+
+  if (!editInfoForm.value.investigationContext.trim()) {
+    await modal.showWarning(
+      "Le contexte de l'enquête est obligatoire.",
+      "Champ requis"
+    );
+    return;
+  }
+
+  try {
+    await reportsApi.update(reportId.value, {
+      title: editInfoForm.value.title,
+      caseNumber: editInfoForm.value.caseNumber || undefined,
+      requestingService: editInfoForm.value.requestingService || undefined,
+      investigationContext: editInfoForm.value.investigationContext,
+      urgencyLevel: editInfoForm.value.urgencyLevel,
+      classification: editInfoForm.value.classification,
+      legalBasis: editInfoForm.value.legalBasis || undefined,
+      keywords: editInfoForm.value.keywords.length > 0 ? editInfoForm.value.keywords : undefined,
+    });
+
+    // Recharger le rapport
+    await loadReport();
+    showEditInfoDialog.value = false;
+
+    await modal.showSuccess(
+      "Les modifications ont été enregistrées avec succès.",
+      "Modifications enregistrées"
+    );
+  } catch (err: any) {
+    await modal.showError(
+      err.response?.data?.message || "Erreur lors de la sauvegarde des modifications.",
+      "Erreur"
+    );
+  }
+}
+
+// Ouvrir le détail d'un article de loi
+function openArticleDetail(articleCode: string) {
+  const article = LEGAL_ARTICLES.find((a) => a.code === articleCode);
+  if (article) {
+    selectedArticle.value = article;
+    showArticleDetailModal.value = true;
+  }
+}
+
 async function handleDuplicate() {
   const confirmed = await modal.showConfirm(
     "Voulez-vous créer une copie de ce rapport ?",
@@ -354,6 +442,7 @@ const urgencyLevels = {
 // Métadonnées pour les classifications
 const classifications = {
   PUBLIC: { label: "Public", icon: "🌐" },
+  RESTRICTED: { label: "Restreint", icon: "⚠️" },
   CONFIDENTIAL: { label: "Confidentiel", icon: "🔒" },
   SECRET: { label: "Secret", icon: "🔐" },
 };
@@ -367,6 +456,7 @@ const urgencyOptions = [
 
 const classificationOptions = [
   { value: "PUBLIC", label: "Public", icon: "🌐" },
+  { value: "RESTRICTED", label: "Restreint", icon: "⚠️" },
   { value: "CONFIDENTIAL", label: "Confidentiel", icon: "🔒" },
   { value: "SECRET", label: "Secret", icon: "🔐" },
 ];
@@ -416,6 +506,10 @@ function getClassificationInfo(classif: string) {
         </label>
         <ul tabindex="0" class="dropdown-content menu p-2 shadow bg-base-100 rounded-box w-52 z-10">
           <li>
+            <a @click="openEditInfoDialog">✏️ Modifier les informations</a>
+          </li>
+          <li class="divider"></li>
+          <li>
             <a @click="handleExportPDF" :class="{ 'loading': exportingPDF }">
               📄 Exporter PDF
             </a>
@@ -464,12 +558,24 @@ function getClassificationInfo(classif: string) {
             <div>
               <div class="text-sm opacity-70">Service enquêteur</div>
               <div class="font-medium">
-                {{ report.investigationService || "—" }}
+                {{ report.requestingService || "—" }}
               </div>
             </div>
-            <div>
-              <div class="text-sm opacity-70">Base légale</div>
-              <div class="font-medium">{{ report.legalBasis || "—" }}</div>
+            <div class="md:col-span-2">
+              <div class="text-sm opacity-70 mb-2">Base légale</div>
+              <div v-if="report.legalBasis" class="flex flex-wrap gap-2 max-h-32 overflow-y-auto p-2 rounded border border-base-300">
+                <button
+                  v-for="article in parseLegalBasis(report.legalBasis)"
+                  :key="article"
+                  type="button"
+                  class="badge badge-primary badge-sm font-mono cursor-pointer hover:badge-secondary transition-colors"
+                  @click="openArticleDetail(article)"
+                  :title="`Cliquer pour voir les détails de ${article}`"
+                >
+                  {{ article }}
+                </button>
+              </div>
+              <div v-else class="font-medium">—</div>
             </div>
             <div class="md:col-span-2">
               <div class="text-sm opacity-70 mb-1">Contexte</div>
@@ -628,6 +734,150 @@ function getClassificationInfo(classif: string) {
       <div class="modal-backdrop" @click="showModuleDialog = false"></div>
     </div>
 
+    <!-- Modal: Modifier les informations du rapport -->
+    <div v-if="showEditInfoDialog" class="modal modal-open">
+      <div class="modal-box max-w-2xl">
+        <h3 class="text-lg font-bold mb-4">✏️ Modifier les informations du rapport</h3>
+        
+        <form @submit.prevent="handleSaveEditInfo" class="space-y-4">
+          <!-- Titre -->
+          <div class="form-control">
+            <label class="label">
+              <span class="label-text">Titre du rapport <span class="text-error">*</span></span>
+            </label>
+            <input
+              v-model="editInfoForm.title"
+              type="text"
+              class="input input-bordered"
+              required
+            />
+          </div>
+
+          <!-- Numéro de dossier et Service -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="form-control">
+              <label class="label">
+                <span class="label-text">Numéro de dossier</span>
+              </label>
+              <input
+                v-model="editInfoForm.caseNumber"
+                type="text"
+                placeholder="Ex: PV.2024.12345"
+                class="input input-bordered"
+              />
+            </div>
+            <div class="form-control">
+              <label class="label">
+                <span class="label-text">Service enquêteur</span>
+              </label>
+              <input
+                v-model="editInfoForm.requestingService"
+                type="text"
+                placeholder="Ex: Brigade Cyber Crime"
+                class="input input-bordered"
+              />
+            </div>
+          </div>
+
+          <!-- Contexte -->
+          <div class="form-control">
+            <label class="label">
+              <span class="label-text">Contexte de l'enquête <span class="text-error">*</span></span>
+            </label>
+            <textarea
+              v-model="editInfoForm.investigationContext"
+              class="textarea textarea-bordered h-24"
+              required
+            ></textarea>
+          </div>
+
+          <!-- Base légale -->
+          <LegalBasisSelector
+            v-model="editInfoForm.legalBasis"
+            hint="Sélectionnez les articles du Code d'Instruction Criminelle belge applicables"
+          />
+
+          <!-- Urgence -->
+          <div class="form-control">
+            <label class="label">
+              <span class="label-text">Niveau d'urgence</span>
+            </label>
+            <select v-model="editInfoForm.urgencyLevel" class="select select-bordered">
+              <option v-for="option in urgencyOptions" :key="option.value" :value="option.value">
+                {{ option.icon }} {{ option.label }}
+              </option>
+            </select>
+          </div>
+
+          <!-- Classification -->
+          <div class="form-control">
+            <label class="label">
+              <span class="label-text">Classification</span>
+            </label>
+            <select v-model="editInfoForm.classification" class="select select-bordered">
+              <option v-for="option in classificationOptions" :key="option.value" :value="option.value">
+                {{ option.icon }} {{ option.label }}
+              </option>
+            </select>
+          </div>
+
+          <!-- Mots-clés -->
+          <div class="form-control">
+            <label class="label">
+              <span class="label-text">Mots-clés</span>
+            </label>
+            <div class="join w-full">
+              <input
+                v-model="keywordInput"
+                type="text"
+                placeholder="Ajouter un mot-clé"
+                class="input input-bordered join-item flex-1"
+                @keypress.enter.prevent="addKeyword"
+              />
+              <button
+                type="button"
+                class="btn btn-primary join-item"
+                @click="addKeyword"
+              >
+                Ajouter
+              </button>
+            </div>
+            <div v-if="editInfoForm.keywords.length > 0" class="mt-2 flex flex-wrap gap-2">
+              <span
+                v-for="keyword in editInfoForm.keywords"
+                :key="keyword"
+                class="badge badge-lg gap-2"
+              >
+                {{ keyword }}
+                <button
+                  type="button"
+                  class="btn btn-ghost btn-xs btn-circle"
+                  @click="removeKeyword(keyword)"
+                >
+                  ✕
+                </button>
+              </span>
+            </div>
+          </div>
+
+          <!-- Actions -->
+          <div class="modal-action">
+            <button
+              type="button"
+              class="btn btn-ghost"
+              @click="showEditInfoDialog = false"
+            >
+              Annuler
+            </button>
+            <button type="submit" class="btn btn-primary">
+              💾 Enregistrer
+            </button>
+          </div>
+        </form>
+      </div>
+      <div class="modal-backdrop" @click="showEditInfoDialog = false"></div>
+    </div>
+
     <!-- Modal: Statistiques -->
     <div v-if="showStatsModal && stats" class="modal modal-open">
       <div class="modal-box">
@@ -709,6 +959,13 @@ function getClassificationInfo(classif: string) {
       :show="showEntityDialog"
       @close="showEntityDialog = false"
       @saved="showEntityDialog = false"
+    />
+    
+    <!-- Modal de détail d'article de loi -->
+    <LegalArticleDetailModal
+      :is-open="showArticleDetailModal"
+      :article="selectedArticle"
+      @close="showArticleDetailModal = false"
     />
     
     <!-- Modal Dialog réutilisable -->

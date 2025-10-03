@@ -5,6 +5,7 @@ import { reportsApi, type CreateReportData } from "@/services/api/reports";
 import EntitySelector from "@/components/reports/EntitySelector.vue";
 import EntityDialog from "@/components/reports/EntityDialog.vue";
 import CorrelationAlert from "@/components/reports/CorrelationAlert.vue";
+import LegalBasisSelector from "@/components/shared/LegalBasisSelector.vue";
 
 const router = useRouter();
 
@@ -15,7 +16,7 @@ const totalSteps = 3;
 const form = ref<CreateReportData>({
   title: "",
   caseNumber: "",
-  investigationService: "",
+  requestingService: "",
   investigationContext: "",
   urgencyLevel: "ROUTINE",
   classification: "CONFIDENTIAL",
@@ -37,6 +38,7 @@ const urgencyLevels = [
 
 const classifications = [
   { value: "PUBLIC", label: "Public", icon: "🌐" },
+  { value: "RESTRICTED", label: "Restreint", icon: "⚠️" },
   { value: "CONFIDENTIAL", label: "Confidentiel", icon: "🔒" },
   { value: "SECRET", label: "Secret", icon: "🔐" },
 ];
@@ -94,7 +96,7 @@ async function handleSubmit() {
       ...form.value,
       keywords: form.value.keywords?.length ? form.value.keywords : undefined,
       caseNumber: form.value.caseNumber || undefined,
-      investigationService: form.value.investigationService || undefined,
+      requestingService: form.value.requestingService || undefined,
       legalBasis: form.value.legalBasis || undefined,
     });
 
@@ -175,7 +177,7 @@ function handleCancel() {
                 <span class="label-text">Service enquêteur</span>
               </label>
               <input
-                v-model="form.investigationService"
+                v-model="form.requestingService"
                 type="text"
                 placeholder="Ex: Brigade Cyber Crime"
                 class="input input-bordered"
@@ -240,17 +242,10 @@ function handleCancel() {
             ></textarea>
           </div>
 
-          <div class="form-control">
-            <label class="label">
-              <span class="label-text">Base légale</span>
-            </label>
-            <input
-              v-model="form.legalBasis"
-              type="text"
-              placeholder="Ex: Art. 46bis CPP - Commission rogatoire n°..."
-              class="input input-bordered"
-            />
-          </div>
+          <LegalBasisSelector
+            v-model="form.legalBasis"
+            hint="Sélectionnez les articles du Code d'Instruction Criminelle belge applicables"
+          />
 
           <div class="form-control">
             <label class="label">
@@ -325,9 +320,9 @@ function handleCancel() {
                   <span class="opacity-70">Dossier:</span>
                   <span class="ml-2 font-medium">{{ form.caseNumber }}</span>
                 </div>
-                <div v-if="form.investigationService">
+                <div v-if="form.requestingService">
                   <span class="opacity-70">Service:</span>
-                  <span class="ml-2 font-medium">{{ form.investigationService }}</span>
+                  <span class="ml-2 font-medium">{{ form.requestingService }}</span>
                 </div>
               </div>
             </div>

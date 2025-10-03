@@ -339,6 +339,12 @@ export class ReportService {
       ...("status" in input ? { status: input.status ?? report.status } : {}),
       ...("dateRangeStart" in input ? { dateRangeStart: input.dateRangeStart ?? null } : {}),
       ...("dateRangeEnd" in input ? { dateRangeEnd: input.dateRangeEnd ?? null } : {}),
+      // Champs OSINT
+      ...("investigationContext" in input ? { investigationContext: input.investigationContext ?? null } : {}),
+      ...("urgencyLevel" in input ? { urgencyLevel: input.urgencyLevel ?? null } : {}),
+      ...("classification" in input ? { classification: input.classification ?? null } : {}),
+      ...("legalBasis" in input ? { legalBasis: input.legalBasis ?? null } : {}),
+      ...("keywords" in input ? { keywords: input.keywords ?? [] } : {}),
     };
 
     const updatedReport = await prisma.report.update({ where: { id: reportId }, data });

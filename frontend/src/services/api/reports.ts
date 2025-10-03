@@ -4,10 +4,10 @@ export interface Report {
   id: string;
   title: string;
   caseNumber?: string;
-  investigationService?: string;
+  requestingService?: string;
   investigationContext: string;
   urgencyLevel: "ROUTINE" | "URGENT" | "CRITICAL";
-  classification: "PUBLIC" | "CONFIDENTIAL" | "SECRET";
+  classification: "PUBLIC" | "RESTRICTED" | "CONFIDENTIAL" | "SECRET";
   legalBasis?: string;
   keywords: string[];
   status: "DRAFT" | "PUBLISHED" | "ARCHIVED";
@@ -52,10 +52,10 @@ export interface ReportStats {
 export interface CreateReportData {
   title: string;
   caseNumber?: string;
-  investigationService?: string;
+  requestingService?: string;
   investigationContext: string;
   urgencyLevel: "ROUTINE" | "URGENT" | "CRITICAL";
-  classification: "PUBLIC" | "CONFIDENTIAL" | "SECRET";
+  classification: "PUBLIC" | "RESTRICTED" | "CONFIDENTIAL" | "SECRET";
   legalBasis?: string;
   keywords?: string[];
 }
