@@ -33,6 +33,12 @@ export const createReportSchema = z
     dateRangeEnd: optionalDate,
     objectives: objectivesSchema,
     status: z.enum(["DRAFT", "PUBLISHED", "ARCHIVED"]).optional(),
+    // Nouveaux champs OSINT
+    investigationContext: z.string().trim().max(500).optional(),
+    legalBasis: z.string().trim().max(500).optional(),
+    urgencyLevel: z.enum(["ROUTINE", "URGENT", "CRITICAL"]).optional(),
+    classification: z.enum(["PUBLIC", "RESTRICTED", "CONFIDENTIAL", "SECRET"]).optional(),
+    keywords: z.array(z.string().trim().min(1).max(50)).max(20).optional(),
   })
   .strict();
 

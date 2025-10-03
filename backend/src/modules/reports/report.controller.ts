@@ -70,6 +70,15 @@ export class ReportController {
     }
   }
 
+  static async listModules(req: Request, res: Response, next: NextFunction) {
+    try {
+      const modules = await ReportService.listModules(req.params.reportId);
+      res.json({ modules });
+    } catch (error) {
+      next(error);
+    }
+  }
+
   static async createModule(req: Request, res: Response, next: NextFunction) {
     try {
       const payload = createModuleSchema.parse(req.body);

@@ -8,6 +8,9 @@ import ForgotPasswordPage from "@/pages/ForgotPasswordPage.vue";
 import ResetPasswordPage from "@/pages/ResetPasswordPage.vue";
 import ProfilePage from "@/pages/ProfilePage.vue";
 import ReportListPage from "@/pages/reports/ReportListPage.vue";
+import ReportCreatePage from "@/pages/reports/ReportCreatePage.vue";
+import ReportDetailPage from "@/pages/reports/ReportDetailPage.vue";
+import SearchPage from "@/pages/SearchPage.vue";
 import AdminSettingsPage from "@/pages/admin/AdminSettingsPage.vue";
 import AdminUsersPage from "@/pages/admin/AdminUsersPage.vue";
 import AdminUserDetailPage from "@/pages/admin/AdminUserDetailPage.vue";
@@ -57,6 +60,33 @@ const router = createRouter({
           path: "reports",
           name: "reports.list",
           component: ReportListPage,
+        },
+        {
+          path: "reports/new",
+          name: "reports.create",
+          component: ReportCreatePage,
+          meta: {
+            requiresAuth: true,
+            permissions: ["reports:write"],
+          },
+        },
+        {
+          path: "reports/:id",
+          name: "reports.detail",
+          component: ReportDetailPage,
+          meta: {
+            requiresAuth: true,
+            permissions: ["reports:read"],
+          },
+        },
+        {
+          path: "search",
+          name: "search",
+          component: SearchPage,
+          meta: {
+            requiresAuth: true,
+            permissions: ["reports:read"],
+          },
         },
         {
           path: "profile",

@@ -41,6 +41,8 @@ const envSchema = z.object({
     .string()
     .optional()
     .transform((val) => (val ? Number.parseInt(val, 10) : undefined)),
+  MEILISEARCH_HOST: z.string().default("http://localhost:7700"),
+  MEILISEARCH_API_KEY: z.string().default("masterKey"),
 });
 
 export type Env = z.infer<typeof envSchema> & {

@@ -1,14 +1,213 @@
-# OSINTReport
+# 🕵️ OSINTReport - Police Belge
 
-Plateforme de génération et de diffusion de rapports OSINT pour services d’enquête. Le projet repose sur une API Node.js/Express avec Prisma, une base PostgreSQL et un futur frontend Vue + DaisyUI.
+Plateforme complète de génération et de gestion de rapports OSINT pour services d'enquête. Système intégré de détection ## 📚 Documentation complète
 
-## Vue d’ensemble
+### Guides utilisateur
+- 🚀 **[Démarrage rapide](docs/QUICKSTART.md)** - Installation et premiers pas
+- 📖 **[Guide d'implémentation des corrélations](docs/correlation-implementation-guide.md)**
 
-- **Base de données** : PostgreSQL 16 orchestré via Docker Compose.
-- **Backend** : Node.js (TypeScript), Express 5, Prisma ORM, Zod pour la validation, Argon2 + JWT pour l’authentification.
-- **Frontend** : Vue 3 + Vite + TypeScript, Tailwind CSS & DaisyUI (thème personnalisé) avec Pinia & Vue Router.
-- **Sécurité** : Permissions RBAC, journalisation Pino, chiffrement applicatif des données sensibles (AES-256-GCM via coffre logiciel).
-- **Rapports OSINT** : Modélisation Prisma des rapports, modules dynamiques, pièces jointes et versions. Les schémas de validation sont décrits dans `backend/src/modules/reports`, la structure métier détaillée dans `docs/report-template.md`, et un tableau de bord analytique consolide les statistiques clés (`/api/reports/dashboard`).
+### Documentation technique
+- 🏗️ **[Architecture](docs/architecture.md)** - Vue d'ensemble du système
+- 🔌 **[API complète](docs/api-complete.md)** - 50+ endpoints documentés
+- 🎨 **[Frontend Vue.js](docs/frontend-implementation-complete.md)** - Composants et stores
+- ⚙️ **[Backend API](docs/api-implementation-complete.md)** - Services et contrôleurs
+- 📊 **[Structure des rapports](docs/report-template.md)** - Modèle de données
+- 🔐 **[Sécurité & Vault](docs/security/vault.md)** - Chiffrement AES-256-GCM
+- 🔍 **[Recherche Meilisearch](docs/api-search.md)** - API de recherche full-text
+- ✅ **[Task 7 Complète](docs/TASK-7-COMPLETE.md)** - Guide complet Meilisearch
+
+### Résumés techniques
+- ✅ **[Phase 1 - Corrélations](docs/correlation-system-phase1-summary.md)**
+- 🔍 **[Solution Avatar](docs/avatar-solution.md)**
+- 📝 **[Session 6 Complète](docs/SESSION-6-COMPLETE-SUMMARY.md)** - Résumé session Meilisearch
+
+## 🧩 Structure du projet
+
+```
+OSINTReport/
+├── backend/              # API Express.js + TypeScript
+│   ├── src/
+│   │   ├── modules/
+│   │   │   ├── auth/            # Authentification JWT
+│   │   │   ├── reports/         # Rapports + Modules + Entités
+│   │   │   ├── correlations/    # Détection de liens
+│   │   │   ├── users/           # Gestion utilisateurs
+│   │   │   └── smtp/            # Configuration SMTP
+│   │   ├── middleware/          # Auth, errors, notFound
+│   │   └── routes/              # Routing principal
+│   └── prisma/
+│       ├── schema.prisma        # Modèle de données
+│       └── migrations/          # Historique SQL
+│
+├── frontend/            # Interface Vue 3
+│   ├── src/
+│   │   ├── components/
+│   │   │   └── reports/         # EntitySelector, CorrelationAlert, etc.
+│   │   ├── pages/
+│   │   │   ├── reports/         # Create, Detail, List
+│   │   │   ├── dashboard/       # Dashboard home
+│   │   │   └── admin/           # Gestion admin
+│   │   ├── stores/              # Pinia (entities, correlations, reports)
+│   │   ├── services/
+│   │   │   └── api/             # Clients HTTP (reports, entities, correlations)
+│   │   └── router/              # Vue Router config
+│   └── public/
+│       └── images/              # Avatars, backgrounds
+│
+├── docs/                # Documentation Markdown
+├── postgres/            # Scripts init PostgreSQL
+├── docker-compose.yml   # Services (PostgreSQL, Meilisearch)
+└── .env.example         # Template variables d'environnement
+```
+
+## 🎯 Workflow d'utilisation
+
+### 1. Créer un rapport OSINT
+
+```
+Interface → Wizard 3 étapes → API POST /reports → Database
+```
+
+1. **Étape 1** : Informations (titre, dossier, service, mots-clés)
+2. **Étape 2** : Contexte légal + classification (PUBLIC/CONFIDENTIAL/SECRET)
+3. **Étape 3** : Validation et création
+
+### 2. Ajouter des modules d'analyse
+
+```
+Rapport → + Module → Choisir type → Lier entité → Créer
+```
+
+**Types disponibles** : Téléphone, Email, Réseaux sociaux, Financier, Adresse, Véhicule, Document, Autre
+
+### 3. Détecter les corrélations
+
+```
+Actions → Détecter corrélations → Backend analyse → Alertes créées
+```
+
+Le système compare :
+- 📞 Numéros de téléphone
+- 📧 Adresses email
+- 👤 Noms de personnes
+- 📍 Adresses physiques
+- 🔑 Comptes utilisateurs
+
+### 4. Publier et archiver
+
+```
+DRAFT → Actions → Publier → PUBLISHED → Actions → Archiver → ARCHIVED
+```
+
+## 🔐 Sécurité
+
+- **Authentification** : JWT tokens + cookies httpOnly
+- **Permissions RBAC** : `reports:read`, `reports:write`, `users:read`, `users:write`, `system:admin`
+- **Chiffrement** : AES-256-GCM pour données sensibles (via KeyStore + VaultItem)
+- **Validation** : Zod schemas sur toutes les entrées
+- **Audit logs** : Traçabilité des actions utilisateurs
+- **CSRF Protection** : Cookies sécurisés
+- **Rate limiting** : (À implémenter en production)
+
+## 🚧 Roadmap
+
+### ✅ Phase 1-6 (Complétées)
+- ✅ Architecture et base de données
+- ✅ Authentification et RBAC
+- ✅ API complète (50+ endpoints)
+- ✅ Système de corrélations
+- ✅ Interface Vue.js complète
+- ✅ Gestion d'entités et modules
+
+### ✅ Phase 7 (Complétée)
+- ✅ Intégration Meilisearch (recherche full-text)
+- ✅ Interface de recherche avancée
+- ✅ Filtres facettés et highlighting
+- ✅ Store Pinia et service API
+- ✅ Pagination et tri des résultats
+
+### 📋 Phase 8 (À venir)
+- 📋 Export PDF avec template police belge
+- 📋 Graphe de corrélations visuel
+- 📋 Signatures numériques
+- 📋 Queue de jobs asynchrones
+
+### 🎯 Futures améliorations
+- 🎯 Tests E2E (Playwright)
+- 🎯 CI/CD avec GitHub Actions
+- 🎯 Monitoring (Prometheus + Grafana)
+- 🎯 Notifications en temps réel (WebSockets)
+- 🎯 Mobile app (Capacitor)
+
+## 🤝 Contribution
+
+Le projet suit les standards TypeScript strict et les conventions Vue 3 Composition API.
+
+### Commits
+- `feat:` Nouvelle fonctionnalité
+- `fix:` Correction de bug
+- `docs:` Documentation
+- `refactor:` Refactoring
+- `test:` Tests
+- `chore:` Maintenance
+
+### Tests
+
+```bash
+# Backend
+cd backend
+npm test
+
+# Frontend
+cd frontend
+npm test
+```
+
+## 📊 Statistiques du projet
+
+- **Backend** : ~6000 lignes TypeScript
+- **Frontend** : ~4500 lignes Vue/TS
+- **API** : 54+ endpoints REST
+- **Composants** : 25+ composants Vue réutilisables
+- **Stores Pinia** : 5 stores (auth, reports, entities, correlations, search)
+- **Migrations** : 5 migrations Prisma
+- **Documentation** : 15+ documents Markdown
+
+## 📞 Support
+
+- **Email** : support@osintreport.police.belgium.eu
+- **Issues** : GitHub Issues
+- **Documentation** : `/docs`
+
+## 📄 Licence
+
+Propriétaire - Police Belge
+
+---
+
+**Version** : 1.0.0  
+**Dernière mise à jour** : 2 octobre 2025  
+**Développé par** : Ch4rC0M1n0U with GitHub Copilot 🤖ue de corrélations entre enquêtes, gestion d'entités et workflow de publication.
+
+## ✨ Fonctionnalités principales
+
+- 📝 **Création de rapports guidée** : Wizard multi-étapes avec contexte légal, urgence et classification
+- 🔗 **Détection automatique de corrélations** : Liens entre rapports basés sur téléphones, emails, noms, adresses et comptes
+- 👥 **Gestion d'entités** : Personnes, organisations, contacts avec autocomplétion intelligente
+- 📦 **Modules structurés** : Analyses téléphoniques, emails, réseaux sociaux, financières, etc.
+- 🔄 **Workflow complet** : DRAFT → PUBLISHED → ARCHIVED avec duplication de templates
+- 📊 **Statistiques en temps réel** : Dashboard analytique et vue d'ensemble des enquêtes
+- 🔐 **Sécurité renforcée** : Permissions RBAC, chiffrement AES-256-GCM, audit logs
+
+## 🏗️ Architecture
+
+- **Base de données** : PostgreSQL 16 avec Docker Compose
+- **Backend** : Node.js 20, Express 5, Prisma ORM, TypeScript
+- **Frontend** : Vue 3 (Composition API), Vite, Pinia, Vue Router
+- **UI** : Tailwind CSS + DaisyUI, responsive mobile-first
+- **Recherche** : Meilisearch 1.5 (indexation full-text)
+- **Authentification** : JWT + Argon2, cookies httpOnly
+- **Validation** : Zod schemas côté backend et frontend
 
 ## Prérequis
 
@@ -16,44 +215,50 @@ Plateforme de génération et de diffusion de rapports OSINT pour services d’e
 - Docker + Docker Compose pour la base PostgreSQL locale.
 - `psql` (optionnel) pour diagnostiquer la base.
 
-## Démarrage rapide
+## 🚀 Démarrage rapide (3 minutes)
 
-1. Cloner ce dépôt puis copier les variables d’environnement :
-	```bash
-	cp .env.example .env
-	```
-2. Vérifier/adapter les variables PostgreSQL (`POSTGRES_PASSWORD`, port, etc.) dans `.env` et `backend/.env`.
-3. Lancer la base de données :
-	```bash
-	docker compose up -d postgres
-	```
-4. Installer les dépendances backend et générer le client Prisma :
-	```bash
-	cd backend
-	npm install
-	npx prisma generate
-	```
-5. Appliquer les migrations :
-	```bash
-	npm run prisma:migrate
-	```
-6. Démarrer l’API en mode développement :
-	```bash
-	npm run dev
-	```
+### 1. Services Docker (PostgreSQL + Meilisearch)
 
-### Frontend Vue 3
+```bash
+# Démarrer les services
+docker-compose up -d
 
-1. Installer les dépendances :
-	```bash
-	cd frontend
-	npm install
-	```
-2. Lancer le serveur de développement :
-	```bash
-	npm run dev
-	```
-3. L’application est accessible sur `http://localhost:5173`. Les requêtes `/api` sont automatiquement proxyfées vers le backend (`VITE_API_URL`).
+# Vérifier que tout tourne
+docker-compose ps
+```
+
+### 2. Backend (API)
+
+```bash
+cd backend
+
+# Installer et configurer
+npm install
+npx prisma migrate deploy
+npx prisma generate
+
+# Démarrer le serveur
+npm run dev
+# → http://localhost:4000
+```
+
+### 3. Frontend (Interface)
+
+```bash
+cd frontend
+
+# Installer et démarrer
+npm install
+npm run dev
+# → http://localhost:5173
+```
+
+### 4. Première connexion
+
+- **Email** : `gaetan.minnekeer@police.belgium.eu`
+- **Mot de passe** : `Admin123!`
+
+📚 **Guide complet** : [`docs/QUICKSTART.md`](docs/QUICKSTART.md)
 
 L’API écoute par défaut sur `http://localhost:4000` et expose `/health` pour une vérification rapide.
 

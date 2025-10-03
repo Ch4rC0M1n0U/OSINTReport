@@ -5,6 +5,7 @@ import { entityRouter } from "@modules/reports/entity.router";
 import { userRouter } from "@modules/users/user.router";
 import { smtpRouter } from "@modules/smtp/smtp.router";
 import correlationRouter from "@modules/correlations/correlation.router";
+import searchRouter from "@modules/search/search.router";
 
 const router = Router();
 
@@ -18,5 +19,6 @@ router.use("/entities", entityRouter);
 router.use("/users", userRouter);
 router.use("/smtp", smtpRouter);
 router.use("/correlations", correlationRouter);
+router.use("/search", searchRouter);
 
 export { router };

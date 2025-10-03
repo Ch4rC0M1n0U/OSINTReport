@@ -25,6 +25,7 @@
     "helmet": "^8.1.0",
     "http-errors": "^2.0.0",
     "jsonwebtoken": "^9.0.2",
+    "meilisearch": "^0.53.0",
     "multer": "^2.0.2",
     "nodemailer": "^7.0.6",
     "pino": "^9.12.0",

@@ -3,11 +3,19 @@ import { env } from "@config/env";
 import { logger } from "@config/logger";
 import { prisma } from "@shared/prisma";
 import { bootstrapAuth } from "@modules/auth/bootstrap";
+import { SearchService } from "@modules/search/search.service";
 
 async function start() {
   try {
     await prisma.$connect();
-  await bootstrapAuth();
+    await bootstrapAuth();
+    
+    // Initialiser Meilisearch
+    try {
+      await SearchService.initializeIndexes();
+    } catch (error) {
+      logger.warn({ err: error }, "⚠️  Impossible d'initialiser Meilisearch - la recherche sera indisponible");
+    }
     const server = app.listen(env.PORT, () => {
       logger.info({ port: env.PORT }, "Backend démarré");
     });

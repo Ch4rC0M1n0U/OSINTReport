@@ -38,6 +38,12 @@ reportRouter.patch(
   (req, res, next) => ReportController.update(req, res, next)
 );
 
+reportRouter.get(
+  "/:reportId/modules",
+  requirePermissions(PermissionCode.REPORTS_READ),
+  (req, res, next) => ReportController.listModules(req, res, next)
+);
+
 reportRouter.post(
   "/:reportId/modules",
   requirePermissions(PermissionCode.REPORTS_WRITE),

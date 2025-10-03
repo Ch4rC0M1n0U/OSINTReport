@@ -60,6 +60,14 @@ function handlePageChange(direction: 1 | -1) {
         </p>
       </div>
       <div class="flex gap-3">
+        <router-link to="/reports/new" class="btn btn-primary">
+          + Créer un rapport
+        </router-link>
+      </div>
+    </header>
+
+    <header class="flex gap-3">
+      <div class="flex flex-1 gap-3">
         <input
           v-model="searchModel"
           class="input input-bordered w-full md:w-72"
@@ -101,7 +109,12 @@ function handlePageChange(direction: 1 | -1) {
                   Aucun rapport trouvé pour ces critères.
                 </td>
               </tr>
-              <tr v-for="report in items" :key="report.id">
+              <tr 
+                v-for="report in items" 
+                :key="report.id"
+                class="hover:bg-base-200 cursor-pointer"
+                @click="$router.push({ name: 'reports.detail', params: { id: report.id } })"
+              >
                 <td class="font-medium">
                   {{ report.title }}
                 </td>

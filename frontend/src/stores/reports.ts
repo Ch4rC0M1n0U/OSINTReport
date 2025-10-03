@@ -1,7 +1,7 @@
 import { defineStore } from "pinia";
 import { computed, ref } from "vue";
 
-import { api } from "@/services/http";
+import { reportsApi, type Report } from "@/services/api/reports";
 
 export interface ReportSummary {
   id: string;
@@ -42,19 +42,23 @@ export const useReportsStore = defineStore("reports", () => {
     }
 
     try {
-      const response = await api.get<PaginatedReports>("/reports", {
-        params: {
-          limit: limit.value,
-          offset: offset.value,
-          search: search.value || undefined,
-          status: status.value || undefined,
-        },
+      const response = await reportsApi.list({
+        limit: limit.value,
+        offset: offset.value,
+        search: search.value || undefined,
+        status: status.value || undefined,
       });
 
-      items.value = response.data.items;
-      total.value = response.data.total;
-      limit.value = response.data.limit;
-      offset.value = response.data.offset;
+      items.value = response.items.map(report => ({
+        id: report.id,
+        title: report.title,
+        status: report.status,
+        issuedAt: report.issuedAt || null,
+        owner: report.owner,
+      }));
+      total.value = response.total;
+      limit.value = response.limit;
+      offset.value = response.offset;
       lastFetchedAt.value = Date.now();
     } catch (err) {
       error.value = "Impossible de charger les rapports";

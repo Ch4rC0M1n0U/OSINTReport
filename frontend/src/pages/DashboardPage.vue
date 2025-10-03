@@ -34,6 +34,11 @@ const mainNavigation = computed(() => {
       to: { name: "reports.list" },
       icon: "assignment",
     },
+    {
+      label: "Recherche",
+      to: { name: "search" },
+      icon: "search",
+    },
   ];
 });
 

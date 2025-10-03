@@ -22,6 +22,14 @@ export const useAuthStore = defineStore("auth", () => {
 
   const isAuthenticated = computed(() => Boolean(user.value));
 
+  /**
+   * Vérifie si l'utilisateur a une permission spécifique
+   */
+  function hasPermission(permission: string): boolean {
+    if (!user.value) return false;
+    return user.value.permissions.includes(permission);
+  }
+
   function clearSession() {
     user.value = null;
     initialized.value = true;
@@ -92,6 +100,7 @@ export const useAuthStore = defineStore("auth", () => {
     loading,
     error,
     isAuthenticated,
+    hasPermission,
     clearSession,
     bootstrap,
     login,

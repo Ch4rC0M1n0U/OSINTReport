@@ -335,6 +335,24 @@ export class ReportService {
     return prisma.report.update({ where: { id: reportId }, data });
   }
 
+  static async listModules(reportId: string) {
+    await ReportService.ensureReportExists(reportId);
+
+    return prisma.reportModule.findMany({
+      where: { reportId },
+      include: {
+        entity: {
+          select: {
+            id: true,
+            label: true,
+            type: true,
+          },
+        },
+      },
+      orderBy: { position: "asc" },
+    });
+  }
+
   static async createModule(reportId: string, input: CreateModuleInput) {
     await ReportService.ensureReportExists(reportId);
 
