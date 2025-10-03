@@ -174,4 +174,28 @@ export const reportsApi = {
   async reorderModules(reportId: string, moduleIds: string[]) {
     await api.post(`/reports/${reportId}/modules/reorder`, { moduleIds });
   },
+
+  // Export PDF
+  async exportPDF(reportId: string, watermark = true) {
+    const response = await api.get(`/reports/${reportId}/export/pdf`, {
+      params: { watermark: watermark ? "true" : "false" },
+      responseType: "blob", // Important pour recevoir le PDF
+    });
+    return response.data as Blob;
+  },
+
+  async getExportInfo(reportId: string) {
+    const response = await api.get<{
+      available: boolean;
+      formats: string[];
+      filename: string;
+      metadata: {
+        classification: string;
+        status: string;
+        modulesCount: number;
+        correlationsCount: number;
+      };
+    }>(`/reports/${reportId}/export`);
+    return response.data;
+  },
 };

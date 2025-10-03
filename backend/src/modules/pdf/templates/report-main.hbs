@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Rapport OSINT - {{caseNumber}}</title>
+  <style>
+    /* Reset et base */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Arial', 'Helvetica', sans-serif;
+      font-size: 11pt;
+      line-height: 1.6;
+      color: #333;
+    }
+
+    /* Configuration page */
+    @page {
+      size: A4;
+      margin: 1.5cm;
+    }
+
+    /* Header institutionnel */
+    .document-header {
+      border-bottom: 4px solid #003f87;
+      padding-bottom: 15px;
+      margin-bottom: 20px;
+      page-break-after: avoid;
+    }
+
+    .header-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 15px;
+    }
+
+    .header-logo {
+      width: 120px;
+      height: auto;
+    }
+
+    .header-service {
+      text-align: right;
+      font-size: 10pt;
+      color: #666;
+    }
+
+    .header-service strong {
+      color: #003f87;
+      display: block;
+      font-size: 11pt;
+    }
+
+    .document-title {
+      text-align: center;
+      margin: 20px 0;
+    }
+
+    .document-title h1 {
+      font-size: 24pt;
+      color: #003f87;
+      font-weight: bold;
+      margin-bottom: 10px;
+    }
+
+    .document-title .subtitle {
+      font-size: 14pt;
+      color: #666;
+    }
+
+    /* Bannière de classification */
+    .classification-banner {
+      text-align: center;
+      padding: 8px;
+      font-weight: bold;
+      font-size: 12pt;
+      margin: 15px 0;
+      border-radius: 4px;
+    }
+
+    .classification-banner.restricted {
+      background-color: #0066cc;
+      color: white;
+    }
+
+    .classification-banner.confidential {
+      background-color: #ff8800;
+      color: white;
+    }
+
+    .classification-banner.secret {
+      background-color: #cc0000;
+      color: white;
+    }
+
+    /* Métadonnées du rapport */
+    .report-metadata {
+      background: #f5f5f5;
+      padding: 15px;
+      border-left: 4px solid #003f87;
+      margin-bottom: 20px;
+      font-size: 10pt;
+    }
+
+    .metadata-row {
+      display: flex;
+      margin-bottom: 8px;
+    }
+
+    .metadata-label {
+      font-weight: bold;
+      width: 180px;
+      color: #666;
+    }
+
+    .metadata-value {
+      flex: 1;
+    }
+
+    /* Sections */
+    section {
+      margin-bottom: 25px;
+      page-break-inside: avoid;
+    }
+
+    section h2 {
+      font-size: 16pt;
+      color: #003f87;
+      border-bottom: 2px solid #003f87;
+      padding-bottom: 5px;
+      margin-bottom: 15px;
+      page-break-after: avoid;
+    }
+
+    section h3 {
+      font-size: 13pt;
+      color: #555;
+      margin: 15px 0 10px;
+      page-break-after: avoid;
+    }
+
+    section p {
+      margin-bottom: 10px;
+      text-align: justify;
+    }
+
+    /* Modules */
+    .module {
+      background: #fafafa;
+      border-left: 3px solid #0066cc;
+      padding: 15px;
+      margin-bottom: 15px;
+      page-break-inside: avoid;
+    }
+
+    .module-title {
+      font-size: 13pt;
+      font-weight: bold;
+      color: #003f87;
+      margin-bottom: 10px;
+    }
+
+    .module-headline {
+      font-style: italic;
+      color: #666;
+      margin-bottom: 10px;
+    }
+
+    .research-items {
+      margin-top: 10px;
+    }
+
+    .research-item {
+      background: white;
+      padding: 10px;
+      border-left: 2px solid #ccc;
+      margin-bottom: 10px;
+    }
+
+    .research-item h4 {
+      font-size: 11pt;
+      color: #0066cc;
+      margin-bottom: 5px;
+    }
+
+    .research-item strong {
+      color: #333;
+    }
+
+    .findings {
+      background: #f0f8ff;
+      padding: 10px;
+      margin: 10px 0;
+      border-left: 3px solid #0066cc;
+      font-size: 10pt;
+    }
+
+    .notes {
+      font-size: 9pt;
+      color: #666;
+      font-style: italic;
+      margin-top: 5px;
+    }
+
+    /* Corrélations */
+    .correlation-list {
+      list-style: none;
+      padding: 0;
+    }
+
+    .correlation-item {
+      background: #fff3cd;
+      border-left: 3px solid #ffc107;
+      padding: 10px;
+      margin-bottom: 10px;
+    }
+
+    .correlation-item strong {
+      color: #856404;
+    }
+
+    .correlation-type {
+      display: inline-block;
+      background: #ffc107;
+      color: white;
+      padding: 2px 8px;
+      border-radius: 3px;
+      font-size: 9pt;
+      margin-right: 8px;
+    }
+
+    .correlation-confidence {
+      color: #666;
+      font-size: 9pt;
+    }
+
+    /* Statistiques */
+    .statistics {
+      display: flex;
+      justify-content: space-around;
+      margin: 20px 0;
+    }
+
+    .stat-box {
+      text-align: center;
+      padding: 15px;
+      background: #f5f5f5;
+      border-radius: 4px;
+      min-width: 150px;
+    }
+
+    .stat-number {
+      font-size: 28pt;
+      font-weight: bold;
+      color: #003f87;
+    }
+
+    .stat-label {
+      font-size: 10pt;
+      color: #666;
+      margin-top: 5px;
+    }
+
+    /* Footer */
+    .document-footer {
+      margin-top: 40px;
+      padding-top: 15px;
+      border-top: 2px solid #003f87;
+      font-size: 10pt;
+      color: #666;
+    }
+
+    .signature-block {
+      margin-top: 30px;
+      text-align: right;
+    }
+
+    .signature-block p {
+      margin: 5px 0;
+    }
+
+    /* Utilitaires */
+    .text-center {
+      text-align: center;
+    }
+
+    .text-right {
+      text-align: right;
+    }
+
+    .mb-2 {
+      margin-bottom: 10px;
+    }
+
+    .mb-4 {
+      margin-bottom: 20px;
+    }
+
+    .font-bold {
+      font-weight: bold;
+    }
+
+    .text-muted {
+      color: #666;
+    }
+
+    /* Gestion des sauts de page */
+    .page-break {
+      page-break-before: always;
+    }
+
+    .no-break {
+      page-break-inside: avoid;
+    }
+  </style>
+</head>
+<body>
+  <!-- Header institutionnel -->
+  <div class="document-header">
+    <div class="header-top">
+      <div class="header-logo">
+        <!-- Logo sera remplacé par base64 si disponible -->
+        <div style="background: #003f87; color: white; padding: 20px; text-align: center; font-weight: bold;">
+          POLICE<br/>BELGE
+        </div>
+      </div>
+      <div class="header-service">
+        <strong>{{requestingService}}</strong>
+        {{reportingUnit}}
+      </div>
+    </div>
+
+    <div class="document-title">
+      <h1>Rapport OSINT</h1>
+      <p class="subtitle">
+        Dossier <strong>{{caseNumber}}</strong> – Rapport n° <strong>{{reportNumber}}</strong>
+      </p>
+    </div>
+  </div>
+
+  <!-- Bannière de classification -->
+  {{#if hasClassification}}
+    <div class="classification-banner {{#if (eq classification 'RESTRICTED')}}restricted{{/if}}{{#if (eq classification 'CONFIDENTIAL')}}confidential{{/if}}{{#if (eq classification 'SECRET')}}secret{{/if}}">
+      ⚠️ {{classification}} ⚠️
+    </div>
+  {{/if}}
+
+  <!-- Métadonnées du rapport -->
+  <div class="report-metadata">
+    <div class="metadata-row">
+      <div class="metadata-label">Date d'émission :</div>
+      <div class="metadata-value">{{issuedAt}}</div>
+    </div>
+    <div class="metadata-row">
+      <div class="metadata-label">Date de création :</div>
+      <div class="metadata-value">{{createdAt}}</div>
+    </div>
+    <div class="metadata-row">
+      <div class="metadata-label">Officier responsable :</div>
+      <div class="metadata-value">{{officer}} ({{owner.matricule}})</div>
+    </div>
+    <div class="metadata-row">
+      <div class="metadata-label">Grade :</div>
+      <div class="metadata-value">{{officerRank}}</div>
+    </div>
+    <div class="metadata-row">
+      <div class="metadata-label">Classification :</div>
+      <div class="metadata-value"><strong>{{classification}}</strong></div>
+    </div>
+    <div class="metadata-row">
+      <div class="metadata-label">Niveau d'urgence :</div>
+      <div class="metadata-value">{{urgencyLevel}}</div>
+    </div>
+  </div>
+
+  <!-- Section : Objectif -->
+  {{#if purpose}}
+    <section>
+      <h2>1. Objectif de la recherche</h2>
+      <p>{{purpose}}</p>
+    </section>
+  {{/if}}
+
+  <!-- Section : Résumé -->
+  {{#if summary}}
+    <section>
+      <h2>2. Résumé exécutif</h2>
+      <p>{{{summary}}}</p>
+    </section>
+  {{/if}}
+
+  <!-- Section : Contexte d'investigation -->
+  {{#if investigationContext}}
+    <section>
+      <h2>3. Contexte de l'investigation</h2>
+      <p>{{{investigationContext}}}</p>
+      {{#if legalBasis}}
+        <h3>Base légale</h3>
+        <p>{{legalBasis}}</p>
+      {{/if}}
+    </section>
+  {{/if}}
+
+  <!-- Section : Statistiques -->
+  {{#if modulesCount}}
+    <section>
+      <h2>4. Aperçu des recherches</h2>
+      <div class="statistics">
+        <div class="stat-box">
+          <div class="stat-number">{{modulesCount}}</div>
+          <div class="stat-label">Modules de recherche</div>
+        </div>
+        {{#if correlationsCount}}
+          <div class="stat-box">
+            <div class="stat-number">{{correlationsCount}}</div>
+            <div class="stat-label">Corrélations détectées</div>
+          </div>
+        {{/if}}
+      </div>
+    </section>
+  {{/if}}
+
+  <!-- Section : Modules détaillés -->
+  {{#if modules.length}}
+    <section class="page-break">
+      <h2>5. Détail des recherches</h2>
+      {{#each modules}}
+        <div class="module">
+          <div class="module-title">{{this.title}}</div>
+          {{{this.content}}}
+        </div>
+      {{/each}}
+    </section>
+  {{/if}}
+
+  <!-- Section : Corrélations -->
+  {{#if correlations.length}}
+    <section>
+      <h2>6. Corrélations identifiées</h2>
+      <ul class="correlation-list">
+        {{#each correlations}}
+          <li class="correlation-item">
+            <span class="correlation-type">{{this.type}}</span>
+            <span class="correlation-confidence">(Confiance: {{this.confidence}})</span>
+            <p><strong>Rapport lié :</strong> {{this.relatedReport.title}} ({{this.relatedReport.caseNumber}})</p>
+            {{#if this.description}}
+              <p>{{this.description}}</p>
+            {{/if}}
+          </li>
+        {{/each}}
+      </ul>
+    </section>
+  {{/if}}
+
+  <!-- Footer et signature -->
+  <div class="document-footer">
+    <p class="text-muted">
+      Document généré le {{generatedDate}} par le système OSINTReport v1.0
+    </p>
+
+    <div class="signature-block">
+      <p><strong>{{officer}}</strong></p>
+      <p>{{officerRank}}</p>
+      <p>{{reportingUnit}}</p>
+    </div>
+  </div>
+</body>
+</html>

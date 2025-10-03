@@ -24,6 +24,7 @@ const showModuleDialog = ref(false);
 const showEntityDialog = ref(false);
 const showStatsModal = ref(false);
 const showCorrelationsModal = ref(false);
+const exportingPDF = ref(false);
 
 const moduleForm = ref({
   type: "phone_analysis",
@@ -171,6 +172,37 @@ function formatDate(date: string) {
   }).format(new Date(date));
 }
 
+async function handleExportPDF() {
+  exportingPDF.value = true;
+  try {
+    const pdfBlob = await reportsApi.exportPDF(reportId.value);
+    
+    // Créer un lien de téléchargement
+    const url = window.URL.createObjectURL(pdfBlob);
+    const link = document.createElement("a");
+    link.href = url;
+    
+    // Générer le nom de fichier
+    const caseNum = report.value?.caseNumber || "NO-CASE";
+    const reportNum = report.value?.reportNumber || report.value?.id.substring(0, 8);
+    const date = new Date().toISOString().split("T")[0];
+    link.download = `OSINT_${caseNum}_${reportNum}_${date}.pdf`;
+    
+    // Déclencher le téléchargement
+    document.body.appendChild(link);
+    link.click();
+    
+    // Nettoyer
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
+  } catch (err: any) {
+    alert(err.response?.data?.message || "Erreur lors de l'export PDF");
+    console.error(err);
+  } finally {
+    exportingPDF.value = false;
+  }
+}
+
 const statusColors = {
   DRAFT: "badge-warning",
   PUBLISHED: "badge-success",
@@ -213,6 +245,12 @@ const statusColors = {
           Actions ▾
         </label>
         <ul tabindex="0" class="dropdown-content menu p-2 shadow bg-base-100 rounded-box w-52 z-10">
+          <li>
+            <a @click="handleExportPDF" :class="{ 'loading': exportingPDF }">
+              📄 Exporter PDF
+            </a>
+          </li>
+          <li class="divider"></li>
           <li>
             <a @click="showStatsModal = true">📊 Statistiques</a>
           </li>

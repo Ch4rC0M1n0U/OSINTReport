@@ -51,9 +51,12 @@ export class SearchController {
   static async getFacets(req: Request, res: Response, next: NextFunction) {
     try {
       const { q = "" } = req.query;
-      const facets = await SearchService.getFacets(String(q));
+      const facetDistribution = await SearchService.getFacets(String(q));
 
-      res.json({ facets });
+      res.json({ 
+        query: String(q),
+        facetDistribution 
+      });
     } catch (error) {
       logger.error({ err: error }, "Erreur facettes");
       next(error);
@@ -65,10 +68,12 @@ export class SearchController {
    */
   static async reindex(req: Request, res: Response, next: NextFunction) {
     try {
-      await SearchService.reindexAll();
+      const count = await SearchService.reindexAll();
 
       res.json({
+        success: true,
         message: "Réindexation terminée avec succès",
+        indexed: count,
       });
     } catch (error) {
       logger.error({ err: error }, "Erreur réindexation");
@@ -83,7 +88,7 @@ export class SearchController {
     try {
       const stats = await SearchService.getStats();
 
-      res.json({ stats });
+      res.json(stats);
     } catch (error) {
       logger.error({ err: error }, "Erreur stats");
       next(error);

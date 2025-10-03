@@ -11,6 +11,8 @@ import {
   UpdateReportInput,
 } from "@modules/reports/report.validation";
 import { VaultService } from "@modules/security/vault.service";
+import { SearchService } from "@modules/search/search.service";
+import { logger } from "@config/logger";
 
 export class ReportService {
   private static async resolveAttachmentSecret<T extends { storageKey: string }>(
@@ -249,7 +251,14 @@ export class ReportService {
       dateRangeEnd: input.dateRangeEnd ?? null,
     };
 
-    return prisma.report.create({ data });
+    const report = await prisma.report.create({ data });
+    
+    // Indexer le rapport dans Meilisearch (async, sans bloquer)
+    SearchService.indexReport(report.id).catch((error) => {
+      logger.warn({ err: error, reportId: report.id }, "⚠️  Échec d'indexation du rapport");
+    });
+    
+    return report;
   }
 
   static async getReport(reportId: string) {
@@ -332,7 +341,14 @@ export class ReportService {
       ...("dateRangeEnd" in input ? { dateRangeEnd: input.dateRangeEnd ?? null } : {}),
     };
 
-    return prisma.report.update({ where: { id: reportId }, data });
+    const updatedReport = await prisma.report.update({ where: { id: reportId }, data });
+    
+    // Réindexer le rapport dans Meilisearch (async, sans bloquer)
+    SearchService.indexReport(reportId).catch((error) => {
+      logger.warn({ err: error, reportId }, "⚠️  Échec de réindexation du rapport");
+    });
+    
+    return updatedReport;
   }
 
   static async listModules(reportId: string) {

@@ -6,6 +6,7 @@ import { userRouter } from "@modules/users/user.router";
 import { smtpRouter } from "@modules/smtp/smtp.router";
 import correlationRouter from "@modules/correlations/correlation.router";
 import searchRouter from "@modules/search/search.router";
+import pdfRouter from "@modules/pdf/pdf.router";
 
 const router = Router();
 
@@ -15,6 +16,7 @@ router.get("/health", (_req, res) => {
 
 router.use("/auth", authRouter);
 router.use("/reports", reportRouter);
+router.use("/reports", pdfRouter); // Export PDF: /reports/:id/export/pdf
 router.use("/entities", entityRouter);
 router.use("/users", userRouter);
 router.use("/smtp", smtpRouter);
