@@ -8,7 +8,7 @@
     <!-- Sélecteur avec recherche -->
     <div class="relative">
       <div
-        class="input input-bordered flex flex-wrap gap-2 min-h-[3rem] cursor-pointer hover:border-primary transition-colors"
+        class="input input-bordered flex flex-wrap gap-2 min-h-[3rem] max-h-32 overflow-y-auto cursor-pointer hover:border-primary transition-colors"
         :class="{ 'input-error': error, 'border-primary': isOpen }"
         @click="toggleDropdown"
       >

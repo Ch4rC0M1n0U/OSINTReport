@@ -6,6 +6,8 @@ import EntitySelector from "@/components/reports/EntitySelector.vue";
 import EntityDialog from "@/components/reports/EntityDialog.vue";
 import CorrelationAlert from "@/components/reports/CorrelationAlert.vue";
 import LegalBasisSelector from "@/components/shared/LegalBasisSelector.vue";
+import LegalBasisDisplay from "@/components/shared/LegalBasisDisplay.vue";
+import { parseLegalBasis } from "@/data/legal-basis";
 
 const router = useRouter();
 
@@ -334,10 +336,11 @@ function handleCancel() {
               <p class="text-sm">{{ form.investigationContext }}</p>
             </div>
 
-            <div v-if="form.legalBasis">
-              <div class="text-sm opacity-70 mb-1">Base légale:</div>
-              <p class="text-sm">{{ form.legalBasis }}</p>
-            </div>
+            <LegalBasisDisplay
+              :legal-basis="form.legalBasis"
+              label="Base légale:"
+              :clickable="false"
+            />
 
             <div class="flex gap-4">
               <div>

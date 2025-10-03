@@ -19,6 +19,7 @@ import { useModal } from "@/composables/useModal";
 import LegalBasisSelector from "@/components/shared/LegalBasisSelector.vue";
 import { parseLegalBasis, LEGAL_ARTICLES, type LegalArticle } from "@/data/legal-basis";
 import LegalArticleDetailModal from "@/components/shared/LegalArticleDetailModal.vue";
+import LegalBasisDisplay from "@/components/shared/LegalBasisDisplay.vue";
 
 // Composants de modules
 import SummaryModule from "@/components/modules/SummaryModule.vue";
@@ -562,20 +563,11 @@ function getClassificationInfo(classif: string) {
               </div>
             </div>
             <div class="md:col-span-2">
-              <div class="text-sm opacity-70 mb-2">Base légale</div>
-              <div v-if="report.legalBasis" class="flex flex-wrap gap-2 max-h-32 overflow-y-auto p-2 rounded border border-base-300">
-                <button
-                  v-for="article in parseLegalBasis(report.legalBasis)"
-                  :key="article"
-                  type="button"
-                  class="badge badge-primary badge-sm font-mono cursor-pointer hover:badge-secondary transition-colors"
-                  @click="openArticleDetail(article)"
-                  :title="`Cliquer pour voir les détails de ${article}`"
-                >
-                  {{ article }}
-                </button>
-              </div>
-              <div v-else class="font-medium">—</div>
+              <LegalBasisDisplay
+                :legal-basis="report.legalBasis"
+                :clickable="true"
+                @click-article="openArticleDetail"
+              />
             </div>
             <div class="md:col-span-2">
               <div class="text-sm opacity-70 mb-1">Contexte</div>
