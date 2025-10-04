@@ -1,0 +1,16 @@
+{
+  "screenshots": [
+    {
+      "name": "Exemple - Profil Facebook",
+      "url": "/images/screenshots/example-facebook.png"
+    },
+    {
+      "name": "Exemple - Profil Instagram",
+      "url": "/images/screenshots/example-instagram.png"
+    },
+    {
+      "name": "Exemple - Profil Twitter",
+      "url": "/images/screenshots/example-twitter.png"
+    }
+  ]
+}
