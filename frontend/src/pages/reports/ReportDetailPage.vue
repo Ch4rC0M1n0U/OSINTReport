@@ -673,6 +673,7 @@ function getClassificationInfo(classif: string) {
                     v-if="getModuleComponent(module.type as ReportModuleType)"
                     :is="getModuleComponent(module.type as ReportModuleType)"
                     :model-value="module.payload || {}"
+                    :report-id="reportId"
                     @update:model-value="(payload: any) => handleUpdateModule(module.id, payload)"
                   />
                   <div v-else class="text-sm opacity-60 italic">

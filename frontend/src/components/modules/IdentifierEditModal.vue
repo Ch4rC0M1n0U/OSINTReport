@@ -158,6 +158,18 @@
           </div>
         </div>
 
+        <!-- Capture d'écran -->
+        <div v-if="reportId" class="form-control">
+          <label class="label">
+            <span class="label-text">Capture d'écran</span>
+          </label>
+          <ScreenshotPicker
+            v-model="screenshot"
+            label="Preuve de l'identifiant"
+            :case-id="reportId"
+          />
+        </div>
+
         <!-- Sources -->
         <div class="form-control">
           <label class="label">
@@ -193,11 +205,13 @@
 import { ref, computed, watch } from 'vue';
 import type { Finding } from '@/services/api/reports';
 import SourcesListEditor from './shared/SourcesListEditor.vue';
+import ScreenshotPicker from '../shared/ScreenshotPicker.vue';
 
 const props = defineProps<{
   isOpen: boolean;
   identifier: Finding | null;
   existingValues?: string[];
+  reportId?: string; // UID du rapport pour screenshots
 }>();
 
 const emit = defineEmits<{
@@ -223,6 +237,9 @@ const defaultIdentifier = (): Finding => ({
 const localIdentifier = ref<Finding>(defaultIdentifier());
 const errors = ref<Record<string, string>>({});
 
+// Screenshot (optionnel)
+const screenshot = ref('');
+
 // Synchroniser avec props
 watch(
   () => props.identifier,
@@ -236,8 +253,10 @@ watch(
         cloned.relatedEntities = [];
       }
       localIdentifier.value = cloned;
+      screenshot.value = cloned.screenshot || '';
     } else {
       localIdentifier.value = defaultIdentifier();
+      screenshot.value = '';
     }
     errors.value = {};
   },
@@ -371,7 +390,13 @@ function handleSubmit() {
     );
   }
   
-  emit('save', localIdentifier.value);
+  // Ajouter le screenshot si présent
+  const finalIdentifier = { ...localIdentifier.value };
+  if (screenshot.value) {
+    (finalIdentifier as any).screenshot = screenshot.value;
+  }
+  
+  emit('save', finalIdentifier);
 }
 
 function handleCancel() {

@@ -42,7 +42,7 @@ npm install puppeteer handlebars
 ### Option 2 : PDFKit (Bibliothèque native Node.js)
 
 **✅ Avantages :**
-- Léger (~2MB)
+- Léger (~10MB)
 - Très rapide (50-200ms par PDF)
 - Contrôle total sur la mise en page
 - Faible consommation mémoire

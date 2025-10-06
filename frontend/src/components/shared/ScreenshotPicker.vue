@@ -1,241 +1,327 @@
 <template>
   <div class="screenshot-picker">
-    <!-- Mode sélection -->
-    <div v-if="!isGalleryOpen">
-      <!-- Preview de la capture sélectionnée -->
-      <div v-if="selectedScreenshot" class="mb-3">
-        <div class="relative group">
-          <img
-            :src="selectedScreenshot"
-            :alt="label || 'Capture d\'écran'"
-            class="w-full h-48 object-cover rounded-lg border border-base-300"
-          />
-          <div class="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg flex items-center justify-center gap-2">
-            <button
-              type="button"
-              class="btn btn-sm btn-circle btn-ghost text-white"
-              @click="openGallery"
-              title="Changer"
-            >
-              🖼️
-            </button>
-            <button
-              type="button"
-              class="btn btn-sm btn-circle btn-ghost text-white"
-              @click="removeScreenshot"
-              title="Supprimer"
-            >
-              ✕
-            </button>
-          </div>
+    <!-- Preview de la capture sélectionnée -->
+    <div v-if="hasScreenshot" class="mb-3">
+      <div class="relative group cursor-pointer" @click="openFullscreen">
+        <img
+          :src="modelValue"
+          :alt="label"
+          class="w-full h-48 object-cover rounded-lg border border-base-300"
+        />
+        <div
+          class="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg flex items-center justify-center gap-2"
+        >
+          <button
+            type="button"
+            class="btn btn-sm btn-circle btn-ghost text-white"
+            @click.stop="openGallery"
+            title="Changer"
+          >
+            🖼️
+          </button>
+          <button
+            type="button"
+            class="btn btn-sm btn-circle btn-ghost text-white"
+            @click.stop="removeScreenshot"
+            title="Supprimer"
+          >
+            ✕
+          </button>
         </div>
-        <p v-if="label" class="text-xs text-base-content/60 mt-1">{{ label }}</p>
       </div>
+      <p class="text-xs text-base-content/60 mt-1">{{ label }}</p>
+    </div>
 
-      <!-- Boutons d'action -->
-      <div class="flex gap-2">
-        <button
-          type="button"
-          class="btn btn-sm btn-outline flex-1"
-          @click="openGallery"
-        >
-          <span>🖼️</span>
-          <span>{{ selectedScreenshot ? 'Changer' : 'Choisir' }} une capture</span>
-        </button>
-        <button
-          type="button"
-          class="btn btn-sm btn-outline"
-          @click="triggerUpload"
-        >
-          <span>📤</span>
-          <span>Upload</span>
-        </button>
-      </div>
+    <!-- Boutons d'action -->
+    <div class="flex gap-2">
+      <button
+        type="button"
+        class="btn btn-sm btn-outline flex-1"
+        @click="openGallery"
+      >
+        <span>🖼️</span>
+        <span>{{ hasScreenshot ? 'Changer' : 'Choisir' }} une capture</span>
+      </button>
+      <label class="btn btn-sm btn-outline cursor-pointer">
+        <span>📤</span>
+        <span>Upload</span>
+        <input
+          type="file"
+          class="hidden"
+          accept="image/png,image/jpeg,image/jpg,image/webp"
+          @change="handleFileUpload"
+        />
+      </label>
+    </div>
 
-      <!-- Input file caché -->
-      <input
-        ref="fileInput"
-        type="file"
-        accept="image/*"
-        class="hidden"
-        @change="handleFileUpload"
-      />
+    <!-- Erreur d'upload -->
+    <div v-if="uploadError" class="alert alert-error mt-2 text-sm">
+      <span>⚠️</span>
+      <span>{{ uploadError }}</span>
     </div>
 
     <!-- Modal Galerie -->
-    <div v-if="isGalleryOpen" class="modal modal-open">
-      <div class="modal-box w-11/12 max-w-5xl">
-        <h3 class="text-lg font-bold mb-4">📸 Galerie de captures d'écran</h3>
+    <div v-if="showModal" class="modal modal-open">
+      <div class="modal-box max-w-4xl">
+        <h3 class="font-bold text-lg mb-4">
+          📸 Galerie de captures d'écran
+        </h3>
 
-        <!-- Grille de captures -->
-        <div v-if="screenshots.length > 0" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 max-h-96 overflow-y-auto">
+        <!-- Loader -->
+        <div v-if="isLoading" class="flex justify-center items-center py-12">
+          <span class="loading loading-spinner loading-lg"></span>
+          <p class="ml-3">Chargement...</p>
+        </div>
+
+        <!-- Grille de screenshots -->
+        <div
+          v-else-if="screenshots.length > 0"
+          class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 max-h-[60vh] overflow-y-auto"
+        >
           <div
-            v-for="(screenshot, index) in screenshots"
-            :key="index"
-            class="relative group cursor-pointer"
+            v-for="screenshot in screenshots"
+            :key="screenshot.filename"
+            class="relative group cursor-pointer rounded-lg overflow-hidden border-2 border-transparent hover:border-primary transition-all"
             @click="selectScreenshot(screenshot)"
           >
             <img
               :src="screenshot.url"
-              :alt="screenshot.name"
-              class="w-full h-32 object-cover rounded-lg border-2 transition-all"
-              :class="selectedScreenshot === screenshot.url ? 'border-primary' : 'border-base-300 hover:border-primary/50'"
+              :alt="screenshot.originalName"
+              class="w-full h-32 object-cover"
             />
-            <div class="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg flex items-center justify-center">
-              <span class="text-white text-sm">
-                {{ selectedScreenshot === screenshot.url ? '✓ Sélectionné' : 'Cliquer pour sélectionner' }}
-              </span>
+            <div
+              class="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-1"
+            >
+              <p class="text-white text-xs font-semibold px-2 text-center">
+                {{ screenshot.originalName }}
+              </p>
+              <p class="text-white/70 text-xs">
+                {{ formatSize(screenshot.size) }} • {{ screenshot.width }}x{{ screenshot.height }}
+              </p>
+              <p v-if="screenshot.captureDate" class="text-white/60 text-xs">
+                📸 {{ formatDate(screenshot.captureDate) }}
+              </p>
+              <button
+                type="button"
+                class="btn btn-xs btn-error mt-2"
+                @click="deleteScreenshot(screenshot, $event)"
+              >
+                🗑️ Supprimer
+              </button>
             </div>
-            <p class="text-xs text-base-content/60 mt-1 truncate">{{ screenshot.name }}</p>
           </div>
         </div>
 
-        <!-- État vide -->
-        <div v-else class="text-center py-12 text-base-content/60">
-          <div class="text-6xl mb-4">📸</div>
-          <p>Aucune capture d'écran disponible</p>
-          <p class="text-sm mt-2">Uploadez une capture pour commencer</p>
+        <!-- Aucun screenshot -->
+        <div v-else class="text-center py-12">
+          <p class="text-base-content/60">
+            Aucune capture d'écran disponible.
+          </p>
+          <p class="text-sm text-base-content/40 mt-2">
+            Utilisez le bouton "Upload" pour ajouter une capture.
+          </p>
         </div>
 
-        <!-- Actions -->
+        <!-- Erreur -->
+        <div v-if="uploadError" class="alert alert-error mt-4">
+          <span>⚠️</span>
+          <span>{{ uploadError }}</span>
+        </div>
+
+        <!-- Boutons du modal -->
         <div class="modal-action">
-          <button type="button" class="btn btn-ghost" @click="closeGallery">
-            Annuler
-          </button>
           <button
             type="button"
-            class="btn btn-primary"
-            :disabled="!selectedScreenshot"
-            @click="confirmSelection"
+            class="btn"
+            @click="showModal = false"
           >
-            Confirmer
+            Fermer
           </button>
         </div>
       </div>
-      <div class="modal-backdrop" @click="closeGallery"></div>
+      <div class="modal-backdrop" @click="showModal = false"></div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref, computed } from 'vue';
+import { screenshotService, type Screenshot } from '../../services/screenshot';
 
-interface Screenshot {
-  name: string;
-  url: string;
+interface Props {
+  modelValue: string;
+  label?: string;
+  caseId: string; // OBLIGATOIRE : UID du dossier pour isolation
 }
 
-const props = defineProps<{
-  modelValue?: string;
-  label?: string;
-}>();
-
-const emit = defineEmits<{
-  (e: 'update:modelValue', value: string): void;
-}>();
-
-const isGalleryOpen = ref(false);
-const selectedScreenshot = ref<string>(props.modelValue || '');
-const screenshots = ref<Screenshot[]>([]);
-const fileInput = ref<HTMLInputElement | null>(null);
-
-// Charger les captures depuis le dossier public
-onMounted(async () => {
-  await loadScreenshots();
+const props = withDefaults(defineProps<Props>(), {
+  label: 'Capture d\'écran',
 });
 
+const emit = defineEmits<{
+  'update:modelValue': [value: string];
+}>();
+
+const showModal = ref(false);
+const screenshots = ref<Screenshot[]>([]);
+const isLoading = ref(false);
+const uploadError = ref('');
+
+const hasScreenshot = computed(() => !!props.modelValue);
+
+/**
+ * Chargement des screenshots depuis l'API (filtré par caseId)
+ */
 async function loadScreenshots() {
   try {
-    // Essayer de charger un fichier index.json qui liste les captures
-    const response = await fetch('/images/screenshots/index.json');
-    if (response.ok) {
-      const data = await response.json();
-      screenshots.value = data.screenshots || [];
-    }
-  } catch (error) {
-    console.warn('Impossible de charger la liste des captures:', error);
-    // Fallback: utiliser des captures par défaut si disponibles
-    screenshots.value = generateDefaultScreenshots();
+    isLoading.value = true;
+    uploadError.value = '';
+    screenshots.value = await screenshotService.list(props.caseId);
+  } catch (error: any) {
+    console.error('Erreur chargement screenshots:', error);
+    uploadError.value = error.message || 'Erreur lors du chargement des captures';
+  } finally {
+    isLoading.value = false;
   }
 }
 
-function generateDefaultScreenshots(): Screenshot[] {
-  // Générer une liste de captures par défaut (à adapter selon vos besoins)
-  const defaultScreenshots: Screenshot[] = [];
-  for (let i = 1; i <= 10; i++) {
-    defaultScreenshots.push({
-      name: `screenshot-${i}.png`,
-      url: `/images/screenshots/screenshot-${i}.png`
-    });
-  }
-  return defaultScreenshots;
-}
-
+/**
+ * Ouverture du modal et chargement des screenshots
+ */
 function openGallery() {
-  isGalleryOpen.value = true;
+  showModal.value = true;
+  loadScreenshots();
 }
 
-function closeGallery() {
-  isGalleryOpen.value = false;
-}
-
+/**
+ * Sélection d'un screenshot de la galerie
+ */
 function selectScreenshot(screenshot: Screenshot) {
-  selectedScreenshot.value = screenshot.url;
+  emit('update:modelValue', screenshot.url);
+  showModal.value = false;
 }
 
-function confirmSelection() {
-  emit('update:modelValue', selectedScreenshot.value);
-  closeGallery();
-}
-
-function removeScreenshot() {
-  selectedScreenshot.value = '';
-  emit('update:modelValue', '');
-}
-
-function triggerUpload() {
-  fileInput.value?.click();
-}
-
+/**
+ * Gestion de l'upload de fichier
+ */
 async function handleFileUpload(event: Event) {
   const target = event.target as HTMLInputElement;
   const file = target.files?.[0];
-  
+
   if (!file) return;
 
-  // Vérifier que c'est une image
-  if (!file.type.startsWith('image/')) {
-    alert('Veuillez sélectionner une image');
+  // Validation du type
+  const allowedTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp'];
+  if (!allowedTypes.includes(file.type)) {
+    uploadError.value = 'Format non supporté. Utilisez PNG, JPG ou WebP.';
     return;
   }
 
-  // Créer une URL temporaire pour l'aperçu
-  const reader = new FileReader();
-  reader.onload = (e) => {
-    const dataUrl = e.target?.result as string;
-    selectedScreenshot.value = dataUrl;
-    emit('update:modelValue', dataUrl);
-    
-    // Ajouter à la galerie temporairement
-    screenshots.value.unshift({
-      name: file.name,
-      url: dataUrl
-    });
-  };
-  reader.readAsDataURL(file);
+  // Validation de la taille (10MB max)
+  if (file.size > 10 * 1024 * 1024) {
+    uploadError.value = 'Fichier trop volumineux (10MB maximum).';
+    return;
+  }
 
-  // TODO: Implémenter l'upload réel vers le serveur
-  console.log('Upload de fichier:', file.name);
+  try {
+    isLoading.value = true;
+    uploadError.value = '';
+
+    // Upload via l'API sécurisée avec le caseId du dossier
+    const result = await screenshotService.upload(file, {
+      caseId: props.caseId,
+      investigatorName: 'Investigateur', // TODO: Passer le vrai nom depuis le store
+    });
+
+    // Mise à jour de la sélection
+    emit('update:modelValue', result.url);
+    
+    // Rechargement de la liste
+    await loadScreenshots();
+    
+    // Fermeture du modal si ouvert
+    if (showModal.value) {
+      showModal.value = false;
+    }
+  } catch (error: any) {
+    console.error('Erreur upload:', error);
+    uploadError.value = error.message || 'Erreur lors de l\'upload';
+  } finally {
+    isLoading.value = false;
+    // Reset de l'input
+    target.value = '';
+  }
+}
+
+/**
+ * Suppression de la capture sélectionnée
+ */
+function removeScreenshot() {
+  emit('update:modelValue', '');
+}
+
+/**
+ * Ouverture de la capture en plein écran
+ */
+function openFullscreen() {
+  if (props.modelValue) {
+    window.open(props.modelValue, '_blank');
+  }
+}
+
+/**
+ * Suppression d'un screenshot de la galerie
+ */
+async function deleteScreenshot(screenshot: Screenshot, event: Event) {
+  event.stopPropagation();
+  
+  if (!confirm(`Supprimer "${screenshot.originalName}" ?`)) {
+    return;
+  }
+
+  try {
+    isLoading.value = true;
+    await screenshotService.delete(screenshot.filename, props.caseId);
+    await loadScreenshots();
+    
+    // Si c'était le screenshot sélectionné, le retirer
+    if (props.modelValue === screenshot.url) {
+      removeScreenshot();
+    }
+  } catch (error: any) {
+    console.error('Erreur suppression:', error);
+    uploadError.value = error.message || 'Erreur lors de la suppression';
+  } finally {
+    isLoading.value = false;
+  }
+}
+
+/**
+ * Formatage de la taille de fichier
+ */
+function formatSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+/**
+ * Formatage de la date de capture EXIF
+ */
+function formatDate(isoDate: string): string {
+  const date = new Date(isoDate);
+  return date.toLocaleDateString('fr-FR', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
 }
 </script>
 
 <style scoped>
 .modal-backdrop {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
+  background-color: rgba(0, 0, 0, 0.5);
 }
 </style>

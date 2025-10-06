@@ -51,6 +51,7 @@
       :is-open="isModalOpen"
       :profile="editingProfile"
       :existing-profiles="existingProfiles"
+      :report-id="reportId"
       @close="closeModal"
       @save="handleSave"
     />
@@ -69,6 +70,7 @@ const props = defineProps<{
     platform?: string;
   };
   readonly?: boolean;
+  reportId?: string; // UID du rapport pour isolation des screenshots
 }>();
 
 const emit = defineEmits<{

@@ -51,6 +51,7 @@
       :is-open="isModalOpen"
       :identifier="editingIdentifier"
       :existing-values="existingValues"
+      :report-id="reportId"
       @close="closeModal"
       @save="handleSave"
     />
@@ -68,6 +69,7 @@ const props = defineProps<{
     findings?: Finding[];
   };
   readonly?: boolean;
+  reportId?: string; // UID du rapport pour screenshots
 }>();
 
 const emit = defineEmits<{

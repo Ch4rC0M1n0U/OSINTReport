@@ -1,227 +1,389 @@
 <template>
-  <div class="space-y-4">
-    <!-- Mode lecture -->
-    <div v-if="!isEditing" class="space-y-3">
-      <div class="flex items-center justify-between">
-        <div class="flex items-center gap-2">
-          <span class="text-lg font-semibold">🖼️ Galerie média</span>
-          <span class="badge badge-neutral">{{ items.length }}</span>
-        </div>
-        <button
-          v-if="!readonly"
-          type="button"
-          class="btn btn-sm btn-primary"
-          @click="startEditing"
-        >
-          ✏️ Modifier
-        </button>
+  <div class="media-gallery-module">
+    <!-- En-tête -->
+    <div class="flex items-center justify-between mb-4">
+      <div class="flex items-center gap-2">
+        <span class="text-lg font-semibold">🖼️ Galerie média</span>
+        <span class="badge badge-neutral">{{ screenshots.length }}</span>
       </div>
+      <button
+        v-if="!readonly && reportId"
+        type="button"
+        class="btn btn-sm btn-primary gap-2"
+        @click="openUploadDialog"
+      >
+        <span>📤</span>
+        <span>Ajouter une capture</span>
+      </button>
+    </div>
 
-      <!-- Description -->
-      <div v-if="modelValue.description" class="alert">
-        <p>{{ modelValue.description }}</p>
-      </div>
+    <!-- Loader -->
+    <div v-if="isLoading" class="flex justify-center items-center py-12">
+      <span class="loading loading-spinner loading-lg"></span>
+      <p class="ml-3">Chargement de la galerie...</p>
+    </div>
 
-      <!-- Grille de médias -->
-      <div v-if="items.length > 0" class="grid grid-cols-2 md:grid-cols-3 gap-4">
-        <div
-          v-for="(item, index) in items"
-          :key="index"
-          class="card bg-base-200 shadow-sm"
-        >
-          <div class="card-body p-3">
-            <div class="aspect-square bg-base-300 rounded flex items-center justify-center mb-2">
-              <span class="text-4xl">🖼️</span>
+    <!-- Galerie de screenshots -->
+    <div
+      v-else-if="screenshots.length > 0"
+      class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4"
+    >
+      <div
+        v-for="screenshot in screenshots"
+        :key="screenshot.filename"
+        class="card bg-base-100 border border-base-300 hover:border-primary transition-all cursor-pointer group"
+        @click="openFullscreen(screenshot)"
+      >
+        <!-- Image -->
+        <figure class="relative h-48 overflow-hidden">
+          <img
+            :src="screenshot.url"
+            :alt="screenshot.originalName"
+            class="w-full h-full object-cover group-hover:scale-110 transition-transform"
+          />
+          <div class="absolute inset-0 bg-black/0 group-hover:bg-black/50 transition-all flex items-center justify-center">
+            <span class="text-4xl opacity-0 group-hover:opacity-100 transition-opacity">
+              🔍
+            </span>
+          </div>
+        </figure>
+
+        <!-- Métadonnées -->
+        <div class="card-body p-3">
+          <div class="flex items-center justify-between mb-2">
+            <h3 class="text-sm font-semibold truncate flex-1" :title="screenshot.originalName">
+              {{ screenshot.originalName }}
+            </h3>
+            <span
+              v-if="screenshot.gpsLatitude !== undefined && screenshot.gpsLongitude !== undefined"
+              class="badge badge-success badge-xs gap-1"
+              title="Image géolocalisée"
+            >
+              <span>📍</span>
+            </span>
+          </div>
+          
+          <div class="text-xs text-base-content/60 space-y-1">
+            <div class="flex items-center gap-2">
+              <span>📐</span>
+              <span>{{ screenshot.width }}x{{ screenshot.height }}</span>
             </div>
-            <div class="text-sm font-semibold truncate">{{ item.caption }}</div>
-            <div v-if="item.date" class="text-xs opacity-70">{{ item.date }}</div>
-            <div v-if="item.source" class="text-xs opacity-70">Source: {{ item.source }}</div>
+            <div class="flex items-center gap-2">
+              <span>💾</span>
+              <span>{{ formatSize(screenshot.size) }}</span>
+            </div>
+            <div v-if="screenshot.captureDate" class="flex items-center gap-2">
+              <span>📸</span>
+              <span :title="formatFullDate(screenshot.captureDate)">
+                {{ formatDate(screenshot.captureDate) }}
+              </span>
+            </div>
+            <div v-else class="flex items-center gap-2">
+              <span>📅</span>
+              <span :title="formatFullDate(screenshot.uploadedAt)">
+                {{ formatDate(screenshot.uploadedAt) }}
+              </span>
+            </div>
+          </div>
+
+          <!-- Actions -->
+          <div class="card-actions justify-end mt-2">
+            <button
+              v-if="!readonly"
+              type="button"
+              class="btn btn-xs btn-error btn-ghost"
+              @click.stop="confirmDelete(screenshot)"
+            >
+              🗑️
+            </button>
           </div>
         </div>
-      </div>
-
-      <!-- État vide -->
-      <div v-else class="text-center py-12 opacity-60">
-        <div class="text-5xl mb-3">🖼️</div>
-        <p>Aucun média</p>
-        <button
-          v-if="!readonly"
-          type="button"
-          class="btn btn-sm btn-ghost mt-3"
-          @click="startEditing"
-        >
-          Ajouter un média
-        </button>
       </div>
     </div>
 
-    <!-- Mode édition -->
-    <div v-else class="space-y-4">
-      <div class="flex items-center justify-between">
-        <h4 class="font-semibold">✏️ Modification de la galerie</h4>
-        <div class="flex gap-2">
-          <button type="button" class="btn btn-sm btn-ghost" @click="cancelEditing">
+    <!-- État vide -->
+    <div v-else class="text-center py-12 bg-base-200 rounded-lg">
+      <div class="text-6xl mb-4">🖼️</div>
+      <p class="text-base-content/60 mb-4">
+        Aucune capture d'écran dans ce dossier
+      </p>
+      <button
+        v-if="!readonly && reportId"
+        type="button"
+        class="btn btn-sm btn-primary gap-2"
+        @click="openUploadDialog"
+      >
+        <span>📤</span>
+        <span>Ajouter la première capture</span>
+      </button>
+    </div>
+
+    <!-- Erreur -->
+    <div v-if="error" class="alert alert-error mt-4">
+      <span>⚠️</span>
+      <span>{{ error }}</span>
+    </div>
+
+    <!-- Modal upload -->
+    <div v-if="showUploadModal" class="modal modal-open">
+      <div class="modal-box">
+        <h3 class="font-bold text-lg mb-4">📤 Ajouter une capture d'écran</h3>
+        
+        <div class="form-control">
+          <label class="label">
+            <span class="label-text">Fichier image</span>
+          </label>
+          <input
+            type="file"
+            class="file-input file-input-bordered w-full"
+            accept="image/png,image/jpeg,image/jpg,image/webp"
+            @change="handleFileSelect"
+          />
+          <label class="label">
+            <span class="label-text-alt">PNG, JPG ou WebP (10MB max)</span>
+          </label>
+        </div>
+
+        <div v-if="uploadError" class="alert alert-error mt-4">
+          <span>⚠️</span>
+          <span>{{ uploadError }}</span>
+        </div>
+
+        <div class="modal-action">
+          <button
+            type="button"
+            class="btn btn-ghost"
+            :disabled="isUploading"
+            @click="closeUploadDialog"
+          >
             Annuler
           </button>
-          <button type="button" class="btn btn-sm btn-primary" @click="saveChanges">
-            💾 Enregistrer
+          <button
+            type="button"
+            class="btn btn-primary"
+            :disabled="!selectedFile || isUploading"
+            @click="handleUpload"
+          >
+            <span v-if="isUploading" class="loading loading-spinner"></span>
+            <span v-else>📤</span>
+            <span>{{ isUploading ? 'Upload...' : 'Téléverser' }}</span>
           </button>
         </div>
       </div>
+      <div class="modal-backdrop" @click="closeUploadDialog"></div>
+    </div>
 
-      <!-- Description -->
-      <div class="form-control">
-        <label class="label"><span class="label-text">Description</span></label>
-        <textarea
-          v-model="editedDescription"
-          class="textarea textarea-bordered"
-          placeholder="Description de la galerie..."
-          rows="2"
-        ></textarea>
-      </div>
+    <!-- Modal fullscreen -->
+    <div v-if="fullscreenImage" class="modal modal-open">
+      <div class="modal-box max-w-6xl">
+        <h3 class="font-bold text-lg mb-4">{{ fullscreenImage.originalName }}</h3>
+        
+        <img
+          :src="fullscreenImage.url"
+          :alt="fullscreenImage.originalName"
+          class="w-full rounded-lg"
+        />
 
-      <!-- Liste des médias -->
-      <div class="space-y-3">
-        <div
-          v-for="(item, index) in editedItems"
-          :key="index"
-          class="card bg-base-200 shadow-sm"
-        >
-          <div class="card-body p-3">
-            <div class="flex justify-between items-start mb-2">
-              <span class="font-semibold">Média #{{ index + 1 }}</span>
-              <button
-                type="button"
-                class="btn btn-sm btn-ghost btn-circle text-error"
-                @click="removeItem(index)"
-              >
-                🗑️
-              </button>
-            </div>
-
-            <div class="grid grid-cols-2 gap-2">
-              <div class="form-control col-span-2">
-                <input
-                  v-model="item.attachmentId"
-                  type="text"
-                  placeholder="ID de pièce jointe"
-                  class="input input-bordered input-sm"
-                />
-              </div>
-              <div class="form-control col-span-2">
-                <input
-                  v-model="item.caption"
-                  type="text"
-                  placeholder="Légende"
-                  class="input input-bordered input-sm"
-                />
-              </div>
-              <div class="form-control">
-                <input
-                  v-model="item.date"
-                  type="text"
-                  placeholder="Date"
-                  class="input input-bordered input-sm"
-                />
-              </div>
-              <div class="form-control">
-                <input
-                  v-model="item.source"
-                  type="text"
-                  placeholder="Source"
-                  class="input input-bordered input-sm"
-                />
-              </div>
-            </div>
+        <div class="mt-4 text-sm text-base-content/60 grid grid-cols-2 gap-2">
+          <div><strong>Dimensions :</strong> {{ fullscreenImage.width }}x{{ fullscreenImage.height }}</div>
+          <div><strong>Taille :</strong> {{ formatSize(fullscreenImage.size) }}</div>
+          <div v-if="fullscreenImage.captureDate">
+            <strong>Capture :</strong> {{ formatFullDate(fullscreenImage.captureDate) }}
+          </div>
+          <div><strong>Téléversé :</strong> {{ formatFullDate(fullscreenImage.uploadedAt) }}</div>
+          <div v-if="fullscreenImage.gpsLatitude !== undefined && fullscreenImage.gpsLongitude !== undefined" class="col-span-2">
+            <strong>📍 Localisation GPS :</strong>
+            <span class="ml-2 font-mono">{{ fullscreenImage.gpsLatitude.toFixed(6) }}°, {{ fullscreenImage.gpsLongitude.toFixed(6) }}°</span>
           </div>
         </div>
 
-        <button type="button" class="btn btn-outline btn-block" @click="addItem">
-          + Ajouter un média
-        </button>
+        <!-- Carte OpenStreetMap si coordonnées GPS disponibles -->
+        <div v-if="fullscreenImage.gpsLatitude !== undefined && fullscreenImage.gpsLongitude !== undefined" class="mt-4">
+          <LocationMap
+            :latitude="fullscreenImage.gpsLatitude"
+            :longitude="fullscreenImage.gpsLongitude"
+            :altitude="fullscreenImage.gpsAltitude"
+          />
+        </div>
+
+        <div class="modal-action">
+          <a
+            :href="fullscreenImage.url"
+            target="_blank"
+            class="btn btn-sm btn-ghost gap-2"
+          >
+            <span>🔗</span>
+            <span>Ouvrir dans un nouvel onglet</span>
+          </a>
+          <button
+            type="button"
+            class="btn btn-sm"
+            @click="fullscreenImage = null"
+          >
+            Fermer
+          </button>
+        </div>
       </div>
+      <div class="modal-backdrop" @click="fullscreenImage = null"></div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue';
-import type { MediaGalleryPayload, MediaItem } from '@/services/api/reports';
+import { ref, watch, onMounted } from 'vue';
+import { screenshotService, type Screenshot } from '@/services/screenshot';
+import LocationMap from '@/components/shared/LocationMap.vue';
 
-const props = withDefaults(
-  defineProps<{
-    modelValue: MediaGalleryPayload;
-    readonly?: boolean;
-  }>(),
-  {
-    readonly: false,
-  }
-);
-
-const emit = defineEmits<{
-  (e: 'update:modelValue', value: MediaGalleryPayload): void;
+const props = defineProps<{
+  modelValue?: any;
+  readonly?: boolean;
+  reportId?: string;
 }>();
 
-const isEditing = ref(false);
-const items = ref<MediaItem[]>(props.modelValue.items || []);
-const editedItems = ref<MediaItem[]>([]);
-const editedDescription = ref(props.modelValue.description || '');
+const emit = defineEmits<{
+  (e: 'update:modelValue', value: any): void;
+}>();
 
-watch(
-  () => props.modelValue,
-  (newValue) => {
-    items.value = newValue.items || [];
-  },
-  { deep: true }
-);
+const screenshots = ref<Screenshot[]>([]);
+const isLoading = ref(false);
+const error = ref('');
 
-function startEditing() {
-  editedItems.value = JSON.parse(JSON.stringify(items.value));
-  editedDescription.value = props.modelValue.description || '';
-  isEditing.value = true;
+const showUploadModal = ref(false);
+const selectedFile = ref<File | null>(null);
+const isUploading = ref(false);
+const uploadError = ref('');
+
+const fullscreenImage = ref<Screenshot | null>(null);
+
+watch(() => props.reportId, loadScreenshots, { immediate: true });
+
+onMounted(() => {
+  loadScreenshots();
+});
+
+async function loadScreenshots() {
+  if (!props.reportId) return;
+
+  try {
+    isLoading.value = true;
+    error.value = '';
+    screenshots.value = await screenshotService.list(props.reportId);
+  } catch (err: any) {
+    console.error('Erreur chargement galerie:', err);
+    error.value = err.message || 'Erreur lors du chargement de la galerie';
+  } finally {
+    isLoading.value = false;
+  }
 }
 
-function cancelEditing() {
-  isEditing.value = false;
-  editedItems.value = [];
+function openUploadDialog() {
+  showUploadModal.value = true;
+  selectedFile.value = null;
+  uploadError.value = '';
 }
 
-function saveChanges() {
-  items.value = editedItems.value;
-  emit('update:modelValue', {
-    items: items.value,
-    description: editedDescription.value || undefined
+function closeUploadDialog() {
+  showUploadModal.value = false;
+  selectedFile.value = null;
+  uploadError.value = '';
+}
+
+function handleFileSelect(event: Event) {
+  const target = event.target as HTMLInputElement;
+  const file = target.files?.[0];
+  
+  if (!file) return;
+
+  const allowedTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp'];
+  if (!allowedTypes.includes(file.type)) {
+    uploadError.value = 'Format non supporté. Utilisez PNG, JPG ou WebP.';
+    selectedFile.value = null;
+    return;
+  }
+
+  if (file.size > 10 * 1024 * 1024) {
+    uploadError.value = 'Fichier trop volumineux (10MB maximum).';
+    selectedFile.value = null;
+    return;
+  }
+
+  selectedFile.value = file;
+  uploadError.value = '';
+}
+
+async function handleUpload() {
+  if (!selectedFile.value || !props.reportId) return;
+
+  try {
+    isUploading.value = true;
+    uploadError.value = '';
+
+    await screenshotService.upload(selectedFile.value, {
+      caseId: props.reportId,
+      investigatorName: 'Investigateur',
+    });
+
+    await loadScreenshots();
+    closeUploadDialog();
+  } catch (err: any) {
+    console.error('Erreur upload:', err);
+    uploadError.value = err.message || "Erreur lors de l'upload";
+  } finally {
+    isUploading.value = false;
+  }
+}
+
+async function confirmDelete(screenshot: Screenshot) {
+  if (!confirm(`Supprimer "${screenshot.originalName}" ?`)) {
+    return;
+  }
+
+  try {
+    isLoading.value = true;
+    await screenshotService.delete(screenshot.filename, props.reportId);
+    await loadScreenshots();
+  } catch (err: any) {
+    console.error('Erreur suppression:', err);
+    error.value = err.message || 'Erreur lors de la suppression';
+  } finally {
+    isLoading.value = false;
+  }
+}
+
+function openFullscreen(screenshot: Screenshot) {
+  fullscreenImage.value = screenshot;
+}
+
+function formatSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function formatDate(isoDate: string): string {
+  const date = new Date(isoDate);
+  return date.toLocaleDateString('fr-FR', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
   });
-  isEditing.value = false;
 }
 
-function addItem() {
-  editedItems.value.push({
-    attachmentId: '',
-    caption: '',
-    date: '',
-    source: '',
+function formatFullDate(isoDate: string): string {
+  const date = new Date(isoDate);
+  return date.toLocaleString('fr-FR', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
   });
-}
-
-function removeItem(index: number) {
-  editedItems.value.splice(index, 1);
 }
 </script>
 
 <style scoped>
-.truncate {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.card {
-  transition: all 0.2s ease;
-}
-
-.card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+.modal-backdrop {
+  background-color: rgba(0, 0, 0, 0.7);
 }
 </style>

@@ -57,6 +57,23 @@
         {{ identifier.description }}
       </p>
 
+      <!-- Screenshot (si présent) -->
+      <div v-if="screenshot" class="mt-3">
+        <div class="relative group cursor-pointer rounded-lg overflow-hidden border border-base-300 hover:border-primary">
+          <img
+            :src="screenshot"
+            alt="Screenshot de preuve"
+            class="w-full h-32 object-cover"
+            @click="openScreenshot"
+          />
+          <div class="absolute top-2 right-2">
+            <span class="badge badge-sm bg-black/50 text-white border-0">
+              📸 Preuve
+            </span>
+          </div>
+        </div>
+      </div>
+
       <!-- Plateformes -->
       <div v-if="hasPlatforms" class="mt-3">
         <div class="text-xs text-base-content/60 mb-1">Plateformes :</div>
@@ -122,6 +139,9 @@ const emit = defineEmits<{
   (e: 'duplicate'): void;
   (e: 'delete'): void;
 }>();
+
+// Screenshot (optionnel)
+const screenshot = computed(() => (props.identifier as any).screenshot);
 
 const identifierTypeIcon = computed(() => {
   const type = props.identifier.metadata?.identifierType;
@@ -218,6 +238,12 @@ const remainingEntitiesCount = computed(() => {
 function confirmDelete() {
   if (confirm(`Êtes-vous sûr de vouloir supprimer l'identifiant "${props.identifier.label}" ?`)) {
     emit('delete');
+  }
+}
+
+function openScreenshot() {
+  if (screenshot.value) {
+    window.open(screenshot.value, '_blank');
   }
 }
 </script>

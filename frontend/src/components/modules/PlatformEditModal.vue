@@ -127,6 +127,7 @@
           <ScreenshotPicker
             v-model="screenshot"
             label="Capture du profil"
+            :case-id="reportId || 'UNKNOWN'"
           />
         </div>
 
@@ -214,12 +215,13 @@
 import { ref, computed, watch } from 'vue';
 import type { Finding } from '@/services/api/reports';
 import SourcesListEditor from './shared/SourcesListEditor.vue';
-import ScreenshotPicker from '../../shared/ScreenshotPicker.vue';
+import ScreenshotPicker from '../shared/ScreenshotPicker.vue';
 
 const props = defineProps<{
   isOpen: boolean;
   profile: Finding | null;
   existingProfiles?: string[];
+  reportId?: string; // UID du rapport pour isolation des screenshots
 }>();
 
 const emit = defineEmits<{

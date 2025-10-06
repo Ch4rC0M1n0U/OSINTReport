@@ -7,6 +7,7 @@ import { smtpRouter } from "@modules/smtp/smtp.router";
 import correlationRouter from "@modules/correlations/correlation.router";
 import searchRouter from "@modules/search/search.router";
 import pdfRouter from "@modules/pdf/pdf.router";
+import { mediaRouter } from "@modules/media/media.router";
 
 const router = Router();
 
@@ -22,5 +23,6 @@ router.use("/users", userRouter);
 router.use("/smtp", smtpRouter);
 router.use("/correlations", correlationRouter);
 router.use("/search", searchRouter);
+router.use("/media", mediaRouter);
 
 export { router };
