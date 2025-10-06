@@ -2,8 +2,30 @@ import sharp = require('sharp');
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import * as crypto from 'crypto';
-// @ts-ignore - No types available for exif-parser
-const exifParser = require('exif-parser');
+import exifr from 'exifr';
+
+/**
+ * Retourne la date/heure actuelle avec timezone locale (ISO 8601 complet)
+ * Ex: "2025-10-06T07:45:30+02:00"
+ */
+function getCurrentDateTimeWithTimezone(): string {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  const hours = String(now.getHours()).padStart(2, '0');
+  const minutes = String(now.getMinutes()).padStart(2, '0');
+  const seconds = String(now.getSeconds()).padStart(2, '0');
+  
+  // Calcul de l'offset timezone
+  const offsetMinutes = -now.getTimezoneOffset();
+  const offsetHours = Math.floor(Math.abs(offsetMinutes) / 60);
+  const offsetMins = Math.abs(offsetMinutes) % 60;
+  const offsetSign = offsetMinutes >= 0 ? '+' : '-';
+  const offset = `${offsetSign}${String(offsetHours).padStart(2, '0')}:${String(offsetMins).padStart(2, '0')}`;
+  
+  return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}${offset}`;
+}
 
 interface ScreenshotMetadata {
   caseId: string;
@@ -22,6 +44,10 @@ interface ProcessedScreenshot {
     format: string;
     uploadedAt: string;
     uploadedBy: string;
+    captureDate?: string; // Date de capture EXIF (optionnelle)
+    gpsLatitude?: number; // Coordonnées GPS EXIF (optionnelles)
+    gpsLongitude?: number;
+    gpsAltitude?: number;
   };
 }
 
@@ -67,8 +93,9 @@ export async function processScreenshot(
     console.log(`📊 Processing image: ${file.originalname} (${file.size} bytes)`);
     
     const image = sharp(tempPath, {
-      limitInputPixels: 50000000, // 50MP max (au lieu de 268MP par défaut, mais mieux géré)
+      limitInputPixels: 100000000, // 100MP max (augmenté pour Google Photos haute résolution)
       failOnError: false, // Continue même avec des erreurs mineures
+      sequentialRead: true, // Optimise la lecture séquentielle (mieux pour grandes images)
     });
     const imageMetadata = await image.metadata();
     
@@ -76,112 +103,163 @@ export async function processScreenshot(
     console.log(`📦 Image format: ${imageMetadata.format}`);
     console.log(`💾 Image size: ${(file.size / 1024 / 1024).toFixed(2)} MB`);
 
-    // 2. Extraction EXIF détaillée (date/heure de capture + GPS)
-    // TEMPORAIREMENT DÉSACTIVÉ - Cause des erreurs 500 avec certaines images
+    // 2. Extraction EXIF détaillée (date/heure de capture + GPS) avec exifr
     let captureDate: string | undefined;
     let gpsLatitude: number | undefined;
     let gpsLongitude: number | undefined;
     let gpsAltitude: number | undefined;
     
-    console.log('ℹ️ EXIF extraction temporarily disabled - will be re-enabled after debugging');
-    
-    /* DÉSACTIVÉ TEMPORAIREMENT
     try {
-      // Lecture du fichier pour extraction EXIF avec exif-parser
-      const fileBuffer = await fs.readFile(tempPath);
+      console.log('📋 Starting EXIF extraction with exifr...');
       
-      try {
-        // Vérification que le buffer est valide
-        if (!fileBuffer || fileBuffer.length === 0) {
-          console.log('ℹ️ Empty file buffer, skipping EXIF extraction');
-        } else {
-          const parser = exifParser.create(fileBuffer);
+      // exifr est beaucoup plus robuste et gère automatiquement:
+      // - Multiples formats EXIF (JPEG, PNG, WebP, HEIC, etc.)
+      // - Conversion GPS automatique (DMS → Decimal)
+      // - Parsing de dates complexes
+      // - Gestion d'erreurs gracieuse
+      const exifData = await exifr.parse(tempPath, {
+        // Options pour extraire le maximum de données
+        gps: true,           // Coordonnées GPS
+        tiff: true,          // Métadonnées TIFF
+        xmp: false,          // Pas besoin de XMP (photos pro)
+        icc: false,          // Pas besoin de profil couleur
+        iptc: false,         // Pas besoin de IPTC
+        jfif: false,         // Pas besoin de JFIF
+        ihdr: false,         // Pas besoin de PNG header
+        pick: [              // Champs spécifiques à extraire
+          'DateTimeOriginal',
+          'CreateDate',
+          'DateTime',
+          'OffsetTimeOriginal', // Timezone offset de la date originale
+          'OffsetTime',         // Timezone offset général
+          'GPSLatitude',
+          'GPSLongitude',
+          'GPSAltitude',
+          'Make',
+          'Model'
+        ],
+        translateKeys: true, // Traduit les clés techniques en noms lisibles
+        translateValues: true, // Traduit les valeurs
+        reviveValues: true,   // Convertit automatiquement les types
+        sanitize: true,       // Nettoie les valeurs invalides
+        mergeOutput: true,    // Fusionne tous les segments EXIF
+      });
+      
+      if (exifData) {
+        console.log('✅ EXIF data extracted successfully');
+        
+        // Extraction de la date de capture (plusieurs champs possibles)
+        // IMPORTANT: Pour l'OSINT, on doit préserver l'heure LOCALE EXACTE de la prise de vue
+        // avec sa timezone originale (ISO 8601 complet: 2025-10-05T18:00:35+02:00)
+        const rawDate = exifData.DateTimeOriginal || exifData.CreateDate || exifData.DateTime;
+        const offsetTime = exifData.OffsetTimeOriginal || exifData.OffsetTime;
+        
+        if (rawDate) {
+          let dateStr = '';
           
-          // Parse avec options pour éviter les erreurs
-          const result = parser.parse();
-          
-          if (result && result.tags) {
-            console.log('ℹ️ EXIF tags found:', Object.keys(result.tags).length);
+          if (rawDate instanceof Date) {
+            // Extraire les composants sans conversion timezone
+            const year = rawDate.getFullYear();
+            const month = String(rawDate.getMonth() + 1).padStart(2, '0');
+            const day = String(rawDate.getDate()).padStart(2, '0');
+            const hours = String(rawDate.getHours()).padStart(2, '0');
+            const minutes = String(rawDate.getMinutes()).padStart(2, '0');
+            const seconds = String(rawDate.getSeconds()).padStart(2, '0');
             
-            // Extraction de la date de capture
-            if (result.tags.DateTimeOriginal) {
-              try {
-                // DateTimeOriginal est en timestamp Unix
-                captureDate = new Date(result.tags.DateTimeOriginal * 1000).toISOString();
-                console.log('📸 Capture date extracted:', captureDate);
-              } catch (dateErr) {
-                console.warn('⚠️ Date conversion failed');
-              }
-            } else if (result.tags.CreateDate) {
-              try {
-                captureDate = new Date(result.tags.CreateDate * 1000).toISOString();
-                console.log('📸 Create date extracted:', captureDate);
-              } catch (dateErr) {
-                console.warn('⚠️ Date conversion failed');
-              }
+            dateStr = `${year}-${month}-${day}T${hours}:${minutes}:${seconds}`;
+            console.log(`📸 Capture date (EXIF): ${year}-${month}-${day} ${hours}:${minutes}:${seconds}`);
+          } else if (typeof rawDate === 'string') {
+            // Parse manuel du format EXIF: "2025:10:05 18:00:35"
+            const match = rawDate.match(/(\d{4}):(\d{2}):(\d{2})\s+(\d{2}):(\d{2}):(\d{2})/);
+            if (match) {
+              const [, year, month, day, hours, minutes, seconds] = match;
+              dateStr = `${year}-${month}-${day}T${hours}:${minutes}:${seconds}`;
+              console.log(`📸 Capture date (parsed): ${dateStr}`);
             }
-            
-            // Extraction des coordonnées GPS
-            const hasGPSLat = result.tags.GPSLatitude !== undefined && 
-                             result.tags.GPSLatitude !== null &&
-                             !isNaN(result.tags.GPSLatitude);
-            const hasGPSLon = result.tags.GPSLongitude !== undefined && 
-                             result.tags.GPSLongitude !== null &&
-                             !isNaN(result.tags.GPSLongitude);
-            
-            if (hasGPSLat && hasGPSLon) {
-              gpsLatitude = Number(result.tags.GPSLatitude);
-              gpsLongitude = Number(result.tags.GPSLongitude);
-              
-              // Validation des coordonnées (latitude: -90 à 90, longitude: -180 à 180)
-              if (gpsLatitude >= -90 && gpsLatitude <= 90 && 
-                  gpsLongitude >= -180 && gpsLongitude <= 180) {
-                console.log(`📍 GPS coordinates extracted: ${gpsLatitude}, ${gpsLongitude}`);
-                
-                // Altitude (optionnelle)
-                if (result.tags.GPSAltitude !== undefined && 
-                    result.tags.GPSAltitude !== null &&
-                    !isNaN(result.tags.GPSAltitude)) {
-                  gpsAltitude = Number(result.tags.GPSAltitude);
-                  console.log('📍 GPS altitude extracted:', gpsAltitude);
-                }
-              } else {
-                console.warn('⚠️ Invalid GPS coordinates:', gpsLatitude, gpsLongitude);
-                gpsLatitude = undefined;
-                gpsLongitude = undefined;
-              }
+          }
+          
+          // Ajouter la timezone originale si disponible dans les EXIF
+          if (dateStr) {
+            if (offsetTime && typeof offsetTime === 'string') {
+              // offsetTime format: "+02:00", "-05:00", etc.
+              captureDate = `${dateStr}${offsetTime}`;
+              console.log(`🌍 Timezone offset found: ${offsetTime}`);
+              console.log(`📸 Full capture date with timezone: ${captureDate}`);
             } else {
-              console.log('ℹ️ No GPS data in image');
+              // Pas de timezone EXIF: on utilise celle du serveur comme fallback
+              // pour estimer la timezone locale de la prise de vue
+              const serverOffset = -new Date().getTimezoneOffset();
+              const offsetHours = Math.floor(Math.abs(serverOffset) / 60);
+              const offsetMinutes = Math.abs(serverOffset) % 60;
+              const offsetSign = serverOffset >= 0 ? '+' : '-';
+              const fallbackOffset = `${offsetSign}${String(offsetHours).padStart(2, '0')}:${String(offsetMinutes).padStart(2, '0')}`;
+              
+              captureDate = `${dateStr}${fallbackOffset}`;
+              console.log(`⚠️ No timezone in EXIF, using server timezone as fallback: ${fallbackOffset}`);
+              console.log(`📸 Capture date (estimated): ${captureDate}`);
             }
-          } else {
-            console.log('ℹ️ No EXIF tags found in image');
           }
         }
-      } catch (exifErr: any) {
-        console.warn('⚠️ exif-parser failed:', exifErr.message, exifErr.stack);
-        // Continue sans EXIF - ce n'est pas bloquant
+        
+        // Extraction GPS (exifr retourne déjà en format décimal!)
+        if (exifData.latitude !== undefined && exifData.longitude !== undefined) {
+          gpsLatitude = Number(exifData.latitude);
+          gpsLongitude = Number(exifData.longitude);
+          
+          // Validation des coordonnées
+          if (!isNaN(gpsLatitude) && !isNaN(gpsLongitude) &&
+              gpsLatitude >= -90 && gpsLatitude <= 90 && 
+              gpsLongitude >= -180 && gpsLongitude <= 180) {
+            console.log(`📍 GPS coordinates: ${gpsLatitude.toFixed(6)}°, ${gpsLongitude.toFixed(6)}°`);
+            
+            // Altitude (optionnelle)
+            if (exifData.GPSAltitude !== undefined && !isNaN(Number(exifData.GPSAltitude))) {
+              gpsAltitude = Number(exifData.GPSAltitude);
+              console.log(`📍 GPS altitude: ${gpsAltitude.toFixed(1)}m`);
+            }
+          } else {
+            console.warn('⚠️ Invalid GPS coordinates, ignoring:', gpsLatitude, gpsLongitude);
+            gpsLatitude = undefined;
+            gpsLongitude = undefined;
+          }
+        } else {
+          console.log('ℹ️ No GPS data in image');
+        }
+        
+        // Log du device (utile pour debug)
+        if (exifData.Make || exifData.Model) {
+          console.log(`📱 Device: ${exifData.Make || ''} ${exifData.Model || ''}`.trim());
+        }
+      } else {
+        console.log('ℹ️ No EXIF data found in image');
       }
-    } catch (err: any) {
-      console.error('⚠️ EXIF extraction error:', err.message, err.stack);
-      // Continue même si EXIF échoue - ce n'est pas critique
+    } catch (exifError: any) {
+      // exifr ne devrait jamais throw avec silenceErrors: true, mais on gère quand même
+      console.warn('⚠️ EXIF extraction failed (non-critical):', exifError.message);
+      // On continue le traitement même sans EXIF
     }
-    */
 
-    // 3. Création du watermark
-    const watermarkText = createWatermarkText(metadata);
-    const watermarkSvg = generateWatermarkSvg(
-      watermarkText,
-      imageMetadata.width || 800
-    );
-
-    // 4. Traitement et compression
+    // 3. Calcul des dimensions finales AVANT de créer le watermark
     // Pour les grandes images (>3000px), on garde une meilleure qualité
     const maxDimension = 3840; // 4K UHD
     const targetWidth = Math.min(imageMetadata.width || maxDimension, maxDimension);
     const targetHeight = Math.min(imageMetadata.height || maxDimension, maxDimension);
     
-    console.log(`🔧 Resizing to max ${targetWidth}x${targetHeight}`);
+    // Calcul du ratio pour obtenir la taille réelle après resize
+    const widthRatio = targetWidth / (imageMetadata.width || 1);
+    const heightRatio = targetHeight / (imageMetadata.height || 1);
+    const resizeRatio = Math.min(widthRatio, heightRatio, 1); // Ne pas agrandir
     
+    const finalWidth = Math.round((imageMetadata.width || targetWidth) * resizeRatio);
+    const finalHeight = Math.round((imageMetadata.height || targetHeight) * resizeRatio);
+    
+    console.log(`🔧 Resizing from ${imageMetadata.width}x${imageMetadata.height} to ${finalWidth}x${finalHeight}`);
+    
+    // 4. Création du watermark avec la BONNE taille (après resize)
+    const watermarkText = createWatermarkText(metadata);
+    const watermarkSvg = generateWatermarkSvg(watermarkText, finalWidth);
+
+    // 5. Traitement et compression
     const processedImage = await image
       .resize({
         width: targetWidth,
@@ -218,7 +296,7 @@ export async function processScreenshot(
       width: processedImage.width,
       height: processedImage.height,
       format: processedImage.format,
-      uploadedAt: new Date().toISOString(),
+      uploadedAt: getCurrentDateTimeWithTimezone(), // ✅ Date locale avec timezone
       captureDate, // Date de capture depuis EXIF (si disponible)
       gpsLatitude, // Latitude GPS (si disponible)
       gpsLongitude, // Longitude GPS (si disponible)
@@ -239,8 +317,12 @@ export async function processScreenshot(
         width: processedImage.width,
         height: processedImage.height,
         format: processedImage.format,
-        uploadedAt: new Date().toISOString(),
+        uploadedAt: getCurrentDateTimeWithTimezone(), // ✅ Date locale avec timezone
         uploadedBy: userId,
+        captureDate, // Date de capture EXIF
+        gpsLatitude, // Coordonnées GPS EXIF
+        gpsLongitude,
+        gpsAltitude,
       },
     };
   } catch (error: any) {
@@ -432,8 +514,11 @@ export async function listUserScreenshots(
           originalName: metadata.originalName,
           url: generateSignedUrl(metadata.filename, expiresAt, baseUrl),
           expiresAt,
-          uploadedAt: metadata.uploadedAt || new Date().toISOString(),
+          uploadedAt: metadata.uploadedAt || getCurrentDateTimeWithTimezone(), // ✅ Fallback avec timezone
           captureDate: metadata.captureDate, // Date de capture EXIF (si disponible)
+          gpsLatitude: metadata.gpsLatitude, // Latitude GPS EXIF (si disponible)
+          gpsLongitude: metadata.gpsLongitude, // Longitude GPS EXIF (si disponible)
+          gpsAltitude: metadata.gpsAltitude, // Altitude GPS EXIF (si disponible)
           caseId: metadata.caseId,
           size: metadata.size,
           width: metadata.width,
