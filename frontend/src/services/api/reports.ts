@@ -173,6 +173,35 @@ export interface Source {
   accessedAt?: string;
 }
 
+// Détails spécifiques pour une personne physique
+export interface PersonDetails {
+  dateOfBirth?: string; // Format ISO 8601 (YYYY-MM-DD)
+  nationalRegistryNumber?: string; // Numéro de Registre National (Belgique)
+  physicalAddress?: string;
+  phoneNumbers?: string[]; // Liste de numéros de téléphone
+}
+
+// Détails spécifiques pour une société/organisation
+export interface CompanyDetails {
+  bceNumber?: string; // Numéro BCE (Banque-Carrefour des Entreprises)
+  headquartersAddress?: string; // Adresse du siège social
+  operationalAddresses?: string[]; // Adresses d'exploitation
+  phoneNumbers?: string[]; // Numéros de téléphone
+  website?: string;
+}
+
+// Métadonnées enrichies pour les entités
+export interface EntityMetadata {
+  entityType?: 'person' | 'organization' | 'company' | 'group' | 'alias' | 'other';
+  aliases?: string[];
+  isVerified?: boolean;
+  personDetails?: PersonDetails; // Si entityType === 'person'
+  companyDetails?: CompanyDetails; // Si entityType === 'organization' | 'company'
+  relatedIdentifiers?: string[]; // IDs vers IdentifierLookup
+  relatedPlatforms?: string[]; // IDs vers PlatformAnalysis
+  relatedMedia?: string[]; // IDs vers MediaGallery
+}
+
 export interface Finding {
   label: string;
   description: string;
@@ -180,7 +209,7 @@ export interface Finding {
   sources: Source[];
   attachments?: string[];
   relatedEntities?: string[];
-  metadata?: Record<string, any>;
+  metadata?: EntityMetadata; // Typage plus fort pour EntityOverview
 }
 
 export interface MediaItem {

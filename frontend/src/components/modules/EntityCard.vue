@@ -79,6 +79,76 @@
         </div>
       </div>
 
+      <!-- Informations personne physique -->
+      <div v-if="entityType === 'person' && hasPersonDetails" class="mt-3 space-y-1 text-xs">
+        <div v-if="entity.metadata?.personDetails?.dateOfBirth" class="flex items-center gap-2">
+          <span class="opacity-60">🎂 Né(e) le:</span>
+          <span class="font-medium">{{ formatDate(entity.metadata.personDetails.dateOfBirth) }}</span>
+        </div>
+        <div v-if="entity.metadata?.personDetails?.nationalRegistryNumber" class="flex items-center gap-2">
+          <span class="opacity-60">🆔 RRN:</span>
+          <span class="font-mono font-medium">{{ entity.metadata.personDetails.nationalRegistryNumber }}</span>
+        </div>
+        <div v-if="entity.metadata?.personDetails?.physicalAddress" class="flex items-start gap-2">
+          <span class="opacity-60">📍 Adresse:</span>
+          <span class="font-medium">{{ entity.metadata.personDetails.physicalAddress }}</span>
+        </div>
+        <div v-if="entity.metadata?.personDetails?.phoneNumbers?.length" class="flex items-start gap-2">
+          <span class="opacity-60">📞 Tél:</span>
+          <div class="flex flex-wrap gap-1">
+            <span 
+              v-for="(phone, idx) in entity.metadata.personDetails.phoneNumbers"
+              :key="idx"
+              class="badge badge-xs badge-outline font-mono"
+            >
+              {{ phone }}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Informations société -->
+      <div v-if="(entityType === 'organization' || entityType === 'company') && hasCompanyDetails" class="mt-3 space-y-1 text-xs">
+        <div v-if="entity.metadata?.companyDetails?.bceNumber" class="flex items-center gap-2">
+          <span class="opacity-60">🏢 BCE:</span>
+          <span class="font-mono font-medium">{{ entity.metadata.companyDetails.bceNumber }}</span>
+        </div>
+        <div v-if="entity.metadata?.companyDetails?.headquartersAddress" class="flex items-start gap-2">
+          <span class="opacity-60">📍 Siège:</span>
+          <span class="font-medium">{{ entity.metadata.companyDetails.headquartersAddress }}</span>
+        </div>
+        <div v-if="entity.metadata?.companyDetails?.operationalAddresses?.length" class="flex items-start gap-2">
+          <span class="opacity-60">🏭 Exploitation:</span>
+          <div class="space-y-1">
+            <div
+              v-for="(addr, idx) in entity.metadata.companyDetails.operationalAddresses"
+              :key="idx"
+              class="text-xs"
+            >
+              {{ addr }}
+            </div>
+          </div>
+        </div>
+        <div v-if="entity.metadata?.companyDetails?.phoneNumbers?.length" class="flex items-start gap-2">
+          <span class="opacity-60">📞 Tél:</span>
+          <div class="flex flex-wrap gap-1">
+            <span 
+              v-for="(phone, idx) in entity.metadata.companyDetails.phoneNumbers"
+              :key="idx"
+              class="badge badge-xs badge-outline font-mono"
+            >
+              {{ phone }}
+            </span>
+          </div>
+        </div>
+        <div v-if="entity.metadata?.companyDetails?.website" class="flex items-center gap-2">
+          <span class="opacity-60">🌐 Site:</span>
+          <a :href="entity.metadata.companyDetails.website" target="_blank" class="link link-primary text-xs">
+            {{ entity.metadata.companyDetails.website }}
+          </a>
+        </div>
+      </div>
+
       <!-- Sources -->
       <div v-if="entity.sources.length > 0" class="flex items-center gap-2 mt-3 text-xs text-base-content/60">
         <span>📎</span>
@@ -130,6 +200,29 @@ const entityTypeLabel = computed(() => {
   return labels[type || 'other'] || 'Autre';
 });
 
+const entityType = computed(() => props.entity.metadata?.entityType);
+
+const hasPersonDetails = computed(() => {
+  const details = props.entity.metadata?.personDetails;
+  return !!(
+    details?.dateOfBirth ||
+    details?.nationalRegistryNumber ||
+    details?.physicalAddress ||
+    details?.phoneNumbers?.length
+  );
+});
+
+const hasCompanyDetails = computed(() => {
+  const details = props.entity.metadata?.companyDetails;
+  return !!(
+    details?.bceNumber ||
+    details?.headquartersAddress ||
+    details?.operationalAddresses?.length ||
+    details?.phoneNumbers?.length ||
+    details?.website
+  );
+});
+
 const hasAliases = computed(() => {
   return props.entity.metadata?.aliases && props.entity.metadata.aliases.length > 0;
 });
@@ -151,5 +244,15 @@ function confirmDelete() {
   if (confirm(`Êtes-vous sûr de vouloir supprimer l'entité "${props.entity.label}" ?`)) {
     emit('delete');
   }
+}
+
+function formatDate(dateString: string): string {
+  if (!dateString) return '';
+  const date = new Date(dateString);
+  return date.toLocaleDateString('fr-FR', { 
+    year: 'numeric', 
+    month: 'long', 
+    day: 'numeric' 
+  });
 }
 </script>

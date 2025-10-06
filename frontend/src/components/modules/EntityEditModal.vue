@@ -106,6 +106,202 @@
           </div>
         </div>
 
+        <!-- Champs spécifiques : Personne physique -->
+        <div v-if="entityType === 'person'" class="space-y-3 p-4 bg-base-200 rounded-lg">
+          <h4 class="font-semibold text-sm flex items-center gap-2">
+            <span>👤</span>
+            <span>Informations personnelles</span>
+          </h4>
+          
+          <div class="grid grid-cols-2 gap-3">
+            <div class="form-control">
+              <label class="label">
+                <span class="label-text text-xs">Date de naissance</span>
+              </label>
+              <input
+                v-model="personDetails.dateOfBirth"
+                type="date"
+                class="input input-bordered input-sm"
+              />
+            </div>
+
+            <div class="form-control">
+              <label class="label">
+                <span class="label-text text-xs">Numéro Registre National</span>
+              </label>
+              <input
+                v-model="personDetails.nationalRegistryNumber"
+                type="text"
+                placeholder="XX.XX.XX-XXX.XX"
+                class="input input-bordered input-sm font-mono"
+              />
+            </div>
+          </div>
+
+          <div class="form-control">
+            <label class="label">
+              <span class="label-text text-xs">Adresse physique</span>
+            </label>
+            <textarea
+              v-model="personDetails.physicalAddress"
+              placeholder="Rue, numéro, code postal, ville, pays"
+              class="textarea textarea-bordered textarea-sm"
+              rows="2"
+            ></textarea>
+          </div>
+
+          <div class="form-control">
+            <label class="label">
+              <span class="label-text text-xs">Numéros de téléphone</span>
+            </label>
+            <div class="space-y-1">
+              <div
+                v-for="(phone, index) in personDetails.phoneNumbers || []"
+                :key="index"
+                class="join w-full"
+              >
+                <input
+                  :value="phone"
+                  @input="updatePersonPhone(index, ($event.target as HTMLInputElement).value)"
+                  type="tel"
+                  placeholder="+32 XXX XX XX XX"
+                  class="input input-bordered input-sm join-item flex-1 font-mono"
+                />
+                <button
+                  type="button"
+                  class="btn btn-sm btn-ghost join-item"
+                  @click="removePersonPhone(index)"
+                >
+                  ✕
+                </button>
+              </div>
+              <button
+                type="button"
+                class="btn btn-xs btn-ghost btn-block"
+                @click="addPersonPhone"
+              >
+                + Ajouter un numéro
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Champs spécifiques : Société/Organisation -->
+        <div v-if="entityType === 'organization' || entityType === 'company'" class="space-y-3 p-4 bg-base-200 rounded-lg">
+          <h4 class="font-semibold text-sm flex items-center gap-2">
+            <span>🏢</span>
+            <span>Informations société</span>
+          </h4>
+          
+          <div class="grid grid-cols-2 gap-3">
+            <div class="form-control">
+              <label class="label">
+                <span class="label-text text-xs">Numéro BCE</span>
+              </label>
+              <input
+                v-model="companyDetails.bceNumber"
+                type="text"
+                placeholder="0XXX.XXX.XXX"
+                class="input input-bordered input-sm font-mono"
+              />
+            </div>
+
+            <div class="form-control">
+              <label class="label">
+                <span class="label-text text-xs">Site web</span>
+              </label>
+              <input
+                v-model="companyDetails.website"
+                type="url"
+                placeholder="https://example.com"
+                class="input input-bordered input-sm"
+              />
+            </div>
+          </div>
+
+          <div class="form-control">
+            <label class="label">
+              <span class="label-text text-xs">Adresse du siège social</span>
+            </label>
+            <textarea
+              v-model="companyDetails.headquartersAddress"
+              placeholder="Rue, numéro, code postal, ville, pays"
+              class="textarea textarea-bordered textarea-sm"
+              rows="2"
+            ></textarea>
+          </div>
+
+          <div class="form-control">
+            <label class="label">
+              <span class="label-text text-xs">Adresses d'exploitation</span>
+            </label>
+            <div class="space-y-1">
+              <div
+                v-for="(address, index) in companyDetails.operationalAddresses || []"
+                :key="index"
+                class="join w-full"
+              >
+                <input
+                  :value="address"
+                  @input="updateOperationalAddress(index, ($event.target as HTMLInputElement).value)"
+                  type="text"
+                  placeholder="Adresse d'exploitation"
+                  class="input input-bordered input-sm join-item flex-1"
+                />
+                <button
+                  type="button"
+                  class="btn btn-sm btn-ghost join-item"
+                  @click="removeOperationalAddress(index)"
+                >
+                  ✕
+                </button>
+              </div>
+              <button
+                type="button"
+                class="btn btn-xs btn-ghost btn-block"
+                @click="addOperationalAddress"
+              >
+                + Ajouter une adresse
+              </button>
+            </div>
+          </div>
+
+          <div class="form-control">
+            <label class="label">
+              <span class="label-text text-xs">Numéros de téléphone</span>
+            </label>
+            <div class="space-y-1">
+              <div
+                v-for="(phone, index) in companyDetails.phoneNumbers || []"
+                :key="index"
+                class="join w-full"
+              >
+                <input
+                  :value="phone"
+                  @input="updateCompanyPhone(index, ($event.target as HTMLInputElement).value)"
+                  type="tel"
+                  placeholder="+32 XXX XX XX XX"
+                  class="input input-bordered input-sm join-item flex-1 font-mono"
+                />
+                <button
+                  type="button"
+                  class="btn btn-sm btn-ghost join-item"
+                  @click="removeCompanyPhone(index)"
+                >
+                  ✕
+                </button>
+              </div>
+              <button
+                type="button"
+                class="btn btn-xs btn-ghost btn-block"
+                @click="addCompanyPhone"
+              >
+                + Ajouter un numéro
+              </button>
+            </div>
+          </div>
+        </div>
+
         <!-- Entité vérifiée -->
         <div class="form-control">
           <label class="label cursor-pointer justify-start gap-3">
@@ -173,7 +369,7 @@ const defaultEntity = (): Finding => ({
   confidence: 'probable' as any,
   sources: [],
   metadata: {
-    entityType: '',
+    entityType: undefined,
     aliases: [],
     isVerified: false,
   },
@@ -190,7 +386,7 @@ watch(
       const cloned = JSON.parse(JSON.stringify(newEntity));
       // S'assurer que metadata existe toujours
       if (!cloned.metadata) {
-        cloned.metadata = { entityType: '', aliases: [], isVerified: false };
+        cloned.metadata = { entityType: undefined, aliases: [], isVerified: false };
       }
       localEntity.value = cloned;
     } else {
@@ -206,30 +402,63 @@ const entityType = computed({
   get: () => localEntity.value.metadata?.entityType || '',
   set: (value) => {
     if (!localEntity.value.metadata) {
-      localEntity.value.metadata = { entityType: '', aliases: [], isVerified: false };
+      localEntity.value.metadata = { entityType: undefined, aliases: [], isVerified: false };
     }
-    localEntity.value.metadata.entityType = value;
+    localEntity.value.metadata.entityType = value as any;
   },
 });
 
 const aliases = computed(() => localEntity.value.metadata?.aliases || []);
 
+// Getters directs pour les détails (pas de setter, on modifie directement l'objet)
+const personDetails = computed(() => {
+  if (!localEntity.value.metadata) {
+    localEntity.value.metadata = { entityType: undefined, aliases: [], isVerified: false };
+  }
+  if (!localEntity.value.metadata.personDetails) {
+    localEntity.value.metadata.personDetails = { 
+      dateOfBirth: undefined, 
+      nationalRegistryNumber: undefined, 
+      physicalAddress: undefined, 
+      phoneNumbers: [] 
+    };
+  }
+  return localEntity.value.metadata.personDetails;
+});
+
+const companyDetails = computed(() => {
+  if (!localEntity.value.metadata) {
+    localEntity.value.metadata = { entityType: undefined, aliases: [], isVerified: false };
+  }
+  if (!localEntity.value.metadata.companyDetails) {
+    localEntity.value.metadata.companyDetails = { 
+      bceNumber: undefined, 
+      headquartersAddress: undefined, 
+      operationalAddresses: [], 
+      phoneNumbers: [],
+      website: undefined
+    };
+  }
+  return localEntity.value.metadata.companyDetails;
+});
+
 const isVerified = computed({
   get: () => localEntity.value.metadata?.isVerified || false,
   set: (value) => {
     if (!localEntity.value.metadata) {
-      localEntity.value.metadata = { entityType: '', aliases: [], isVerified: false };
+      localEntity.value.metadata = { entityType: undefined, aliases: [], isVerified: false };
     }
-    localEntity.value.metadata.isVerified = value;
+    if (localEntity.value.metadata) {
+      localEntity.value.metadata.isVerified = value;
+    }
   },
 });
 
 // Validation
 const isValid = computed(() => {
-  return (
-    localEntity.value.label.trim() !== '' &&
-    localEntity.value.metadata?.entityType !== ''
-  );
+  const hasLabel = localEntity.value.label.trim() !== '';
+  const hasType = !!localEntity.value.metadata?.entityType;
+  return hasLabel && hasType;
 });
 
 function validateUniqueness(): boolean {
@@ -249,12 +478,14 @@ function validateUniqueness(): boolean {
 
 function addAlias() {
   if (!localEntity.value.metadata) {
-    localEntity.value.metadata = { entityType: '', aliases: [], isVerified: false };
+    localEntity.value.metadata = { entityType: undefined, aliases: [], isVerified: false };
   }
-  if (!localEntity.value.metadata.aliases) {
+  if (localEntity.value.metadata && !localEntity.value.metadata.aliases) {
     localEntity.value.metadata.aliases = [];
   }
-  localEntity.value.metadata.aliases.push('');
+  if (localEntity.value.metadata) {
+    localEntity.value.metadata.aliases!.push('');
+  }
 }
 
 function updateAlias(index: number, value: string) {
@@ -266,6 +497,75 @@ function updateAlias(index: number, value: string) {
 function removeAlias(index: number) {
   if (localEntity.value.metadata?.aliases) {
     localEntity.value.metadata.aliases.splice(index, 1);
+  }
+}
+
+// Gestion des téléphones (personne)
+function addPersonPhone() {
+  const details = personDetails.value;
+  if (!details.phoneNumbers) {
+    details.phoneNumbers = [];
+  }
+  details.phoneNumbers.push('');
+}
+
+function updatePersonPhone(index: number, value: string) {
+  const details = personDetails.value;
+  if (details.phoneNumbers) {
+    details.phoneNumbers[index] = value;
+  }
+}
+
+function removePersonPhone(index: number) {
+  const details = personDetails.value;
+  if (details.phoneNumbers) {
+    details.phoneNumbers.splice(index, 1);
+  }
+}
+
+// Gestion des adresses d'exploitation (société)
+function addOperationalAddress() {
+  const details = companyDetails.value;
+  if (!details.operationalAddresses) {
+    details.operationalAddresses = [];
+  }
+  details.operationalAddresses.push('');
+}
+
+function updateOperationalAddress(index: number, value: string) {
+  const details = companyDetails.value;
+  if (details.operationalAddresses) {
+    details.operationalAddresses[index] = value;
+  }
+}
+
+function removeOperationalAddress(index: number) {
+  const details = companyDetails.value;
+  if (details.operationalAddresses) {
+    details.operationalAddresses.splice(index, 1);
+  }
+}
+
+// Gestion des téléphones (société)
+function addCompanyPhone() {
+  const details = companyDetails.value;
+  if (!details.phoneNumbers) {
+    details.phoneNumbers = [];
+  }
+  details.phoneNumbers.push('');
+}
+
+function updateCompanyPhone(index: number, value: string) {
+  const details = companyDetails.value;
+  if (details.phoneNumbers) {
+    details.phoneNumbers[index] = value;
+  }
+}
+
+function removeCompanyPhone(index: number) {
+  const details = companyDetails.value;
+  if (details.phoneNumbers) {
+    details.phoneNumbers.splice(index, 1);
   }
 }
 

@@ -354,6 +354,7 @@ function getModuleIcon(type: string) {
 function getModuleComponent(type: ReportModuleType) {
   const componentMap: Record<string, any> = {
     summary: SummaryModule,
+    entities: EntityOverviewModule, // Type "entities" pour compatibilité
     objectives: ObjectivesModule,
     conclusions: ConclusionsModule,
     entity_overview: EntityOverviewModule,
