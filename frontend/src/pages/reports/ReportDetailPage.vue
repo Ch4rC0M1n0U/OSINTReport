@@ -939,10 +939,10 @@ function getClassificationInfo(classif: string) {
     <div v-if="showCorrelationsModal" class="modal modal-open">
       <div class="modal-box w-11/12 max-w-3xl">
         <h3 class="text-lg font-bold mb-4">
-          🔗 Corrélations ({{ correlations.length }})
+          🔗 Corrélations ({{ correlations?.length || 0 }})
         </h3>
 
-        <div v-if="correlations.length === 0" class="text-center py-8 opacity-60">
+        <div v-if="!correlations || correlations.length === 0" class="text-center py-8 opacity-60">
           Aucune corrélation détectée
         </div>
 

@@ -306,33 +306,17 @@ function formatSize(bytes: number): string {
 }
 
 /**
- * Convertit un offset timezone en nom de timezone
- */
-function getTimezoneName(offset: string): string {
-  const timezoneMap: Record<string, string> = {
-    '+02:00': 'CEST', '+01:00': 'CET', '+00:00': 'UTC',
-    '-04:00': 'EDT', '-05:00': 'EST', '+09:00': 'JST', '+08:00': 'CST',
-  };
-  return timezoneMap[offset] || `UTC${offset}`;
-}
-
-/**
- * Formatage de la date de capture EXIF avec timezone originale
- * Ex: "2025-10-05T18:00:35+02:00" → "05/10/2025 18:00 (CEST - UTC+02:00)"
+ * Formatage de la date de capture EXIF
  */
 function formatDate(isoDate: string): string {
-  const match = isoDate.match(/(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})([\+\-]\d{2}:\d{2})?/);
-  if (!match) return isoDate;
-  
-  const [, year, month, day, hours, minutes, , timezone] = match;
-  const dateStr = `${day}/${month}/${year} ${hours}:${minutes}`;
-  
-  if (timezone) {
-    const tzName = getTimezoneName(timezone);
-    return `${dateStr} (${tzName} - UTC${timezone})`;
-  }
-  
-  return dateStr;
+  const date = new Date(isoDate);
+  return date.toLocaleDateString('fr-FR', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
 }
 </script>
 

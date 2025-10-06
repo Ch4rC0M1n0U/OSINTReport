@@ -8,9 +8,10 @@ import puppeteer from "puppeteer";
 import handlebars from "handlebars";
 import { PDFDocument, rgb, StandardFonts, degrees } from "pdf-lib";
 import { readFile } from "fs/promises";
-import { join } from "path";
+import { join, resolve } from "path";
 import { logger } from "@/config/logger";
 import { prisma } from "@/config/prisma";
+import { SettingsService } from "@/modules/settings/settings.service";
 
 interface GeneratePDFOptions {
   reportId: string;
@@ -153,10 +154,68 @@ export class PDFService {
   /**
    * Préparer les données pour le template
    */
-  private static prepareTemplateData(report: any, options: GeneratePDFOptions) {
+  private static async prepareTemplateData(report: any, options: GeneratePDFOptions) {
     const now = new Date();
+    
+    // Récupérer les paramètres système
+    const systemSettings = await SettingsService.getSettings();
+    
+    // Construire l'adresse complète du service
+    const serviceAddressParts = [];
+    if (systemSettings.serviceAddress) serviceAddressParts.push(systemSettings.serviceAddress);
+    if (systemSettings.servicePostalCode || systemSettings.serviceCity) {
+      const cityPart = [systemSettings.servicePostalCode, systemSettings.serviceCity]
+        .filter(Boolean)
+        .join(' ');
+      serviceAddressParts.push(cityPart);
+    }
+    if (systemSettings.serviceCountry) serviceAddressParts.push(systemSettings.serviceCountry);
+    const serviceAddress = serviceAddressParts.length > 0 ? serviceAddressParts.join(', ') : null;
+
+    // Préparer l'URL du logo pour Puppeteer (base64 pour éviter les problèmes de sécurité file://)
+    let logoUrl: string | null = null;
+    if (systemSettings.logoUrl) {
+      try {
+        // Le logoUrl est relatif type "/uploads/logos/xxx.png"
+        // __dirname en production: /workspaces/OSINTReport/backend/dist/modules/pdf
+        // On veut accéder à: /workspaces/OSINTReport/backend/uploads/logos/xxx.png
+        const relativePath = systemSettings.logoUrl.startsWith('/') 
+          ? systemSettings.logoUrl.substring(1) 
+          : systemSettings.logoUrl;
+        const logoPath = resolve(join(__dirname, "../../../", relativePath));
+        const fs = require('fs');
+        
+        if (fs.existsSync(logoPath)) {
+          // Convertir l'image en base64
+          const imageBuffer = fs.readFileSync(logoPath);
+          const mimeType = systemSettings.logoUrl.toLowerCase().endsWith('.png') ? 'image/png' :
+                          systemSettings.logoUrl.toLowerCase().endsWith('.jpg') || systemSettings.logoUrl.toLowerCase().endsWith('.jpeg') ? 'image/jpeg' :
+                          systemSettings.logoUrl.toLowerCase().endsWith('.svg') ? 'image/svg+xml' :
+                          'image/png';
+          const base64Image = imageBuffer.toString('base64');
+          logoUrl = `data:${mimeType};base64,${base64Image}`;
+          logger.debug(`Logo converti en base64 (${mimeType}, ${(base64Image.length / 1024).toFixed(2)} KB)`);
+        } else {
+          logger.warn(`Logo file not found: ${logoPath}`);
+        }
+      } catch (error) {
+        logger.error(`Error loading logo: ${error}`);
+      }
+    }
 
     return {
+      // Paramètres système
+      serviceName: systemSettings.serviceName || "OSINT",
+      serviceFullName: systemSettings.serviceFullName || null,
+      serviceAddress: serviceAddress,
+      servicePhone: systemSettings.phoneNumber || null,
+      serviceFax: systemSettings.faxNumber || null,
+      serviceEmail: systemSettings.emailContact || null,
+      serviceWebsite: systemSettings.websiteUrl || null,
+      logoUrl: logoUrl,
+      primaryColor: systemSettings.primaryColor || "#003f87",
+      secondaryColor: systemSettings.secondaryColor || "#0066cc",
+      
       // Métadonnées du rapport
       title: report.title,
       caseNumber: report.caseNumber || "N/A",
@@ -666,7 +725,7 @@ export class PDFService {
       logger.debug("✅ Données du rapport récupérées");
 
       // 2. Préparer les données pour le template
-      const templateData = this.prepareTemplateData(report, options);
+      const templateData = await this.prepareTemplateData(report, options);
       logger.debug("✅ Données template préparées");
 
       // 3. Charger et rendre le template HTML

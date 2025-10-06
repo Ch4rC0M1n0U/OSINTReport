@@ -27,7 +27,7 @@
 
     /* Header institutionnel */
     .document-header {
-      border-bottom: 4px solid #003f87;
+      border-bottom: 4px solid {{primaryColor}};
       padding-bottom: 15px;
       margin-bottom: 20px;
       page-break-after: avoid;
@@ -52,7 +52,7 @@
     }
 
     .header-service strong {
-      color: #003f87;
+      color: {{primaryColor}};
       display: block;
       font-size: 11pt;
     }
@@ -64,7 +64,7 @@
 
     .document-title h1 {
       font-size: 24pt;
-      color: #003f87;
+      color: {{primaryColor}};
       font-weight: bold;
       margin-bottom: 10px;
     }
@@ -103,7 +103,7 @@
     .report-metadata {
       background: #f5f5f5;
       padding: 15px;
-      border-left: 4px solid #003f87;
+      border-left: 4px solid {{primaryColor}};
       margin-bottom: 20px;
       font-size: 10pt;
     }
@@ -131,8 +131,8 @@
 
     section h2 {
       font-size: 16pt;
-      color: #003f87;
-      border-bottom: 2px solid #003f87;
+      color: {{primaryColor}};
+      border-bottom: 2px solid {{primaryColor}};
       padding-bottom: 5px;
       margin-bottom: 15px;
       page-break-after: avoid;
@@ -153,7 +153,7 @@
     /* Modules */
     .module {
       background: #fafafa;
-      border-left: 3px solid #0066cc;
+      border-left: 3px solid {{secondaryColor}};
       padding: 15px;
       margin-bottom: 15px;
       page-break-inside: avoid;
@@ -162,7 +162,7 @@
     .module-title {
       font-size: 13pt;
       font-weight: bold;
-      color: #003f87;
+      color: {{primaryColor}};
       margin-bottom: 10px;
     }
 
@@ -188,12 +188,12 @@
     .entity-card {
       background: white;
       padding: 12px;
-      border-left: 3px solid #0066cc;
+      border-left: 3px solid {{secondaryColor}};
       border-radius: 4px;
     }
 
     .entity-card h4 {
-      color: #003f87;
+      color: {{primaryColor}};
       margin-bottom: 8px;
     }
 
@@ -235,12 +235,12 @@
     .methodology {
       background: #e7f3ff;
       padding: 10px;
-      border-left: 3px solid #0066cc;
+      border-left: 3px solid {{secondaryColor}};
       margin: 10px 0;
     }
 
     .methodology h4 {
-      color: #003f87;
+      color: {{primaryColor}};
       margin-bottom: 5px;
     }
 
@@ -310,11 +310,11 @@
       background: #f0f8ff;
       padding: 10px;
       margin: 10px 0;
-      border-left: 3px solid #0066cc;
+      border-left: 3px solid {{secondaryColor}};
     }
 
     .screenshots h4 {
-      color: #003f87;
+      color: {{primaryColor}};
       margin-bottom: 5px;
     }
 
@@ -335,7 +335,7 @@
 
     .media-item .caption {
       font-weight: bold;
-      color: #003f87;
+      color: {{primaryColor}};
       margin-bottom: 5px;
     }
 
@@ -418,7 +418,7 @@
     .sign-off-block {
       background: #f5f5f5;
       padding: 15px;
-      border-left: 4px solid #003f87;
+      border-left: 4px solid {{primaryColor}};
       margin-top: 20px;
     }
 
@@ -453,7 +453,7 @@
 
     .research-item h4 {
       font-size: 11pt;
-      color: #0066cc;
+      color: {{secondaryColor}};
       margin-bottom: 5px;
     }
 
@@ -465,7 +465,7 @@
       background: #f0f8ff;
       padding: 10px;
       margin: 10px 0;
-      border-left: 3px solid #0066cc;
+      border-left: 3px solid {{secondaryColor}};
       font-size: 10pt;
     }
 
@@ -526,7 +526,7 @@
     .stat-number {
       font-size: 28pt;
       font-weight: bold;
-      color: #003f87;
+      color: {{primaryColor}};
     }
 
     .stat-label {
@@ -539,7 +539,7 @@
     .document-footer {
       margin-top: 40px;
       padding-top: 15px;
-      border-top: 2px solid #003f87;
+      border-top: 2px solid {{primaryColor}};
       font-size: 10pt;
       color: #666;
     }
@@ -592,15 +592,25 @@
   <!-- Header institutionnel -->
   <div class="document-header">
     <div class="header-top">
+      {{#if logoUrl}}
       <div class="header-logo">
-        <!-- Logo sera remplacé par base64 si disponible -->
-        <div style="background: #003f87; color: white; padding: 20px; text-align: center; font-weight: bold;">
-          POLICE<br/>BELGE
+        <img src="{{logoUrl}}" alt="Logo {{serviceName}}" style="width: 120px; height: auto;">
+      </div>
+      {{else}}
+      <div class="header-logo">
+        <div style="background: {{primaryColor}}; color: white; padding: 20px; text-align: center; font-weight: bold;">
+          {{serviceName}}
         </div>
       </div>
+      {{/if}}
       <div class="header-service">
-        <strong>{{requestingService}}</strong>
-        {{reportingUnit}}
+        <strong>{{serviceName}}</strong>
+        {{#if serviceFullName}}{{serviceFullName}}{{/if}}
+        {{#if serviceAddress}}
+        <div style="font-size: 9pt; margin-top: 5px;">
+          {{serviceAddress}}
+        </div>
+        {{/if}}
       </div>
     </div>
 
@@ -729,8 +739,16 @@
   <!-- Footer et signature -->
   <div class="document-footer">
     <p class="text-muted">
-      Document généré le {{generatedDate}} par le système OSINTReport v1.0
+      Document généré le {{generatedDate}} par {{serviceName}}
+      {{#if serviceWebsite}} – {{serviceWebsite}}{{/if}}
     </p>
+    {{#if serviceAddress}}
+    <p class="text-muted" style="font-size: 9pt; margin-top: 5px;">
+      {{serviceAddress}}
+      {{#if servicePhone}} – Tél: {{servicePhone}}{{/if}}
+      {{#if serviceEmail}} – Email: {{serviceEmail}}{{/if}}
+    </p>
+    {{/if}}
 
     <div class="signature-block">
       <p><strong>{{officer}}</strong></p>

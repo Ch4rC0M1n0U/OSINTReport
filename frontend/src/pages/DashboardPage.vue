@@ -77,6 +77,12 @@ const adminNavigation = computed(() => {
       icon: "settings",
       visible: canManageSystemSettings.value || canAccessAdmin.value,
     },
+    {
+      label: "Gestion de la recherche",
+      to: { name: "admin.search" },
+      icon: "manage_search",
+      visible: canAccessAdmin.value,
+    },
   ]
     .filter((child) => child.visible)
     .map(({ visible, ...rest }) => rest);

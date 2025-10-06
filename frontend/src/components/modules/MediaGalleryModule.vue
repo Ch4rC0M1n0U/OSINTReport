@@ -361,50 +361,24 @@ function formatSize(bytes: number): string {
 }
 
 function formatDate(isoDate: string): string {
-  // Format court: DD/MM/YYYY
-  // Ex: "2025-10-05T18:00:35+02:00" → "05/10/2025"
-  const match = isoDate.match(/(\d{4})-(\d{2})-(\d{2})/);
-  if (!match) return isoDate;
-  
-  const [, year, month, day] = match;
-  return `${day}/${month}/${year}`;
-}
-
-/**
- * Convertit un offset timezone en nom de timezone
- * Ex: "+02:00" (en été) → "CEST", "+01:00" (en hiver) → "CET"
- */
-function getTimezoneName(offset: string): string {
-  // Map des timezones courantes (peut être étendu)
-  const timezoneMap: Record<string, string> = {
-    '+02:00': 'CEST', // Central European Summer Time (été)
-    '+01:00': 'CET',  // Central European Time (hiver)
-    '+00:00': 'UTC',  // Coordinated Universal Time
-    '-04:00': 'EDT',  // Eastern Daylight Time
-    '-05:00': 'EST',  // Eastern Standard Time
-    '+09:00': 'JST',  // Japan Standard Time
-    '+08:00': 'CST',  // China Standard Time
-    // Ajoutez d'autres selon vos besoins
-  };
-  
-  return timezoneMap[offset] || `UTC${offset}`;
+  const date = new Date(isoDate);
+  return date.toLocaleDateString('fr-FR', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+  });
 }
 
 function formatFullDate(isoDate: string): string {
-  // Format complet avec timezone originale entre parenthèses
-  // Ex: "2025-10-05T18:00:35+02:00" → "05/10/2025 18:00:35 (CEST - UTC+02:00)"
-  const match = isoDate.match(/(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})([\+\-]\d{2}:\d{2})?/);
-  if (!match) return isoDate;
-  
-  const [, year, month, day, hours, minutes, seconds, timezone] = match;
-  const dateStr = `${day}/${month}/${year} ${hours}:${minutes}:${seconds}`;
-  
-  if (timezone) {
-    const tzName = getTimezoneName(timezone);
-    return `${dateStr} (${tzName} - UTC${timezone})`;
-  }
-  
-  return dateStr;
+  const date = new Date(isoDate);
+  return date.toLocaleString('fr-FR', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+  });
 }
 </script>
 

@@ -31,6 +31,15 @@ interface SearchableReport {
   issuedAt: string | undefined;
   modulesCount: number;
   modulesContent: string;
+  // Entités extraites des modules
+  entities: {
+    phones: string[];
+    emails: string[];
+    names: string[];
+    addresses: string[];
+    urls: string[];
+    accounts: string[];
+  };
 }
 
 interface SearchOptions {
@@ -50,6 +59,187 @@ interface SearchResult {
 
 export class SearchService {
   private static reportsIndex: Index | null = null;
+
+  /**
+   * Extraire les entités des modules d'un rapport
+   */
+  private static extractEntities(modules: any[]): {
+    phones: string[];
+    emails: string[];
+    names: string[];
+    addresses: string[];
+    urls: string[];
+    accounts: string[];
+  } {
+    const entities = {
+      phones: [] as string[],
+      emails: [] as string[],
+      names: [] as string[],
+      addresses: [] as string[],
+      urls: [] as string[],
+      accounts: [] as string[],
+    };
+
+    modules.forEach((module: any) => {
+      if (!module.payload || typeof module.payload !== "object") return;
+
+      const payload = module.payload;
+
+      // Extraire selon le type de module
+      switch (module.type) {
+        case "platform_analysis":
+          // Téléphones
+          if (payload.phoneNumbers && Array.isArray(payload.phoneNumbers)) {
+            entities.phones.push(...payload.phoneNumbers.map((p: any) => p.number || p));
+          }
+          if (payload.phone) entities.phones.push(payload.phone);
+
+          // Emails
+          if (payload.emails && Array.isArray(payload.emails)) {
+            entities.emails.push(...payload.emails.map((e: any) => e.email || e));
+          }
+          if (payload.email) entities.emails.push(payload.email);
+
+          // Noms
+          if (payload.names && Array.isArray(payload.names)) {
+            entities.names.push(...payload.names.map((n: any) => n.name || n));
+          }
+          if (payload.fullName) entities.names.push(payload.fullName);
+          if (payload.realName) entities.names.push(payload.realName);
+
+          // Adresses
+          if (payload.addresses && Array.isArray(payload.addresses)) {
+            entities.addresses.push(...payload.addresses.map((a: any) => 
+              typeof a === 'string' ? a : a.address || JSON.stringify(a)
+            ));
+          }
+          if (payload.location) entities.addresses.push(payload.location);
+
+          // URLs
+          if (payload.urls && Array.isArray(payload.urls)) {
+            entities.urls.push(...payload.urls.map((u: any) => u.url || u));
+          }
+          if (payload.profileUrl) entities.urls.push(payload.profileUrl);
+          if (payload.websiteUrl) entities.urls.push(payload.websiteUrl);
+
+          // Comptes
+          if (payload.accounts && Array.isArray(payload.accounts)) {
+            entities.accounts.push(...payload.accounts.map((a: any) => 
+              a.username || a.handle || a.account || a
+            ));
+          }
+          if (payload.username) entities.accounts.push(payload.username);
+          if (payload.handle) entities.accounts.push(payload.handle);
+          break;
+
+        case "entity_overview":
+          // Extraire depuis metadata
+          if (payload.metadata) {
+            // Téléphones depuis personDetails
+            if (payload.metadata.personDetails?.phoneNumbers && Array.isArray(payload.metadata.personDetails.phoneNumbers)) {
+              entities.phones.push(...payload.metadata.personDetails.phoneNumbers.filter(Boolean));
+            }
+
+            // Téléphones depuis companyDetails
+            if (payload.metadata.companyDetails?.phoneNumbers && Array.isArray(payload.metadata.companyDetails.phoneNumbers)) {
+              entities.phones.push(...payload.metadata.companyDetails.phoneNumbers.filter(Boolean));
+            }
+
+            // Identifiants liés (peuvent être téléphones, emails, usernames)
+            if (payload.metadata.relatedIdentifiers && Array.isArray(payload.metadata.relatedIdentifiers)) {
+              payload.metadata.relatedIdentifiers.forEach((id: string) => {
+                if (!id) return;
+                
+                // Détecter le type d'identifiant
+                if (/^\+?[\d\s\-()]{10,}$/.test(id)) {
+                  entities.phones.push(id);
+                } else if (/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(id)) {
+                  entities.emails.push(id);
+                } else {
+                  entities.accounts.push(id);
+                }
+              });
+            }
+
+            // Emails depuis personDetails ou companyDetails
+            if (payload.metadata.personDetails?.email) {
+              entities.emails.push(payload.metadata.personDetails.email);
+            }
+
+            // Adresses
+            if (payload.metadata.personDetails?.physicalAddress) {
+              entities.addresses.push(payload.metadata.personDetails.physicalAddress);
+            }
+            if (payload.metadata.companyDetails?.headquartersAddress) {
+              entities.addresses.push(payload.metadata.companyDetails.headquartersAddress);
+            }
+            if (payload.metadata.companyDetails?.operationalAddresses && Array.isArray(payload.metadata.companyDetails.operationalAddresses)) {
+              entities.addresses.push(...payload.metadata.companyDetails.operationalAddresses.filter(Boolean));
+            }
+
+            // Noms/Aliases
+            if (payload.metadata.aliases && Array.isArray(payload.metadata.aliases)) {
+              entities.names.push(...payload.metadata.aliases.filter(Boolean));
+            }
+
+            // Website
+            if (payload.metadata.companyDetails?.website) {
+              entities.urls.push(payload.metadata.companyDetails.website);
+            }
+          }
+
+          // Label principal de l'entité
+          if (payload.label) {
+            entities.names.push(payload.label);
+          }
+          break;
+
+        case "identifier_lookup":
+          // Parcourir les items de recherche
+          if (payload.items && Array.isArray(payload.items)) {
+            payload.items.forEach((item: any) => {
+              if (item.type === "PHONE" && item.value) entities.phones.push(item.value);
+              if (item.type === "EMAIL" && item.value) entities.emails.push(item.value);
+              if (item.type === "NAME" && item.value) entities.names.push(item.value);
+              if (item.type === "ADDRESS" && item.value) entities.addresses.push(item.value);
+              if (item.type === "URL" && item.value) entities.urls.push(item.value);
+              if (item.type === "ACCOUNT" && item.value) entities.accounts.push(item.value);
+            });
+          }
+          break;
+
+        default:
+          // Recherche générique dans le payload
+          const payloadStr = JSON.stringify(payload).toLowerCase();
+          
+          // Pattern téléphone international
+          const phonePattern = /\+?[\d\s\-()]{10,}/g;
+          const phones = payloadStr.match(phonePattern);
+          if (phones) entities.phones.push(...phones);
+
+          // Pattern email
+          const emailPattern = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g;
+          const emails = payloadStr.match(emailPattern);
+          if (emails) entities.emails.push(...emails);
+
+          // Pattern URL
+          const urlPattern = /https?:\/\/[^\s"<>]+/g;
+          const urls = payloadStr.match(urlPattern);
+          if (urls) entities.urls.push(...urls);
+          break;
+      }
+    });
+
+    // Dédupliquer et nettoyer
+    return {
+      phones: [...new Set(entities.phones.filter(Boolean))],
+      emails: [...new Set(entities.emails.filter(Boolean))],
+      names: [...new Set(entities.names.filter(Boolean))],
+      addresses: [...new Set(entities.addresses.filter(Boolean))],
+      urls: [...new Set(entities.urls.filter(Boolean))],
+      accounts: [...new Set(entities.accounts.filter(Boolean))],
+    };
+  }
 
   /**
    * Initialiser les indexes Meilisearch
@@ -87,6 +277,13 @@ export class SearchService {
           "keywords",
           "modulesContent",
           "ownerName",
+          // Entités
+          "entities.phones",
+          "entities.emails",
+          "entities.names",
+          "entities.addresses",
+          "entities.urls",
+          "entities.accounts",
         ],
         filterableAttributes: [
           "status",
@@ -95,6 +292,13 @@ export class SearchService {
           "ownerId",
           "createdAt",
           "issuedAt",
+          // Entités (pour filtrer)
+          "entities.phones",
+          "entities.emails",
+          "entities.names",
+          "entities.addresses",
+          "entities.urls",
+          "entities.accounts",
         ],
         sortableAttributes: ["createdAt", "updatedAt", "issuedAt", "title"],
         rankingRules: [
@@ -177,6 +381,9 @@ export class SearchService {
         })
         .join("\n\n");
 
+      // Extraire les entités des modules
+      const entities = this.extractEntities(report.modules);
+
       // Créer l'objet indexable
       const searchableReport: SearchableReport = {
         id: report.id,
@@ -199,6 +406,7 @@ export class SearchService {
         updatedAt: report.updatedAt.toISOString(),
         modulesCount: report._count.modules,
         modulesContent,
+        entities,
         issuedAt: report.issuedAt?.toISOString(),
       };
 
@@ -278,6 +486,8 @@ export class SearchService {
           })
           .join("\n\n");
 
+        const entities = this.extractEntities(report.modules);
+
         return {
           id: report.id,
           title: report.title,
@@ -299,6 +509,7 @@ export class SearchService {
           updatedAt: report.updatedAt.toISOString(),
           modulesCount: report._count.modules,
           modulesContent,
+          entities,
           issuedAt: report.issuedAt?.toISOString(),
         };
       });

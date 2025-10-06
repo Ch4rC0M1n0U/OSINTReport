@@ -268,6 +268,23 @@
         </div>
       </div>
 
+      <!-- Link to Search Management -->
+      <div class="alert alert-info">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="stroke-current shrink-0 w-6 h-6">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+        </svg>
+        <div class="flex-1">
+          <h3 class="font-bold">Gestion de l'index de recherche</h3>
+          <div class="text-sm">
+            Pour gérer l'index MeiliSearch, réindexer les rapports ou consulter les statistiques de recherche,
+            rendez-vous sur la page dédiée.
+          </div>
+        </div>
+        <router-link to="/admin/search" class="btn btn-primary btn-sm">
+          🔍 Gérer la recherche
+        </router-link>
+      </div>
+
       <!-- Actions -->
       <div class="flex justify-end gap-4">
         <button
