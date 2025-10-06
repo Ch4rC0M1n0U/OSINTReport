@@ -17,6 +17,11 @@ export default defineConfig(({ mode }: { mode: string }) => {
           changeOrigin: true,
           secure: false,
         },
+        "/uploads": {
+          target: env.VITE_API_URL ?? "http://localhost:4000",
+          changeOrigin: true,
+          secure: false,
+        },
       },
     },
     preview: {

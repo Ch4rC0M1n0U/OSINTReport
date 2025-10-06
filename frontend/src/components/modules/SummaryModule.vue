@@ -21,38 +21,6 @@
 
     <!-- Mode édition avec auto-save -->
     <div v-else class="space-y-6">
-      <!-- Indicateur auto-save -->
-      <div class="flex items-center justify-between bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg px-4 py-2">
-        <div class="flex items-center gap-2">
-          <span class="text-sm font-medium text-blue-700 dark:text-blue-300">
-            ✨ Sauvegarde automatique activée
-          </span>
-        </div>
-        <div class="flex items-center gap-2">
-          <!-- Indicateur de sauvegarde en cours -->
-          <div v-if="autoSave.isSaving.value" class="flex items-center gap-2 text-blue-600 dark:text-blue-400">
-            <svg class="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-            </svg>
-            <span class="text-xs font-medium">Sauvegarde...</span>
-          </div>
-          
-          <!-- Dernière sauvegarde -->
-          <div v-else-if="autoSave.lastSaved.value" class="text-xs text-green-600 dark:text-green-400 flex items-center gap-1">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-            </svg>
-            <span>Sauvegardé {{ formatLastSaved(autoSave.lastSaved.value) }}</span>
-          </div>
-        </div>
-      </div>
-
-      <!-- Erreur auto-save -->
-      <div v-if="autoSave.error.value" class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg px-4 py-2 text-sm text-red-700 dark:text-red-300">
-        ⚠️ {{ autoSave.error.value }}
-      </div>
-
       <!-- Éditeur de contenu WYSIWYG -->
       <section>
         <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-3">
@@ -63,9 +31,38 @@
           placeholder="Décrivez les éléments recueillis par les enquêteurs, le contexte, les faits principaux..."
         />
         <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">
-          💡 Le contenu est automatiquement sauvegardé 2 secondes après avoir arrêté de taper.
+          💡 Sauvegarde automatique après 30 secondes d'inactivité.
         </p>
       </section>
+
+      <!-- Indicateur discret en bas -->
+      <div class="flex items-center justify-between text-xs text-base-content/60 pt-2 border-t border-base-300">
+        <div class="flex items-center gap-2">
+          <!-- Sauvegarde en cours -->
+          <div v-if="autoSave.isSaving.value" class="flex items-center gap-1">
+            <span class="loading loading-spinner loading-xs"></span>
+            <span>Sauvegarde...</span>
+          </div>
+          
+          <!-- Dernière sauvegarde -->
+          <div v-else-if="autoSave.lastSaved.value" class="flex items-center gap-1 text-success">
+            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+            </svg>
+            <span>Sauvegardé {{ formatLastSaved(autoSave.lastSaved.value) }}</span>
+          </div>
+          
+          <!-- En attente -->
+          <div v-else class="opacity-50">
+            En attente de modifications...
+          </div>
+        </div>
+        
+        <!-- Erreur -->
+        <div v-if="autoSave.error.value" class="text-error">
+          ⚠️ {{ autoSave.error.value }}
+        </div>
+      </div>
 
       <!-- Bouton terminer -->
       <div class="flex justify-end">
@@ -108,7 +105,7 @@ const safeContent = computed(() => {
 
 // Auto-save setup
 const autoSave = useAutoSave(editableContent, {
-  delay: 2000,
+  delay: 30000, // 30 secondes
   enabled: isEditing,
   onSave: async (content: string) => {
     emit("update:modelValue", { content });

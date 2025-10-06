@@ -4,6 +4,7 @@ export enum PermissionCode {
   USERS_READ = "users:read",
   USERS_WRITE = "users:write",
   ADMIN = "system:admin",
+  SYSTEM_SETTINGS = "system:settings",
 }
 
 export type RoleDefinition = {
@@ -24,6 +25,7 @@ export const ROLE_DEFINITIONS: RoleDefinition[] = [
       PermissionCode.USERS_READ,
       PermissionCode.USERS_WRITE,
       PermissionCode.ADMIN,
+      PermissionCode.SYSTEM_SETTINGS,
     ],
   },
   {

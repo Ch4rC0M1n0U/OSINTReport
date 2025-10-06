@@ -132,15 +132,17 @@
               <input
                 v-model="lead.platform"
                 type="text"
-                placeholder="Plateforme"
-                class="input input-bordered input-sm w-full"
+                placeholder="Plateforme (appuyez sur Entrée pour sauvegarder)"
+                class="input input-sm w-full px-0 border-0 border-b border-base-300 bg-transparent focus:outline-none focus:border-primary transition-colors"
+                @keyup.enter="saveChanges"
               />
 
               <input
                 v-model="lead.legalBasis"
                 type="text"
-                placeholder="Base légale"
-                class="input input-bordered input-sm w-full"
+                placeholder="Base légale (appuyez sur Entrée pour sauvegarder)"
+                class="input input-sm w-full px-0 border-0 border-b border-base-300 bg-transparent focus:outline-none focus:border-primary transition-colors"
+                @keyup.enter="saveChanges"
               />
 
               <!-- Données ciblées -->
@@ -155,8 +157,9 @@
                     <input
                       v-model="lead.dataTargeted![dataIndex]"
                       type="text"
-                      placeholder="Type de donnée"
-                      class="input input-bordered input-sm join-item flex-1"
+                      placeholder="Type de donnée (Entrée pour sauvegarder)"
+                      class="input input-sm join-item flex-1 px-0 border-0 border-b border-base-300 bg-transparent focus:outline-none focus:border-primary transition-colors"
+                      @keyup.enter="saveChanges"
                     />
                     <button
                       type="button"

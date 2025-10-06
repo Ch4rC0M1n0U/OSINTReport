@@ -29,9 +29,56 @@ export class PDFService {
   private static templateCache: Map<string, HandlebarsTemplateDelegate> = new Map();
 
   /**
+   * Enregistrer les helpers Handlebars personnalisés
+   */
+  private static registerHelpers() {
+    // Helper pour comparaison égalité
+    handlebars.registerHelper("eq", function (a: any, b: any) {
+      return a === b;
+    });
+
+    // Helper pour formater une date
+    handlebars.registerHelper("formatDate", function (date: string | Date) {
+      if (!date) return "N/A";
+      const d = new Date(date);
+      return d.toLocaleDateString("fr-BE", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      });
+    });
+
+    // Helper pour formater une date avec heure
+    handlebars.registerHelper("formatDateTime", function (date: string | Date) {
+      if (!date) return "N/A";
+      const d = new Date(date);
+      return d.toLocaleDateString("fr-BE", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+    });
+
+    // Helper pour uppercase
+    handlebars.registerHelper("upper", function (str: string) {
+      return str ? str.toUpperCase() : "";
+    });
+
+    // Helper pour vérifier si tableau non vide
+    handlebars.registerHelper("hasItems", function (arr: any[]) {
+      return arr && Array.isArray(arr) && arr.length > 0;
+    });
+  }
+
+  /**
    * Charger et compiler un template Handlebars
    */
   private static async loadTemplate(templateName: string): Promise<HandlebarsTemplateDelegate> {
+    // Enregistrer les helpers (une seule fois)
+    this.registerHelpers();
+
     // Vérifier le cache
     if (this.templateCache.has(templateName)) {
       return this.templateCache.get(templateName)!;
@@ -176,42 +223,350 @@ export class PDFService {
   }
 
   /**
-   * Rendre le contenu d'un module
+   * Rendre le contenu d'un module selon son type
    */
   private static renderModuleContent(module: any): string {
-    let content = "";
+    const type = module.type;
+    const payload = module.payload || {};
 
-    // Headline
-    if (module.headline) {
-      content += `<p class="module-headline">${module.headline}</p>`;
+    switch (type) {
+      case "summary":
+        return this.renderSummary(payload);
+      case "entities":
+        return this.renderEntities(payload, module.entity);
+      case "objectives":
+        return this.renderObjectives(payload);
+      case "research_summary":
+        return this.renderResearchSummary(payload);
+      case "entity_overview":
+        return this.renderEntityOverview(payload, module.entity);
+      case "identifier_lookup":
+        return this.renderIdentifierLookup(payload);
+      case "platform_analysis":
+        return this.renderPlatformAnalysis(payload);
+      case "media_gallery":
+        return this.renderMediaGallery(payload);
+      case "data_retention":
+        return this.renderDataRetention(payload);
+      case "conclusions":
+        return this.renderConclusions(payload);
+      case "investigation_leads":
+        return this.renderInvestigationLeads(payload);
+      case "sign_off":
+        return this.renderSignOff(payload);
+      default:
+        return this.renderGeneric(payload);
     }
+  }
 
-    // Research items
-    if (module.researchItems && module.researchItems.length > 0) {
-      content += '<div class="research-items">';
-      module.researchItems.forEach((item: any) => {
-        content += `
-          <div class="research-item">
-            <h4>${item.researchType?.name || "Recherche"}</h4>
-            <p><strong>Entité:</strong> ${item.entity?.name || "N/A"}</p>
-            ${item.findings ? `<div class="findings">${item.findings}</div>` : ""}
-            ${item.notes ? `<p class="notes">${item.notes}</p>` : ""}
-          </div>
-        `;
-      });
-      content += "</div>";
-    }
+  /** Renderer pour module Summary */
+  private static renderSummary(payload: any): string {
+    return payload.content ? `<div class="content">${payload.content}</div>` : "";
+  }
 
-    // Payload générique
-    if (module.payload && typeof module.payload === "object") {
-      if (module.payload.findings) {
-        content += '<div class="findings">';
-        content += JSON.stringify(module.payload.findings, null, 2);
-        content += "</div>";
+  /** Renderer pour module Entities */
+  private static renderEntities(payload: any, linkedEntity: any): string {
+    if (!payload.entities || payload.entities.length === 0) return "";
+
+    let html = '<div class="entities-list">';
+    payload.entities.forEach((entry: any) => {
+      const entity = entry.entity || linkedEntity;
+      if (!entity) return;
+
+      html += '<div class="entity-card">';
+      html += `<h4>${entity.name || "Entité"}</h4>`;
+      
+      if (entity.metadata) {
+        const meta = entity.metadata;
+        if (meta.entityType) {
+          html += `<p><strong>Type:</strong> ${meta.entityType}</p>`;
+        }
+        if (meta.aliases && meta.aliases.length > 0) {
+          html += `<p><strong>Alias:</strong> ${meta.aliases.join(", ")}</p>`;
+        }
+        
+        // Détails personne
+        if (meta.personDetails) {
+          const pd = meta.personDetails;
+          if (pd.dateOfBirth) html += `<p><strong>Date de naissance:</strong> ${pd.dateOfBirth}</p>`;
+          if (pd.nationalRegistryNumber) html += `<p><strong>RRN:</strong> ${pd.nationalRegistryNumber}</p>`;
+          if (pd.physicalAddress) html += `<p><strong>Adresse:</strong> ${pd.physicalAddress}</p>`;
+          if (pd.phoneNumbers && pd.phoneNumbers.length > 0) {
+            html += `<p><strong>Téléphones:</strong> ${pd.phoneNumbers.join(", ")}</p>`;
+          }
+        }
+        
+        // Détails société
+        if (meta.companyDetails) {
+          const cd = meta.companyDetails;
+          if (cd.bceNumber) html += `<p><strong>BCE:</strong> ${cd.bceNumber}</p>`;
+          if (cd.headquartersAddress) html += `<p><strong>Siège:</strong> ${cd.headquartersAddress}</p>`;
+          if (cd.website) html += `<p><strong>Site web:</strong> ${cd.website}</p>`;
+          if (cd.phoneNumbers && cd.phoneNumbers.length > 0) {
+            html += `<p><strong>Téléphones:</strong> ${cd.phoneNumbers.join(", ")}</p>`;
+          }
+        }
       }
-    }
+      
+      if (entry.role) html += `<p><strong>Rôle:</strong> ${entry.role}</p>`;
+      if (entry.notes) html += `<p class="notes">${entry.notes}</p>`;
+      html += '</div>';
+    });
+    html += '</div>';
+    return html;
+  }
 
-    return content;
+  /** Renderer pour module Objectives */
+  private static renderObjectives(payload: any): string {
+    if (!payload.objectives || payload.objectives.length === 0) return "";
+
+    let html = '<ul class="objectives-list">';
+    payload.objectives.forEach((obj: string) => {
+      html += `<li>${obj}</li>`;
+    });
+    html += '</ul>';
+    return html;
+  }
+
+  /** Renderer pour module Research Summary */
+  private static renderResearchSummary(payload: any): string {
+    let html = "";
+    
+    if (payload.summary) {
+      html += `<div class="summary-text">${payload.summary}</div>`;
+    }
+    
+    if (payload.notFound && payload.notFound.length > 0) {
+      html += '<div class="not-found-section">';
+      html += '<h4>Éléments non trouvés</h4>';
+      html += '<ul>';
+      payload.notFound.forEach((item: string) => {
+        html += `<li>${item}</li>`;
+      });
+      html += '</ul>';
+      html += '</div>';
+    }
+    
+    if (payload.methodology) {
+      html += `<div class="methodology"><h4>Méthodologie</h4><p>${payload.methodology}</p></div>`;
+    }
+    
+    if (payload.notes) {
+      html += `<p class="notes">${payload.notes}</p>`;
+    }
+    
+    return html;
+  }
+
+  /** Renderer pour module Entity Overview */
+  private static renderEntityOverview(payload: any, entity: any): string {
+    let html = "";
+    
+    if (entity) {
+      html += `<div class="entity-header"><h4>${entity.name}</h4></div>`;
+    }
+    
+    if (payload.context) {
+      html += `<div class="context">${payload.context}</div>`;
+    }
+    
+    if (payload.findings && payload.findings.length > 0) {
+      html += this.renderFindings(payload.findings);
+    }
+    
+    if (payload.notes) {
+      html += `<p class="notes">${payload.notes}</p>`;
+    }
+    
+    return html;
+  }
+
+  /** Renderer pour module Identifier Lookup */
+  private static renderIdentifierLookup(payload: any): string {
+    let html = "";
+    
+    if (payload.identifierValue) {
+      html += `<p><strong>${payload.identifierType || "Identifiant"}:</strong> ${payload.identifierValue}</p>`;
+    }
+    
+    if (payload.findings && payload.findings.length > 0) {
+      html += this.renderFindings(payload.findings);
+    }
+    
+    if (payload.notes) {
+      html += `<p class="notes">${payload.notes}</p>`;
+    }
+    
+    return html;
+  }
+
+  /** Renderer pour module Platform Analysis */
+  private static renderPlatformAnalysis(payload: any): string {
+    let html = "";
+    
+    if (payload.platform) {
+      html += `<p><strong>Plateforme:</strong> ${payload.platform.toUpperCase()}</p>`;
+    }
+    
+    if (payload.platformUrl) {
+      html += `<p><strong>URL:</strong> <a href="${payload.platformUrl}">${payload.platformUrl}</a></p>`;
+    }
+    
+    if (payload.findings && payload.findings.length > 0) {
+      html += this.renderFindings(payload.findings);
+    }
+    
+    if (payload.screenshots && payload.screenshots.length > 0) {
+      html += '<div class="screenshots">';
+      html += '<h4>Captures d\'écran</h4>';
+      html += `<p>${payload.screenshots.length} capture(s) disponible(s)</p>`;
+      html += '</div>';
+    }
+    
+    if (payload.notes) {
+      html += `<p class="notes">${payload.notes}</p>`;
+    }
+    
+    return html;
+  }
+
+  /** Renderer pour module Media Gallery */
+  private static renderMediaGallery(payload: any): string {
+    let html = "";
+    
+    if (payload.description) {
+      html += `<p class="description">${payload.description}</p>`;
+    }
+    
+    if (payload.items && payload.items.length > 0) {
+      html += '<div class="media-grid">';
+      payload.items.forEach((item: any) => {
+        html += '<div class="media-item">';
+        html += `<p class="caption">${item.caption}</p>`;
+        if (item.date) html += `<p class="date">${item.date}</p>`;
+        if (item.source) html += `<p class="source">Source: ${item.source}</p>`;
+        html += '</div>';
+      });
+      html += '</div>';
+    }
+    
+    return html;
+  }
+
+  /** Renderer pour module Data Retention */
+  private static renderDataRetention(payload: any): string {
+    if (!payload.datasets || payload.datasets.length === 0) return "";
+
+    let html = '<div class="datasets-list">';
+    payload.datasets.forEach((dataset: any) => {
+      html += '<div class="dataset-card">';
+      html += `<h4>${dataset.label}</h4>`;
+      html += `<p>${dataset.description}</p>`;
+      html += `<p class="retention-policy"><strong>Rétention:</strong> ${dataset.retentionPolicy}</p>`;
+      if (dataset.location) {
+        html += `<p class="location"><strong>Emplacement:</strong> ${dataset.location}</p>`;
+      }
+      html += '</div>';
+    });
+    html += '</div>';
+    return html;
+  }
+
+  /** Renderer pour module Conclusions */
+  private static renderConclusions(payload: any): string {
+    if (!payload.statements || payload.statements.length === 0) return "";
+
+    let html = '<ul class="conclusions-list">';
+    payload.statements.forEach((statement: string) => {
+      html += `<li>${statement}</li>`;
+    });
+    html += '</ul>';
+    return html;
+  }
+
+  /** Renderer pour module Investigation Leads */
+  private static renderInvestigationLeads(payload: any): string {
+    if (!payload.leads || payload.leads.length === 0) return "";
+
+    let html = '<div class="leads-list">';
+    payload.leads.forEach((lead: any) => {
+      html += '<div class="lead-card">';
+      html += `<h4>${lead.type || "Piste"}</h4>`;
+      if (lead.platform) html += `<p><strong>Plateforme:</strong> ${lead.platform}</p>`;
+      if (lead.legalBasis) html += `<p><strong>Base légale:</strong> ${lead.legalBasis}</p>`;
+      if (lead.dataTargeted && lead.dataTargeted.length > 0) {
+        html += `<p><strong>Données visées:</strong> ${lead.dataTargeted.join(", ")}</p>`;
+      }
+      if (lead.priority) {
+        html += `<p class="priority priority-${lead.priority}"><strong>Priorité:</strong> ${lead.priority.toUpperCase()}</p>`;
+      }
+      if (lead.notes) html += `<p class="notes">${lead.notes}</p>`;
+      html += '</div>';
+    });
+    html += '</div>';
+    return html;
+  }
+
+  /** Renderer pour module Sign Off */
+  private static renderSignOff(payload: any): string {
+    let html = '<div class="sign-off-block">';
+    
+    if (payload.date) {
+      html += `<p><strong>Date:</strong> ${new Date(payload.date).toLocaleDateString("fr-BE")}</p>`;
+    }
+    
+    if (payload.officer) {
+      html += '<div class="officer-info">';
+      html += `<p><strong>${payload.officer.name}</strong></p>`;
+      html += `<p>${payload.officer.rank}</p>`;
+      html += `<p>${payload.officer.unit}</p>`;
+      if (payload.officer.badgeNumber) {
+        html += `<p>Matricule: ${payload.officer.badgeNumber}</p>`;
+      }
+      html += '</div>';
+    }
+    
+    if (payload.additionalNotes) {
+      html += `<p class="notes">${payload.additionalNotes}</p>`;
+    }
+    
+    html += '</div>';
+    return html;
+  }
+
+  /** Renderer générique pour Finding[] */
+  private static renderFindings(findings: any[]): string {
+    let html = '<div class="findings-section">';
+    
+    findings.forEach((finding: any) => {
+      html += '<div class="finding-card">';
+      html += `<h4>${finding.label}</h4>`;
+      html += `<p>${finding.description}</p>`;
+      
+      if (finding.confidence) {
+        html += `<p class="confidence confidence-${finding.confidence}">Confiance: ${finding.confidence}</p>`;
+      }
+      
+      if (finding.sources && finding.sources.length > 0) {
+        html += '<div class="sources"><strong>Sources:</strong><ul>';
+        finding.sources.forEach((source: any) => {
+          html += `<li>${source.type}: ${source.value}${source.note ? ` (${source.note})` : ""}</li>`;
+        });
+        html += '</ul></div>';
+      }
+      
+      html += '</div>';
+    });
+    
+    html += '</div>';
+    return html;
+  }
+
+  /** Renderer générique pour payload inconnu */
+  private static renderGeneric(payload: any): string {
+    if (!payload || Object.keys(payload).length === 0) return "";
+    
+    return `<pre class="payload-dump">${JSON.stringify(payload, null, 2)}</pre>`;
   }
 
   /**

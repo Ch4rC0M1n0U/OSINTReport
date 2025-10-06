@@ -4,6 +4,7 @@ import helmet from "helmet";
 import cookieParser from "cookie-parser";
 import rateLimit from "express-rate-limit";
 import pinoHttp from "pino-http";
+import { join } from "path";
 
 import { env } from "@config/env";
 import { logger } from "@config/logger";
@@ -50,6 +51,9 @@ app.use(cookieParser());
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true }));
 app.use(limiter);
+
+// Servir les fichiers statiques (logos, avatars, etc.)
+app.use("/uploads", express.static(join(__dirname, "../uploads")));
 
 app.use("/api", router);
 

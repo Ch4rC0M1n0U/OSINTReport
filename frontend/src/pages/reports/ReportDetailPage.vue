@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, computed } from "vue";
+import { ref, onMounted, computed, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import {
   reportsApi,
@@ -32,6 +32,7 @@ import MediaGalleryModule from "@/components/modules/MediaGalleryModule.vue";
 import DataRetentionModule from "@/components/modules/DataRetentionModule.vue";
 import InvestigationLeadsModule from "@/components/modules/InvestigationLeadsModule.vue";
 import SignOffModule from "@/components/modules/SignOffModule.vue";
+import ResearchSummaryModule from "@/components/modules/ResearchSummaryModule.vue";
 
 const route = useRoute();
 const router = useRouter();
@@ -89,6 +90,18 @@ const moduleTypes = (Object.keys(MODULE_TYPE_METADATA) as ReportModuleType[])
     icon: MODULE_TYPE_METADATA[key].icon,
   }))
   .sort((a, b) => MODULE_TYPE_METADATA[a.value].order - MODULE_TYPE_METADATA[b.value].order);
+
+// Pré-remplir le titre avec le label du type de module sélectionné
+watch(
+  () => moduleForm.value.type,
+  (newType: ReportModuleType) => {
+    const selectedModuleType = moduleTypes.find((mt) => mt.value === newType);
+    if (selectedModuleType) {
+      moduleForm.value.title = selectedModuleType.label;
+    }
+  },
+  { immediate: true }
+);
 
 onMounted(async () => {
   await loadReport();
@@ -152,9 +165,12 @@ async function detectCorrelations() {
 }
 
 function openModuleDialog() {
+  const defaultType = "summary";
+  const defaultModuleType = moduleTypes.find((mt) => mt.value === defaultType);
+  
   moduleForm.value = {
-    type: "summary",
-    title: "",
+    type: defaultType,
+    title: defaultModuleType?.label || "",
     entityId: undefined,
     payload: {},
   };
@@ -357,6 +373,7 @@ function getModuleComponent(type: ReportModuleType) {
     entities: EntityOverviewModule, // Type "entities" pour compatibilité
     objectives: ObjectivesModule,
     conclusions: ConclusionsModule,
+    research_summary: ResearchSummaryModule,
     entity_overview: EntityOverviewModule,
     identifier_lookup: IdentifierLookupModule,
     platform_analysis: PlatformAnalysisModule,
@@ -371,12 +388,16 @@ function getModuleComponent(type: ReportModuleType) {
 async function handleUpdateModule(moduleId: string, payload: any) {
   try {
     await reportsApi.updateModule(reportId.value, moduleId, { payload });
-    await loadReport();
-    await modal.showSuccess(
-      "Le module a été mis à jour avec succès.",
-      "Module mis à jour"
-    );
+    
+    // Mettre à jour localement le payload du module sans tout recharger
+    const moduleIndex = modules.value.findIndex(m => m.id === moduleId);
+    if (moduleIndex !== -1) {
+      modules.value[moduleIndex].payload = payload;
+    }
+    
+    console.log("✅ Module mis à jour:", moduleId);
   } catch (err: any) {
+    // Afficher l'erreur seulement en cas de problème
     await modal.showError(
       err.response?.data?.message || "Une erreur est survenue lors de la mise à jour du module.",
       "Erreur de mise à jour"

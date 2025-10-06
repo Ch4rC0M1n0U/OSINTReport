@@ -358,7 +358,7 @@
               v-model="newIdentifierInput"
               type="text"
               placeholder="Ajouter un identifiant..."
-              class="input input-bordered input-sm join-item flex-1 font-mono"
+              class="input input-sm join-item flex-1 font-mono px-0 border-0 border-b border-base-300 bg-transparent focus:outline-none focus:border-primary transition-colors"
               @keyup.enter="addNewIdentifier"
             />
             <button

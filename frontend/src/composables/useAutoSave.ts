@@ -10,7 +10,7 @@
 import { ref, watch, type Ref } from 'vue';
 
 export interface AutoSaveOptions {
-  delay?: number; // Délai en ms (défaut: 2000)
+  delay?: number; // Délai en ms (défaut: 30000 = 30s)
   onSave: (value: string) => Promise<void>;
   enabled?: Ref<boolean>; // Activer/désactiver l'auto-save
 }
@@ -27,7 +27,7 @@ export function useAutoSave(
   content: Ref<string>,
   options: AutoSaveOptions
 ): AutoSaveState {
-  const delay = options.delay || 2000;
+  const delay = options.delay || 30000; // 30 secondes par défaut
   const isSaving = ref(false);
   const lastSaved = ref<Date | null>(null);
   const error = ref<string | null>(null);

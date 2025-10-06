@@ -11,6 +11,11 @@ const canAccessAdmin = computed(() => {
   return permissions ? permissions.includes("system:admin") : false;
 });
 
+const canManageSystemSettings = computed(() => {
+  const permissions = auth.user?.permissions;
+  return permissions ? permissions.includes("system:settings") : false;
+});
+
 const canManageUsers = computed(() => {
   const permissions = auth.user?.permissions;
   if (!permissions) return false;
@@ -43,7 +48,7 @@ const mainNavigation = computed(() => {
 });
 
 const adminNavigation = computed(() => {
-  if (!canAccessAdmin.value && !canManageUsers.value) {
+  if (!canAccessAdmin.value && !canManageUsers.value && !canManageSystemSettings.value) {
     return null;
   }
 
@@ -65,6 +70,12 @@ const adminNavigation = computed(() => {
       to: { name: "admin.smtp" },
       icon: "mail",
       visible: canAccessAdmin.value,
+    },
+    {
+      label: "Paramètres système",
+      to: { name: "admin.system" },
+      icon: "settings",
+      visible: canManageSystemSettings.value || canAccessAdmin.value,
     },
   ]
     .filter((child) => child.visible)

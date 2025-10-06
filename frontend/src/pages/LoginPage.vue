@@ -1,15 +1,31 @@
 <script setup lang="ts">
-import { reactive } from "vue";
+import { reactive, computed, onMounted } from "vue";
 import { useRouter, useRoute } from "vue-router";
 import { useAuthStore } from "@/stores/auth";
+import { useSystemSettings } from "@/composables/useSystemSettings";
 
 const auth = useAuthStore();
 const router = useRouter();
 const route = useRoute();
+const { settings, logoUrl, loadSettings } = useSystemSettings();
 
 const form = reactive({
   email: "",
   password: "",
+});
+
+// Textes dynamiques basés sur les paramètres système
+const serviceName = computed(() => settings.value?.serviceName || "OSINT");
+const serviceFullName = computed(() => settings.value?.serviceFullName || "Plateforme de gestion et d'analyse OSINT");
+const serviceAddress = computed(() => {
+  const parts = [];
+  if (settings.value?.serviceAddress) parts.push(settings.value.serviceAddress);
+  if (settings.value?.servicePostalCode || settings.value?.serviceCity) {
+    const cityPart = [settings.value?.servicePostalCode, settings.value?.serviceCity].filter(Boolean).join(' ');
+    parts.push(cityPart);
+  }
+  if (settings.value?.serviceCountry) parts.push(settings.value.serviceCountry);
+  return parts.length > 0 ? parts.join(', ') : null;
 });
 
 async function handleSubmit() {
@@ -21,6 +37,11 @@ async function handleSubmit() {
     // erreur déjà gérée dans le store
   }
 }
+
+// Charger les paramètres au montage de la page
+onMounted(() => {
+  loadSettings();
+});
 </script>
 
 <template>
@@ -38,10 +59,27 @@ async function handleSubmit() {
       
       <!-- Content -->
       <div class="relative z-10 flex flex-col justify-center px-16 text-primary-content">
+        <!-- Logo et nom du service -->
         <div class="mb-8">
-          <div class="flex items-center gap-3 mb-6">
-            <span class="material-symbols-rounded text-5xl">search_insights</span>
-            <h1 class="text-4xl font-bold">OSINT Report</h1>
+          <div class="flex items-center gap-4 mb-6">
+            <!-- Logo du service si disponible -->
+            <div v-if="logoUrl" class="flex-shrink-0">
+              <img 
+                :src="logoUrl" 
+                :alt="`Logo ${serviceName}`" 
+                class="h-16 w-auto object-contain drop-shadow-lg"
+              />
+            </div>
+            <!-- Icône par défaut si pas de logo -->
+            <span v-else class="material-symbols-rounded text-5xl drop-shadow-lg">search_insights</span>
+            
+            <!-- Nom du service -->
+            <div>
+              <h1 class="text-4xl font-bold drop-shadow-md">{{ serviceName }}</h1>
+              <p v-if="serviceFullName && serviceFullName !== serviceName" class="text-sm text-primary-content/80 mt-1">
+                {{ serviceFullName }}
+              </p>
+            </div>
           </div>
           <div class="w-20 h-1 bg-primary-content/50 rounded-full"></div>
         </div>
@@ -77,9 +115,25 @@ async function handleSubmit() {
     <div class="w-full lg:w-1/2 flex items-center justify-center bg-base-100 p-8">
       <div class="w-full max-w-md">
         <!-- Mobile Logo -->
-        <div class="lg:hidden flex items-center justify-center gap-2 mb-8">
-          <span class="material-symbols-rounded text-4xl text-primary">search_insights</span>
-          <h1 class="text-2xl font-bold text-primary">OSINT Report</h1>
+        <div class="lg:hidden mb-8">
+          <div class="flex items-center justify-center gap-3 mb-2">
+            <!-- Logo du service si disponible -->
+            <img 
+              v-if="logoUrl" 
+              :src="logoUrl" 
+              :alt="`Logo ${serviceName}`" 
+              class="h-12 w-auto object-contain"
+            />
+            <!-- Icône par défaut si pas de logo -->
+            <span v-else class="material-symbols-rounded text-4xl text-primary">search_insights</span>
+            
+            <div class="text-center">
+              <h1 class="text-2xl font-bold text-primary">{{ serviceName }}</h1>
+            </div>
+          </div>
+          <p v-if="serviceFullName && serviceFullName !== serviceName" class="text-center text-sm text-base-content/70">
+            {{ serviceFullName }}
+          </p>
         </div>
 
         <!-- Form Card -->
@@ -161,13 +215,21 @@ async function handleSubmit() {
             Créer un compte
           </RouterLink>
 
-          <div class="text-center text-xs text-base-content/50 mt-8">
-            <p>En vous connectant, vous acceptez nos</p>
-            <p>
-              <a href="#" class="link link-hover">Conditions d'utilisation</a> 
-              et 
-              <a href="#" class="link link-hover">Politique de confidentialité</a>
-            </p>
+          <!-- Pied de page -->
+          <div class="mt-8 pt-6 border-t border-base-content/10">
+            <div class="text-center text-xs text-base-content/50">
+              <p>En vous connectant, vous acceptez nos</p>
+              <p class="mb-3">
+                <a href="#" class="link link-hover">Conditions d'utilisation</a> 
+                et 
+                <a href="#" class="link link-hover">Politique de confidentialité</a>
+              </p>
+              
+              <!-- Adresse du service en petit -->
+              <p v-if="serviceAddress" class="text-xs text-base-content/40 mt-4">
+                {{ serviceName }} · {{ serviceAddress }}
+              </p>
+            </div>
           </div>
         </div>
       </div>

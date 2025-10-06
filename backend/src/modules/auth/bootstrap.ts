@@ -31,6 +31,11 @@ const PERMISSION_DEFINITIONS: Array<{ id: string; code: PermissionCode; descript
     code: PermissionCode.ADMIN,
     description: "Administration complète du système",
   },
+  {
+    id: "perm-system-settings",
+    code: PermissionCode.SYSTEM_SETTINGS,
+    description: "Gestion des paramètres système",
+  },
 ];
 
 export async function bootstrapAuth() {

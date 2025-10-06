@@ -17,6 +17,7 @@ import AdminUserDetailPage from "@/pages/admin/AdminUserDetailPage.vue";
 import AdminUserEditPage from "@/pages/admin/AdminUserEditPage.vue";
 import AdminUserCreatePage from "@/pages/admin/AdminUserCreatePage.vue";
 import SmtpSettingsPage from "@/pages/admin/SmtpSettingsPage.vue";
+import SystemSettingsPage from "@/pages/admin/SystemSettingsPage.vue";
 import { useAuthStore } from "@/stores/auth";
 
 const router = createRouter({
@@ -145,6 +146,15 @@ const router = createRouter({
           meta: {
             requiresAuth: true,
             permissions: ["system:admin"],
+          },
+        },
+        {
+          path: "admin/system",
+          name: "admin.system",
+          component: SystemSettingsPage,
+          meta: {
+            requiresAuth: true,
+            permissions: ["system:settings", "system:admin"], // Permet aux admins aussi
           },
         },
       ],

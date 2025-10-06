@@ -6,13 +6,13 @@
         <!-- Convertir le tableau en liste Markdown pour le rendu -->
         <MarkdownRenderer :content="objectivesAsMarkdown" />
       </div>
-      <p v-else class="text-gray-500 dark:text-gray-400 italic">Aucun objectif défini</p>
+      <p v-else class="text-base-content/60 italic">Aucun objectif défini</p>
 
       <!-- Bouton édition -->
       <div class="flex justify-end">
         <button
           @click="startEditing"
-          class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+          class="btn btn-primary"
         >
           ✏️ Modifier
         </button>
@@ -23,19 +23,19 @@
     <div v-else class="space-y-6">
       <section>
         <div class="flex items-center justify-between mb-3">
-          <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
+          <h3 class="text-lg font-semibold">
             🎯 Objectifs OSINT
           </h3>
           <button
             type="button"
             @click="addObjective"
-            class="px-3 py-1.5 text-sm font-medium text-blue-700 hover:text-blue-800 dark:text-blue-400"
+            class="btn btn-sm btn-primary"
           >
             ➕ Ajouter un objectif
           </button>
         </div>
 
-        <div v-if="editablePayload.objectives.length === 0" class="text-sm text-gray-500 dark:text-gray-400 italic">
+        <div v-if="editablePayload.objectives.length === 0" class="text-sm text-base-content/60 italic">
           Aucun objectif
         </div>
 
@@ -43,20 +43,21 @@
           <div
             v-for="(objective, index) in editablePayload.objectives"
             :key="index"
-            class="flex items-start gap-3"
+            class="join w-full"
           >
             <input
               v-model="editablePayload.objectives[index]"
               type="text"
               placeholder="Ex: Identifier les profils sur les réseaux sociaux"
-              class="flex-1 rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500"
+              class="input input-sm join-item flex-1 px-0 border-0 border-b border-base-300 bg-transparent focus:outline-none focus:border-primary transition-colors"
+              @keyup.enter="addObjective"
             />
             <button
               type="button"
               @click="removeObjective(index)"
-              class="px-3 py-2 text-red-600 hover:text-red-700 dark:text-red-400"
+              class="btn btn-sm btn-error join-item"
             >
-              🗑️
+              ✕
             </button>
           </div>
         </div>
@@ -66,13 +67,13 @@
       <div class="flex justify-end gap-3">
         <button
           @click="cancelEditing"
-          class="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700"
+          class="btn btn-ghost"
         >
           Annuler
         </button>
         <button
           @click="saveChanges"
-          class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+          class="btn btn-success"
         >
           💾 Enregistrer
         </button>
@@ -87,12 +88,11 @@ import type { ObjectivesPayload } from "@/services/api/reports";
 import MarkdownRenderer from "@/components/shared/MarkdownRenderer.vue";
 
 interface Props {
-  payload: ObjectivesPayload;
-  moduleId: string;
+  modelValue: ObjectivesPayload;
 }
 
 interface Emits {
-  (e: "update", payload: ObjectivesPayload): void;
+  (e: "update:modelValue", payload: ObjectivesPayload): void;
 }
 
 const props = defineProps<Props>();
@@ -103,7 +103,7 @@ const editablePayload = ref<ObjectivesPayload>({ objectives: [] });
 
 // Computed pour gérer le payload vide ou undefined
 const safeObjectives = computed(() => {
-  return props.payload?.objectives || [];
+  return props.modelValue?.objectives || [];
 });
 
 // Convertir les objectifs en liste Markdown pour le rendu
@@ -113,7 +113,7 @@ const objectivesAsMarkdown = computed(() => {
 
 function startEditing() {
   editablePayload.value = {
-    objectives: props.payload?.objectives ? [...props.payload.objectives] : []
+    objectives: props.modelValue?.objectives ? [...props.modelValue.objectives] : []
   };
   isEditing.value = true;
 }
@@ -131,7 +131,7 @@ function removeObjective(index: number) {
 }
 
 async function saveChanges() {
-  emit("update", editablePayload.value);
+  emit("update:modelValue", editablePayload.value);
   isEditing.value = false;
 }
 </script>

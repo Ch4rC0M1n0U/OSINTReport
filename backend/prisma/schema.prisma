@@ -351,3 +351,29 @@ model PasswordResetToken {
   @@index([userId])
   @@index([expiresAt])
 }
+
+model SystemSettings {
+  id        String   @id @default(uuid())
+  // Informations sur le service
+  serviceName     String   @default("OSINT")
+  serviceFullName String?  // Ex: "DR5 - OSINT - BRUXELLES"
+  serviceAddress  String?
+  serviceCity     String?
+  servicePostalCode String?
+  serviceCountry  String?  @default("Belgique")
+  
+  // Contacts
+  phoneNumber     String?
+  faxNumber       String?
+  emailContact    String?
+  websiteUrl      String?
+  
+  // Branding
+  logoUrl         String?  // Chemin vers le logo uploadé
+  primaryColor    String?  @default("#003f87") // Bleu police belge
+  secondaryColor  String?  @default("#0066cc")
+  
+  // Métadonnées
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
