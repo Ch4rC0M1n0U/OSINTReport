@@ -149,6 +149,21 @@
         </div>
       </div>
 
+      <!-- Identifiants liés (croisements) -->
+      <div v-if="hasRelatedIdentifiers" class="mt-3 pt-3 border-t border-base-300">
+        <div class="text-xs opacity-60 mb-1">🔗 Identifiants liés :</div>
+        <div class="flex flex-wrap gap-1">
+          <span
+            v-for="(identifier, idx) in entity.metadata?.relatedIdentifiers"
+            :key="idx"
+            class="badge badge-sm badge-outline font-mono"
+            :title="getIdentifierTypeFromValue(identifier)"
+          >
+            {{ getIdentifierIcon(identifier) }} {{ identifier }}
+          </span>
+        </div>
+      </div>
+
       <!-- Sources -->
       <div v-if="entity.sources.length > 0" class="flex items-center gap-2 mt-3 text-xs text-base-content/60">
         <span>📎</span>
@@ -223,6 +238,10 @@ const hasCompanyDetails = computed(() => {
   );
 });
 
+const hasRelatedIdentifiers = computed(() => {
+  return props.entity.metadata?.relatedIdentifiers && props.entity.metadata.relatedIdentifiers.length > 0;
+});
+
 const hasAliases = computed(() => {
   return props.entity.metadata?.aliases && props.entity.metadata.aliases.length > 0;
 });
@@ -254,5 +273,37 @@ function formatDate(dateString: string): string {
     month: 'long', 
     day: 'numeric' 
   });
+}
+
+function getIdentifierIcon(identifier: string): string {
+  const lower = identifier.toLowerCase();
+  
+  if (lower.includes('@') && lower.includes('.')) {
+    return '📧'; // Email
+  }
+  if (lower.match(/^\+?\d{8,15}$/)) {
+    return '📞'; // Téléphone
+  }
+  if (lower.startsWith('@')) {
+    return '👤'; // Username/social media
+  }
+  
+  return '🔖'; // Autre
+}
+
+function getIdentifierTypeFromValue(identifier: string): string {
+  const lower = identifier.toLowerCase();
+  
+  if (lower.includes('@') && lower.includes('.')) {
+    return 'Email';
+  }
+  if (lower.match(/^\+?\d{8,15}$/)) {
+    return 'Numéro de téléphone';
+  }
+  if (lower.startsWith('@')) {
+    return 'Username / Réseau social';
+  }
+  
+  return 'Identifiant';
 }
 </script>
