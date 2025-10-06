@@ -3,19 +3,43 @@
     <!-- Mode lecture -->
     <div v-if="!isEditing" class="space-y-3">
       <div class="flex items-center justify-between">
-        <span class="text-lg font-semibold">✍️ Validation finale</span>
+        <div class="flex items-center gap-3">
+          <span class="text-lg font-semibold">✍️ Validation finale</span>
+          <!-- Badge "Verrouillé" si validé -->
+          <span 
+            v-if="isLocked" 
+            class="badge badge-success gap-2"
+            title="Ce rapport a été validé et ne peut plus être modifié sans permissions administrateur"
+          >
+            🔒 Validé
+          </span>
+        </div>
         <button
-          v-if="!readonly"
+          v-if="!readonly && !isLocked"
           type="button"
           class="btn btn-sm btn-primary"
           @click="startEditing"
         >
           ✏️ Modifier
         </button>
+        <!-- Message si verrouillé -->
+        <div 
+          v-else-if="isLocked" 
+          class="tooltip tooltip-left" 
+          data-tip="Modification restreinte : rapport validé"
+        >
+          <button
+            type="button"
+            class="btn btn-sm btn-disabled"
+            disabled
+          >
+            🔒 Verrouillé
+          </button>
+        </div>
       </div>
 
       <div class="card bg-base-200 shadow-sm">
-        <div class="card-body">
+        <div class="card-body"
           <!-- Date -->
           <div class="mb-3">
             <span class="text-sm opacity-70">Date de validation:</span>
@@ -68,8 +92,21 @@
         </div>
       </div>
 
+      <!-- Avertissement verrouillage automatique -->
+      <div class="alert alert-warning shadow-lg">
+        <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current flex-shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+        </svg>
+        <div>
+          <h3 class="font-bold">⚠️ Attention : Verrouillage automatique</h3>
+          <div class="text-sm">
+            Une fois la date ET l'officier validant renseignés, ce rapport sera automatiquement <strong>verrouillé</strong> et ne pourra plus être modifié sans permissions administrateur.
+          </div>
+        </div>
+      </div>
+
       <div class="card bg-base-200 shadow-sm">
-        <div class="card-body">
+        <div class="card-body"
           <!-- Date -->
           <div class="form-control">
             <label class="label">
@@ -154,7 +191,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue';
+import { ref, watch, computed } from 'vue';
 import type { SignOffPayload, Officer } from '@/services/api/reports';
 
 const props = withDefaults(
@@ -175,6 +212,18 @@ const isEditing = ref(false);
 const editedDate = ref(props.modelValue.date || '');
 const editedOfficer = ref<Officer>(props.modelValue.officer || { name: '', rank: '', unit: '' });
 const editedNotes = ref(props.modelValue.additionalNotes || '');
+
+/**
+ * Le rapport est verrouillé si :
+ * - Une date de validation est définie
+ * - ET un officier avec nom et grade est défini
+ * Cette règle garantit que seul un rapport complètement validé est verrouillé.
+ */
+const isLocked = computed(() => {
+  const hasDate = !!props.modelValue.date;
+  const hasOfficer = !!(props.modelValue.officer?.name && props.modelValue.officer?.rank);
+  return hasDate && hasOfficer;
+});
 
 watch(
   () => props.modelValue,

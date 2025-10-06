@@ -4,6 +4,29 @@ import * as path from 'path';
 import * as crypto from 'crypto';
 import exifr from 'exifr';
 
+/**
+ * Retourne la date/heure actuelle avec timezone locale (ISO 8601 complet)
+ * Ex: "2025-10-06T07:45:30+02:00"
+ */
+function getCurrentDateTimeWithTimezone(): string {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  const hours = String(now.getHours()).padStart(2, '0');
+  const minutes = String(now.getMinutes()).padStart(2, '0');
+  const seconds = String(now.getSeconds()).padStart(2, '0');
+  
+  // Calcul de l'offset timezone
+  const offsetMinutes = -now.getTimezoneOffset();
+  const offsetHours = Math.floor(Math.abs(offsetMinutes) / 60);
+  const offsetMins = Math.abs(offsetMinutes) % 60;
+  const offsetSign = offsetMinutes >= 0 ? '+' : '-';
+  const offset = `${offsetSign}${String(offsetHours).padStart(2, '0')}:${String(offsetMins).padStart(2, '0')}`;
+  
+  return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}${offset}`;
+}
+
 interface ScreenshotMetadata {
   caseId: string;
   investigatorName: string;
@@ -107,6 +130,8 @@ export async function processScreenshot(
           'DateTimeOriginal',
           'CreateDate',
           'DateTime',
+          'OffsetTimeOriginal', // Timezone offset de la date originale
+          'OffsetTime',         // Timezone offset général
           'GPSLatitude',
           'GPSLongitude',
           'GPSAltitude',
@@ -124,15 +149,56 @@ export async function processScreenshot(
         console.log('✅ EXIF data extracted successfully');
         
         // Extraction de la date de capture (plusieurs champs possibles)
-        if (exifData.DateTimeOriginal) {
-          captureDate = new Date(exifData.DateTimeOriginal).toISOString();
-          console.log('📸 Capture date (DateTimeOriginal):', captureDate);
-        } else if (exifData.CreateDate) {
-          captureDate = new Date(exifData.CreateDate).toISOString();
-          console.log('📸 Capture date (CreateDate):', captureDate);
-        } else if (exifData.DateTime) {
-          captureDate = new Date(exifData.DateTime).toISOString();
-          console.log('📸 Capture date (DateTime):', captureDate);
+        // IMPORTANT: Pour l'OSINT, on doit préserver l'heure LOCALE EXACTE de la prise de vue
+        // avec sa timezone originale (ISO 8601 complet: 2025-10-05T18:00:35+02:00)
+        const rawDate = exifData.DateTimeOriginal || exifData.CreateDate || exifData.DateTime;
+        const offsetTime = exifData.OffsetTimeOriginal || exifData.OffsetTime;
+        
+        if (rawDate) {
+          let dateStr = '';
+          
+          if (rawDate instanceof Date) {
+            // Extraire les composants sans conversion timezone
+            const year = rawDate.getFullYear();
+            const month = String(rawDate.getMonth() + 1).padStart(2, '0');
+            const day = String(rawDate.getDate()).padStart(2, '0');
+            const hours = String(rawDate.getHours()).padStart(2, '0');
+            const minutes = String(rawDate.getMinutes()).padStart(2, '0');
+            const seconds = String(rawDate.getSeconds()).padStart(2, '0');
+            
+            dateStr = `${year}-${month}-${day}T${hours}:${minutes}:${seconds}`;
+            console.log(`📸 Capture date (EXIF): ${year}-${month}-${day} ${hours}:${minutes}:${seconds}`);
+          } else if (typeof rawDate === 'string') {
+            // Parse manuel du format EXIF: "2025:10:05 18:00:35"
+            const match = rawDate.match(/(\d{4}):(\d{2}):(\d{2})\s+(\d{2}):(\d{2}):(\d{2})/);
+            if (match) {
+              const [, year, month, day, hours, minutes, seconds] = match;
+              dateStr = `${year}-${month}-${day}T${hours}:${minutes}:${seconds}`;
+              console.log(`📸 Capture date (parsed): ${dateStr}`);
+            }
+          }
+          
+          // Ajouter la timezone originale si disponible dans les EXIF
+          if (dateStr) {
+            if (offsetTime && typeof offsetTime === 'string') {
+              // offsetTime format: "+02:00", "-05:00", etc.
+              captureDate = `${dateStr}${offsetTime}`;
+              console.log(`🌍 Timezone offset found: ${offsetTime}`);
+              console.log(`📸 Full capture date with timezone: ${captureDate}`);
+            } else {
+              // Pas de timezone EXIF: on utilise celle du serveur comme fallback
+              // pour estimer la timezone locale de la prise de vue
+              const serverOffset = -new Date().getTimezoneOffset();
+              const offsetHours = Math.floor(Math.abs(serverOffset) / 60);
+              const offsetMinutes = Math.abs(serverOffset) % 60;
+              const offsetSign = serverOffset >= 0 ? '+' : '-';
+              const fallbackOffset = `${offsetSign}${String(offsetHours).padStart(2, '0')}:${String(offsetMinutes).padStart(2, '0')}`;
+              
+              captureDate = `${dateStr}${fallbackOffset}`;
+              console.log(`⚠️ No timezone in EXIF, using server timezone as fallback: ${fallbackOffset}`);
+              console.log(`📸 Capture date (estimated): ${captureDate}`);
+            }
+          }
         }
         
         // Extraction GPS (exifr retourne déjà en format décimal!)
@@ -230,7 +296,7 @@ export async function processScreenshot(
       width: processedImage.width,
       height: processedImage.height,
       format: processedImage.format,
-      uploadedAt: new Date().toISOString(),
+      uploadedAt: getCurrentDateTimeWithTimezone(), // ✅ Date locale avec timezone
       captureDate, // Date de capture depuis EXIF (si disponible)
       gpsLatitude, // Latitude GPS (si disponible)
       gpsLongitude, // Longitude GPS (si disponible)
@@ -251,7 +317,7 @@ export async function processScreenshot(
         width: processedImage.width,
         height: processedImage.height,
         format: processedImage.format,
-        uploadedAt: new Date().toISOString(),
+        uploadedAt: getCurrentDateTimeWithTimezone(), // ✅ Date locale avec timezone
         uploadedBy: userId,
         captureDate, // Date de capture EXIF
         gpsLatitude, // Coordonnées GPS EXIF
@@ -448,7 +514,7 @@ export async function listUserScreenshots(
           originalName: metadata.originalName,
           url: generateSignedUrl(metadata.filename, expiresAt, baseUrl),
           expiresAt,
-          uploadedAt: metadata.uploadedAt || new Date().toISOString(),
+          uploadedAt: metadata.uploadedAt || getCurrentDateTimeWithTimezone(), // ✅ Fallback avec timezone
           captureDate: metadata.captureDate, // Date de capture EXIF (si disponible)
           gpsLatitude: metadata.gpsLatitude, // Latitude GPS EXIF (si disponible)
           gpsLongitude: metadata.gpsLongitude, // Longitude GPS EXIF (si disponible)
