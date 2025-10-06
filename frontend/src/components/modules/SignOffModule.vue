@@ -39,7 +39,7 @@
       </div>
 
       <div class="card bg-base-200 shadow-sm">
-        <div class="card-body"
+        <div class="card-body">
           <!-- Date -->
           <div class="mb-3">
             <span class="text-sm opacity-70">Date de validation:</span>
@@ -106,7 +106,7 @@
       </div>
 
       <div class="card bg-base-200 shadow-sm">
-        <div class="card-body"
+        <div class="card-body">
           <!-- Date -->
           <div class="form-control">
             <label class="label">

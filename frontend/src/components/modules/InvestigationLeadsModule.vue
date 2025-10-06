@@ -31,7 +31,7 @@
                   <span class="badge badge-sm" :class="getPriorityClass(lead.priority)">
                     {{ getPriorityLabel(lead.priority) }}
                   </span>
-                  <span class="badge badge-outline badge-sm">{{ lead.type }}</span>
+                  <span class="badge badge-outline badge-sm">{{ getTypeLabel(lead.type) }}</span>
                 </div>
 
                 <div v-if="lead.platform" class="text-sm mb-1">
@@ -275,6 +275,15 @@ function getPriorityLabel(priority?: string): string {
     high: '🔴 Haute',
   };
   return priority ? labels[priority] || priority : 'Non définie';
+}
+
+function getTypeLabel(type: string): string {
+  const labels: Record<string, string> = {
+    requisition: 'Réquisition',
+    platform_contact: 'Contact plateforme',
+    follow_up: 'Suivi',
+  };
+  return labels[type] || type;
 }
 
 function getPriorityClass(priority?: string): string {
