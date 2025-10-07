@@ -4,6 +4,9 @@
 # Stage 1: Build de l'application Vue.js
 FROM node:20-alpine AS builder
 
+# Argument de build pour l'URL de l'API
+ARG VITE_API_BASE_URL=http://localhost:4000
+
 WORKDIR /app
 
 # Copier les fichiers de dépendances
@@ -14,6 +17,9 @@ RUN npm ci
 
 # Copier le code source
 COPY . .
+
+# Créer le fichier .env.production avec l'URL de l'API
+RUN echo "VITE_API_BASE_URL=${VITE_API_BASE_URL}" > .env.production
 
 # Build de production
 RUN npm run build

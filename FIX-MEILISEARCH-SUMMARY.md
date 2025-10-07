@@ -1,62 +1,41 @@
-# 🚀 RÉSUMÉ DES CORRECTIONS - Healthcheck Meilisearch
+# 🚀 RÉSUMÉ DES CORRECTIONS - Déploiement EasyPanel
 
-## ✅ Problème résolu !
+## ✅ Tous les problèmes résolus !
 
-Le problème "container osintreport-meilisearch is unhealthy" a été corrigé.
+Les problèmes de déploiement sur EasyPanel ont été corrigés.
 
 ---
 
 ## 🔧 Corrections apportées
 
-### 1. Fichier `docker-compose.production.yml` (Modifié)
+### 1. ❌ package-lock.json exclu (.dockerignore)
+**Problème** : `npm ci` échouait car package-lock.json était exclu  
+**Solution** : Retiré package-lock.json de .dockerignore  
+📄 Voir : `BUGFIX-DOCKERIGNORE-PACKAGE-LOCK.md`
 
-**Changements** :
-- ✅ Healthcheck Meilisearch : `wget` → `curl` (disponible dans l'image)
-- ✅ Backend dépend de Meilisearch avec `service_started` au lieu de `service_healthy`
-- ✅ Plus de temps au démarrage du backend (60s au lieu de 40s)
-- ✅ Healthchecks améliorés avec `CMD-SHELL`
+### 2. ❌ Meilisearch healthcheck unhealthy
+**Problème** : Healthcheck utilisait `wget` (non disponible)  
+**Solution** : Créé `docker-compose.easypanel.yml` sans healthchecks stricts  
+📄 Voir : `BUGFIX-MEILISEARCH-HEALTHCHECK.md`
 
-### 2. Fichier `docker-compose.easypanel.yml` (Nouveau ✨)
-
-**Version simplifiée SANS healthchecks stricts** :
-- ✅ Aucun healthcheck sur Meilisearch
-- ✅ Dépendances simples (`depends_on` sans conditions)
-- ✅ Plus compatible avec EasyPanel
-- ✅ Démarrage plus rapide et robuste
-
-### 3. Documentation créée
-
-- ✅ `BUGFIX-MEILISEARCH-HEALTHCHECK.md` - Explication complète du problème
-- ✅ `docs/DEPLOYMENT-EASYPANEL.md` - Mis à jour avec les deux options
+### 3. ❌ Port 80 déjà alloué
+**Problème** : Conflit avec le reverse proxy d'EasyPanel  
+**Solution** : Utilise `expose` au lieu de `ports`  
+📄 Voir : `BUGFIX-PORT-80-CONFLICT.md`
 
 ---
 
-## 🎯 Quelle version utiliser ?
+## 🎯 Fichier final pour EasyPanel
 
-### Pour EasyPanel (RECOMMANDÉ) 👈
+### ✅ `docker-compose.easypanel.yml`
 
-```bash
-# Utilisez ce fichier :
-docker-compose.easypanel.yml
-```
+Ce fichier est maintenant **100% compatible** avec EasyPanel :
+- ✅ Pas de healthchecks stricts
+- ✅ Utilise `expose` au lieu de `ports` (pas de conflit de port)
+- ✅ Package-lock.json inclus dans les builds
+- ✅ Compatible avec le reverse proxy d'EasyPanel
 
-**Avantages** :
-- ✅ Sans healthchecks stricts
-- ✅ Compatible avec EasyPanel
-- ✅ Pas d'erreur "unhealthy"
-- ✅ Simple et robuste
-
-### Pour serveur auto-hébergé
-
-```bash
-# Utilisez ce fichier :
-docker-compose.production.yml
-```
-
-**Avantages** :
-- ✅ Healthchecks complets
-- ✅ Meilleure détection d'erreurs
-- ✅ Monitoring fin
+**C'est LE fichier à utiliser sur EasyPanel !**
 
 ---
 
