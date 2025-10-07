@@ -55,10 +55,10 @@ export class ReportService {
       ...(search
         ? {
             OR: [
-              { title: { contains: search, mode: "insensitive" } },
-              { caseNumber: { contains: search, mode: "insensitive" } },
-              { reportNumber: { contains: search, mode: "insensitive" } },
-              { requestingService: { contains: search, mode: "insensitive" } },
+              { title: { contains: search, mode: "insensitive" as const } },
+              { caseNumber: { contains: search, mode: "insensitive" as const } },
+              { reportNumber: { contains: search, mode: "insensitive" as const } },
+              { requestingService: { contains: search, mode: "insensitive" as const } },
             ],
           }
         : {}),
@@ -594,12 +594,12 @@ export class ReportService {
           reportNumber: null, // Nouveau numéro nécessaire
           purpose: original.purpose,
           summary: original.summary,
-          relatedCases: original.relatedCases,
+          relatedCases: original.relatedCases as any,
           requestingService: original.requestingService,
           reportingUnit: original.reportingUnit,
           reportingOfficer: original.reportingOfficer,
           reportingRank: original.reportingRank,
-          objectives: original.objectives,
+          objectives: original.objectives as any,
           status: 'DRAFT', // Toujours en brouillon
           ownerId,
           dateRangeStart: original.dateRangeStart,
@@ -623,7 +623,7 @@ export class ReportService {
             headline: module.headline,
             entityId: module.entityId,
             position: module.position,
-            payload: module.payload,
+            payload: module.payload as any,
           },
         });
 
@@ -635,7 +635,7 @@ export class ReportService {
               entityId: record.entityId,
               researchTypeId: record.researchTypeId,
               subtitle: record.subtitle,
-              details: record.details,
+              details: record.details as any,
               // Ne pas copier sensitiveDataRef pour sécurité
             },
           });

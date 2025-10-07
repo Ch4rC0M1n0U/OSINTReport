@@ -22,7 +22,7 @@ export const checkCorrelation: RequestHandler = async (req, res, next) => {
       res.status(400).json({
         success: false,
         message: 'Données de vérification invalides',
-        errors: validation.error.errors,
+        errors: validation.error.issues,
       });
       return;
     }

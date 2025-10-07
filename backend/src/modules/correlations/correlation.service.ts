@@ -197,7 +197,7 @@ export class CorrelationService {
         reportNumber: relatedReport.reportNumber || undefined,
         caseNumber: relatedReport.caseNumber || undefined,
         correlationType: type,
-        correlationData: correlation.correlationData as CorrelationData,
+        correlationData: correlation.correlationData as unknown as CorrelationData,
         confidence: correlation.confidence,
         createdAt: correlation.detectedAt,
       });
@@ -413,7 +413,7 @@ export class CorrelationService {
             where: { id: existing.id },
             data: {
               confidence: dto.confidence,
-              correlationData: dto.correlationData,
+              correlationData: dto.correlationData as any,
               notes: dto.notes,
             },
           });
@@ -427,7 +427,7 @@ export class CorrelationService {
           sourceReportId: dto.sourceReportId,
           relatedReportId: dto.relatedReportId,
           correlationType: dto.correlationType,
-          correlationData: dto.correlationData,
+          correlationData: dto.correlationData as any,
           confidence: dto.confidence,
           notes: dto.notes,
         },
