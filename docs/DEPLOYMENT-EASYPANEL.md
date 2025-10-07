@@ -47,7 +47,8 @@ OSINTReport/
 │   ├── .dockerignore
 │   ├── nginx.conf
 │   └── ... (code frontend)
-├── docker-compose.production.yml
+├── docker-compose.production.yml    # Version complète avec healthchecks
+├── docker-compose.easypanel.yml     # Version simplifiée pour EasyPanel (recommandé)
 ├── .env.production.example
 └── easypanel.yml
 ```
@@ -182,12 +183,53 @@ VITE_API_BASE_URL=https://api.votredomaine.com
 
 ## 🚢 Déploiement
 
+### ⚡ Quelle version Docker Compose utiliser ?
+
+**Deux fichiers sont disponibles** :
+
+#### 🎯 `docker-compose.easypanel.yml` (RECOMMANDÉ pour EasyPanel)
+- ✅ Version simplifiée sans healthchecks stricts
+- ✅ Meilleure compatibilité avec EasyPanel
+- ✅ Démarrage plus rapide
+- ✅ Moins de problèmes de configuration
+- ⚠️ Pas de détection automatique de santé des services
+
+**Utilisez ce fichier si** :
+- Vous déployez sur EasyPanel
+- Vous rencontrez des erreurs "unhealthy"
+- Vous voulez une configuration simple et robuste
+
+#### 🔧 `docker-compose.production.yml` (Production auto-hébergée)
+- ✅ Healthchecks complets pour tous les services
+- ✅ Meilleure détection des problèmes
+- ✅ Redémarrage automatique si unhealthy
+- ⚠️ Peut nécessiter plus de configuration
+- ⚠️ Certaines plateformes peuvent avoir des problèmes
+
+**Utilisez ce fichier si** :
+- Vous déployez sur votre propre serveur
+- Vous voulez un monitoring fin des services
+- Vous avez besoin de healthchecks stricts
+
+---
+
 ### Option 1 : Déploiement avec Docker Compose (Recommandé)
+
+#### Méthode A : Version EasyPanel (Simplifiée)
+
+1. Dans EasyPanel, allez dans **Services**
+2. Cliquez sur **"Add Service"** → **"Docker Compose"**
+3. **Copiez le contenu de `docker-compose.easypanel.yml`** ✅
+4. Cliquez sur **"Deploy"**
+
+#### Méthode B : Version Production (Avec healthchecks)
 
 1. Dans EasyPanel, allez dans **Services**
 2. Cliquez sur **"Add Service"** → **"Docker Compose"**
 3. Copiez le contenu de `docker-compose.production.yml`
 4. Cliquez sur **"Deploy"**
+
+💡 **Astuce** : Si vous rencontrez des erreurs de healthcheck, utilisez la Méthode A.
 
 ### Option 2 : Déploiement manuel service par service
 
