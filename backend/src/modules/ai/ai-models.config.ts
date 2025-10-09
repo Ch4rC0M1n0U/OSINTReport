@@ -175,25 +175,25 @@ export const AI_PROVIDERS: Record<string, AIProvider> = {
     apiKeyUrl: 'https://console.anthropic.com/settings/keys',
     models: [
       {
-        value: 'claude-sonnet-4-5-20250514',
-        label: 'Claude Sonnet 4.5 (Mai 2025) 🆕',
-        description: 'Modèle le plus avancé d\'Anthropic - RECOMMANDÉ',
-        maxTokens: 200000,
-        costPer1kTokens: 0.003,
-      },
-      {
-        value: 'claude-opus-4-20250514',
-        label: 'Claude Opus 4 (Mai 2025) 🆕',
-        description: 'Intelligence maximale pour tâches ultra-complexes',
-        maxTokens: 200000,
-        costPer1kTokens: 0.015,
-      },
-      {
         value: 'claude-3-5-sonnet-20241022',
-        label: 'Claude 3.5 Sonnet (Oct 2024)',
-        description: 'Excellente version stable de génération 3.5',
+        label: 'Claude 3.5 Sonnet (Oct 2024) 🆕',
+        description: 'Modèle le plus avancé d\'Anthropic - RECOMMANDÉ',
         maxTokens: 8192,
         costPer1kTokens: 0.003,
+      },
+      {
+        value: 'claude-3-5-sonnet-20240620',
+        label: 'Claude 3.5 Sonnet (Juin 2024)',
+        description: 'Version stable précédente de génération 3.5',
+        maxTokens: 8192,
+        costPer1kTokens: 0.003,
+      },
+      {
+        value: 'claude-3-5-haiku-20241022',
+        label: 'Claude 3.5 Haiku',
+        description: 'Version rapide et économique de Claude 3.5',
+        maxTokens: 8192,
+        costPer1kTokens: 0.0008,
       },
       {
         value: 'claude-3-5-sonnet-20240620',
@@ -267,10 +267,10 @@ export const AVAILABLE_PROVIDERS = Object.values(AI_PROVIDERS);
  * Note: En octobre 2025, les modèles les plus récents sont :
  * - Gemini 2.5 Flash ✨ (stable, Oct 2025)
  * - GPT-5 🚀 (Oct 2025) + GPT-4o et o1
- * - Claude Sonnet 4.5 et Opus 4 (Mai 2025) ✨
+ * - Claude 3.5 Sonnet (Oct 2024) ✨
  */
 export const DEFAULT_MODELS: Record<string, string> = {
   gemini: 'gemini-2.5-flash',
   openai: 'gpt-5',
-  claude: 'claude-sonnet-4-5-20250514',
+  claude: 'claude-3-5-sonnet-20241022',
 };

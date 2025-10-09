@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, watch } from 'vue';
 import { AIGenerationService, type PersonalDataToProtect } from '@/services/ai-generation.service';
 
 export interface AIGenerationModalProps {
@@ -36,19 +36,23 @@ const generatedText = ref('');
 const error = ref('');
 const aiStatus = ref<{ available: boolean; provider: string; model: string } | null>(null);
 
-// Vérifier le statut de l'IA au montage
+// Vérifier le statut de l'IA
 const checkAIStatus = async () => {
   try {
     aiStatus.value = await AIGenerationService.getStatus();
+    console.log('Statut IA chargé:', aiStatus.value);
   } catch (err) {
     console.error('Erreur vérification statut IA:', err);
+    aiStatus.value = { available: false, provider: '', model: '' };
   }
 };
 
-// Appeler au montage du composant
-if (props.isOpen) {
-  checkAIStatus();
-}
+// Surveiller l'ouverture de la modal pour charger le statut
+watch(() => props.isOpen, (newValue) => {
+  if (newValue) {
+    checkAIStatus();
+  }
+}, { immediate: true });
 
 const modalTitle = computed(() => {
   switch (props.contextType) {
