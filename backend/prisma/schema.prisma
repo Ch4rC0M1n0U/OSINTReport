@@ -373,6 +373,14 @@ model SystemSettings {
   primaryColor    String?  @default("#003f87") // Bleu police belge
   secondaryColor  String?  @default("#0066cc")
   
+  // Clés API pour services IA (chiffrées)
+  geminiApiKey    String?  // Google Gemini API Key (chiffrée)
+  openaiApiKey    String?  // OpenAI API Key (chiffrée)
+  claudeApiKey    String?  // Anthropic Claude API Key (chiffrée)
+  aiProvider      String?  @default("gemini") // Provider par défaut: gemini, openai, claude
+  aiModel         String?  @default("gemini-pro") // Modèle par défaut
+  aiEnabled       Boolean  @default(false) // Activer/désactiver les fonctionnalités IA
+  
   // Métadonnées
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

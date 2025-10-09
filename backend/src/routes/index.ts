@@ -9,6 +9,7 @@ import searchRouter from "@modules/search/search.router";
 import pdfRouter from "@modules/pdf/pdf.router";
 import { mediaRouter } from "@modules/media/media.router";
 import settingsRouter from "@modules/settings/settings.router";
+import aiRouter from "@modules/ai/ai.router";
 
 const router = Router();
 
@@ -26,5 +27,6 @@ router.use("/correlations", correlationRouter);
 router.use("/search", searchRouter);
 router.use("/media", mediaRouter);
 router.use("/settings", settingsRouter);
+router.use("/ai", aiRouter);
 
 export { router };

@@ -21,6 +21,18 @@
 
     <!-- Mode édition avec auto-save -->
     <div v-else class="space-y-6">
+      <!-- Bouton génération IA en haut -->
+      <div class="flex justify-end">
+        <AIGenerateButton
+          context-type="summary"
+          :report-data="reportDataForAI"
+          label="Générer un résumé avec l'IA"
+          size="sm"
+          variant="primary"
+          @generated="handleAIGenerated"
+        />
+      </div>
+
       <!-- Éditeur de contenu WYSIWYG -->
       <section>
         <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-3">
@@ -78,11 +90,13 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onUnmounted } from "vue";
+import { ref, computed, onUnmounted, inject } from "vue";
 import type { SummaryPayload } from "@/services/api/reports";
 import WysiwygEditor from "@/components/shared/WysiwygEditor.vue";
 import MarkdownRenderer from "@/components/shared/MarkdownRenderer.vue";
+import AIGenerateButton from "@/components/ai/AIGenerateButton.vue";
 import { useAutoSave } from "@/composables/useAutoSave";
+import type { Report } from "@/services/api/reports";
 
 interface Props {
   modelValue: SummaryPayload;
@@ -94,6 +108,9 @@ interface Emits {
 
 const props = defineProps<Props>();
 const emit = defineEmits<Emits>();
+
+// Injecter les données du rapport depuis le parent
+const report = inject<Report>('report', null as any);
 
 const isEditing = ref(false);
 const editableContent = ref("");
@@ -122,6 +139,32 @@ async function finishEditing() {
   await autoSave.saveNow();
   isEditing.value = false;
 }
+
+// Gestion de la génération IA
+const handleAIGenerated = (text: string) => {
+  // Ajouter le texte généré au contenu existant
+  if (editableContent.value) {
+    editableContent.value += '\n\n' + text;
+  } else {
+    editableContent.value = text;
+  }
+  
+  // Sauvegarder immédiatement
+  autoSave.saveNow();
+};
+
+// Préparer les données pour l'IA
+const reportDataForAI = computed(() => {
+  if (!report) return undefined;
+  
+  return {
+    title: report.title,
+    type: 'PRELIMINARY', // Type par défaut pour la génération
+    classification: report.classification,
+    legalBasis: report.legalBasis || '',
+    existingContent: editableContent.value,
+  };
+});
 
 // Formater "il y a X secondes/minutes"
 function formatLastSaved(date: Date): string {

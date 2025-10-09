@@ -92,4 +92,40 @@ router.delete(
   SettingsController.removeLogo
 );
 
+/**
+ * PUT /api/settings/ai
+ * Mettre à jour les paramètres IA
+ * Requiert : authentification + permission SYSTEM_SETTINGS
+ */
+router.put(
+  "/ai",
+  requireAuth,
+  requirePermissions(PermissionCode.SYSTEM_SETTINGS),
+  SettingsController.updateAISettings
+);
+
+/**
+ * GET /api/settings/ai/status
+ * Récupérer le statut de l'IA
+ * Requiert : authentification + permission SYSTEM_SETTINGS
+ */
+router.get(
+  "/ai/status",
+  requireAuth,
+  requirePermissions(PermissionCode.SYSTEM_SETTINGS),
+  SettingsController.getAIStatus
+);
+
+/**
+ * POST /api/settings/ai/test
+ * Tester la connexion à l'API IA
+ * Requiert : authentification + permission SYSTEM_SETTINGS
+ */
+router.post(
+  "/ai/test",
+  requireAuth,
+  requirePermissions(PermissionCode.SYSTEM_SETTINGS),
+  SettingsController.testAIConnection
+);
+
 export default router;

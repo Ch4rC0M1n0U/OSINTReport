@@ -78,6 +78,12 @@ const adminNavigation = computed(() => {
       visible: canManageSystemSettings.value || canAccessAdmin.value,
     },
     {
+      label: "Configuration IA",
+      to: { name: "admin.ai" },
+      icon: "psychology",
+      visible: canAccessAdmin.value,
+    },
+    {
       label: "Gestion de la recherche",
       to: { name: "admin.search" },
       icon: "manage_search",

@@ -5,6 +5,7 @@
 import { Request, Response, NextFunction } from "express";
 import { z } from "zod";
 import { SettingsService } from "./settings.service";
+import { ApiKeyEncryption } from "./api-key-encryption";
 import { logger } from "@/config/logger";
 
 // Schéma de validation pour la mise à jour des paramètres
@@ -21,6 +22,16 @@ const updateSettingsSchema = z.object({
   websiteUrl: z.string().url().nullable().optional(),
   primaryColor: z.string().regex(/^#[0-9A-Fa-f]{6}$/).nullable().optional(),
   secondaryColor: z.string().regex(/^#[0-9A-Fa-f]{6}$/).nullable().optional(),
+});
+
+// Schéma de validation pour les paramètres IA
+const updateAISettingsSchema = z.object({
+  geminiApiKey: z.string().min(10).nullable().optional(),
+  openaiApiKey: z.string().min(10).nullable().optional(),
+  claudeApiKey: z.string().min(10).nullable().optional(),
+  aiProvider: z.enum(['gemini', 'openai', 'claude']).optional(),
+  aiModel: z.string().min(1).optional(),
+  aiEnabled: z.boolean().optional(),
 });
 
 export class SettingsController {
@@ -95,6 +106,110 @@ export class SettingsController {
       res.json(updated);
     } catch (error) {
       logger.error({ err: error }, "Erreur suppression logo");
+      next(error);
+    }
+  }
+
+  /**
+   * PUT /api/settings/ai
+   * Met à jour les paramètres IA
+   */
+  static async updateAISettings(req: Request, res: Response, next: NextFunction) {
+    try {
+      const validatedData = updateAISettingsSchema.parse(req.body);
+      const settings = await SettingsService.updateAISettings(validatedData);
+      
+      res.status(200).json({
+        success: true,
+        data: {
+          aiEnabled: settings.aiEnabled,
+          aiProvider: settings.aiProvider,
+          aiModel: settings.aiModel,
+          hasGeminiKey: !!settings.geminiApiKey,
+          hasOpenAIKey: !!settings.openaiApiKey,
+          hasClaudeKey: !!settings.claudeApiKey,
+        }
+      });
+    } catch (error) {
+      logger.error({ err: error }, "Erreur mise à jour paramètres IA");
+      next(error);
+    }
+  }
+
+  /**
+   * GET /api/settings/ai/status
+   * Récupère le statut de l'IA
+   */
+  static async getAIStatus(req: Request, res: Response, next: NextFunction) {
+    try {
+      const isEnabled = await SettingsService.isAIEnabled();
+      const settings = await SettingsService.getSettings();
+      
+      res.status(200).json({
+        success: true,
+        data: {
+          aiEnabled: isEnabled,
+          aiProvider: settings.aiProvider,
+          aiModel: settings.aiModel,
+          hasGeminiKey: !!settings.geminiApiKey,
+          hasOpenAIKey: !!settings.openaiApiKey,
+          hasClaudeKey: !!settings.claudeApiKey,
+        }
+      });
+    } catch (error) {
+      logger.error({ err: error }, "Erreur récupération statut IA");
+      next(error);
+    }
+  }
+
+  /**
+   * POST /api/settings/ai/test
+   * Teste la connexion à l'API IA
+   */
+  static async testAIConnection(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { provider } = req.body;
+      
+      if (!provider || !['gemini', 'openai', 'claude'].includes(provider)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Provider invalide. Utilisez "gemini", "openai" ou "claude".'
+        });
+      }
+
+      const apiKey = await SettingsService.getDecryptedApiKey(provider);
+      
+      if (!apiKey) {
+        return res.status(400).json({
+          success: false,
+          message: `Clé API ${provider} non configurée`
+        });
+      }
+
+      // Test de validation de la clé (pas de vrai appel API pour le moment)
+      let isValid = false;
+
+      if (provider === 'gemini') {
+        isValid = ApiKeyEncryption.validateGeminiKey(apiKey);
+      } else if (provider === 'openai') {
+        isValid = ApiKeyEncryption.validateOpenAIKey(apiKey);
+      } else if (provider === 'claude') {
+        isValid = ApiKeyEncryption.validateClaudeKey(apiKey);
+      }
+
+      if (!isValid) {
+        return res.status(400).json({
+          success: false,
+          message: 'Format de clé API invalide'
+        });
+      }
+
+      res.status(200).json({
+        success: true,
+        message: `Clé API ${provider} valide`
+      });
+    } catch (error) {
+      logger.error({ err: error }, "Erreur test connexion IA");
       next(error);
     }
   }

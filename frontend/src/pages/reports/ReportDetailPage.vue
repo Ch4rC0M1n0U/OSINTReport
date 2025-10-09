@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, computed, watch } from "vue";
+import { ref, onMounted, computed, watch, provide } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import {
   reportsApi,
@@ -106,6 +106,9 @@ watch(
 onMounted(async () => {
   await loadReport();
 });
+
+// Fournir le rapport aux composants enfants (pour l'IA)
+provide('report', report);
 
 async function loadReport() {
   loading.value = true;

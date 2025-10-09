@@ -18,6 +18,7 @@ import AdminUserEditPage from "@/pages/admin/AdminUserEditPage.vue";
 import AdminUserCreatePage from "@/pages/admin/AdminUserCreatePage.vue";
 import SmtpSettingsPage from "@/pages/admin/SmtpSettingsPage.vue";
 import SystemSettingsPage from "@/pages/admin/SystemSettingsPage.vue";
+import AISettingsPage from "@/pages/admin/AISettingsPage.vue";
 import SearchManagementPage from "@/pages/admin/SearchManagementPage.vue";
 import { useAuthStore } from "@/stores/auth";
 
@@ -156,6 +157,15 @@ const router = createRouter({
           meta: {
             requiresAuth: true,
             permissions: ["system:settings", "system:admin"], // Permet aux admins aussi
+          },
+        },
+        {
+          path: "admin/ai",
+          name: "admin.ai",
+          component: AISettingsPage,
+          meta: {
+            requiresAuth: true,
+            permissions: ["system:settings", "system:admin"],
           },
         },
         {
