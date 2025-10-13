@@ -814,10 +814,15 @@ function getClassificationInfo(classif: string) {
           <div class="form-control">
             <label class="label">
               <span class="label-text">Contexte de l'enquête <span class="text-error">*</span></span>
+              <span class="label-text-alt" :class="editInfoForm.investigationContext.length > 500 ? 'text-error' : 'text-base-content/60'">
+                {{ editInfoForm.investigationContext.length }} / 500
+              </span>
             </label>
             <textarea
               v-model="editInfoForm.investigationContext"
               class="textarea textarea-bordered h-24"
+              :class="editInfoForm.investigationContext.length > 500 ? 'textarea-error' : ''"
+              maxlength="500"
               required
             ></textarea>
           </div>

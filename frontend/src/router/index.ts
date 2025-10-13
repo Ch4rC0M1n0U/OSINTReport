@@ -20,6 +20,7 @@ import SmtpSettingsPage from "@/pages/admin/SmtpSettingsPage.vue";
 import SystemSettingsPage from "@/pages/admin/SystemSettingsPage.vue";
 import AISettingsPage from "@/pages/admin/AISettingsPage.vue";
 import SearchManagementPage from "@/pages/admin/SearchManagementPage.vue";
+import EntitiesPage from "@/pages/EntitiesPage.vue";
 import { useAuthStore } from "@/stores/auth";
 
 const router = createRouter({
@@ -86,6 +87,15 @@ const router = createRouter({
           path: "search",
           name: "search",
           component: SearchPage,
+          meta: {
+            requiresAuth: true,
+            permissions: ["reports:read"],
+          },
+        },
+        {
+          path: "entities",
+          name: "entities",
+          component: EntitiesPage,
           meta: {
             requiresAuth: true,
             permissions: ["reports:read"],

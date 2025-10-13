@@ -39,8 +39,8 @@ export const createReportSchema = z
     urgencyLevel: z.enum(["ROUTINE", "URGENT", "CRITICAL"]).optional(),
     classification: z.enum(["PUBLIC", "RESTRICTED", "CONFIDENTIAL", "SECRET"]).optional(),
     keywords: z.array(z.string().trim().min(1).max(50)).max(20).optional(),
-  })
-  .strict();
+  });
+  // Supprimé .strict() pour permettre des champs supplémentaires qui seront ignorés
 
 export type CreateReportInput = z.infer<typeof createReportSchema>;
 

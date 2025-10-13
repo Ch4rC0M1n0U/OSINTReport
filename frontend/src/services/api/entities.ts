@@ -42,12 +42,17 @@ export const entitiesApi = {
     search?: string;
   }) {
     const response = await api.get<{
-      items: Entity[];
+      entities: Entity[];
       total: number;
       limit: number;
       offset: number;
     }>("/entities", { params });
-    return response.data;
+    return {
+      items: response.data.entities,
+      total: response.data.total,
+      limit: response.data.limit,
+      offset: response.data.offset,
+    };
   },
 
   async search(query: string, type?: EntityType, limit = 10) {
