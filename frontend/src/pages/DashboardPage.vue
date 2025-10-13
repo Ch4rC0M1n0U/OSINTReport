@@ -4,6 +4,26 @@ import { RouterLink, RouterView } from "vue-router";
 import { useAuthStore } from "@/stores/auth";
 import AppShell from "@/components/layout/AppShell.vue";
 
+// Import HugeIcons
+import { HugeiconsIcon } from "@hugeicons/vue";
+import {
+  DashboardSpeed01Icon,
+  FileAttachmentIcon,
+  UserGroupIcon,
+  Search01Icon,
+  Settings02Icon,
+  UserMultiple02Icon,
+  Mail01Icon,
+  SettingsError02Icon,
+  ArtificialIntelligence01Icon,
+  SearchingIcon,
+  ShieldUserIcon,
+  User02Icon,
+  Logout01Icon,
+  MoreVerticalIcon,
+  ArrowDown01Icon,
+} from "@hugeicons/core-free-icons";
+
 const auth = useAuthStore();
 
 const canAccessAdmin = computed(() => {
@@ -32,25 +52,25 @@ const mainNavigation = computed(() => {
     {
       label: "Tableau de bord",
       to: { name: "dashboard" },
-      icon: "dashboard",
+      icon: DashboardSpeed01Icon,
       badge: undefined,
     },
     {
       label: "Rapports",
       to: { name: "reports.list" },
-      icon: "assignment",
+      icon: FileAttachmentIcon,
       badge: undefined, // Vous pouvez ajouter un compteur ici plus tard
     },
     {
       label: "Entités",
       to: { name: "entities" },
-      icon: "group_work",
+      icon: UserGroupIcon,
       badge: undefined,
     },
     {
       label: "Recherche",
       to: { name: "search" },
-      icon: "search",
+      icon: Search01Icon,
       badge: undefined,
     },
   ];
@@ -65,42 +85,42 @@ const adminNavigation = computed(() => {
     {
       label: "Réglages",
       to: { name: "admin.settings" },
-      icon: "tune",
+      icon: Settings02Icon,
       visible: canAccessAdmin.value,
       badge: undefined,
     },
     {
       label: "Gestion des utilisateurs",
       to: { name: "admin.users" },
-      icon: "group",
+      icon: UserMultiple02Icon,
       visible: canManageUsers.value,
       badge: undefined,
     },
     {
       label: "Configuration SMTP",
       to: { name: "admin.smtp" },
-      icon: "mail",
+      icon: Mail01Icon,
       visible: canAccessAdmin.value,
       badge: undefined,
     },
     {
       label: "Paramètres système",
       to: { name: "admin.system" },
-      icon: "settings",
+      icon: SettingsError02Icon,
       visible: canManageSystemSettings.value || canAccessAdmin.value,
       badge: undefined,
     },
     {
       label: "Configuration IA",
       to: { name: "admin.ai" },
-      icon: "psychology",
+      icon: ArtificialIntelligence01Icon,
       visible: canAccessAdmin.value,
       badge: undefined,
     },
     {
       label: "Gestion de la recherche",
       to: { name: "admin.search" },
-      icon: "manage_search",
+      icon: SearchingIcon,
       visible: canAccessAdmin.value,
       badge: undefined,
     },
@@ -114,7 +134,7 @@ const adminNavigation = computed(() => {
 
   return {
     label: "Administration",
-    icon: "shield_person",
+    icon: ShieldUserIcon,
     children: adminChildren,
   };
 });
@@ -141,7 +161,7 @@ async function handleLogout() {
           inactive-class="text-white/80 hover:bg-white/15 hover:text-white hover:shadow-md"
         >
           <div class="flex items-center gap-3">
-            <span class="material-symbols-rounded text-xl">{{ item.icon }}</span>
+            <HugeiconsIcon :icon="item.icon" :size="20" />
             <span>{{ item.label }}</span>
           </div>
           <span v-if="item.badge" class="badge badge-sm bg-white/25 text-white border-0 font-semibold shadow-sm">
@@ -155,12 +175,10 @@ async function handleLogout() {
         <details class="group">
           <summary class="flex items-center justify-between px-4 py-3 text-sm font-semibold text-white/80 hover:text-white hover:bg-white/10 rounded-xl cursor-pointer transition-all duration-200 list-none">
             <div class="flex items-center gap-3">
-              <span class="material-symbols-rounded text-xl">{{ adminNavigation.icon }}</span>
+              <HugeiconsIcon :icon="adminNavigation.icon" :size="20" />
               <span class="uppercase tracking-wider text-xs">{{ adminNavigation.label }}</span>
             </div>
-            <span class="material-symbols-rounded text-lg transition-transform duration-200 group-open:rotate-180">
-              expand_more
-            </span>
+            <HugeiconsIcon :icon="ArrowDown01Icon" :size="18" class="transition-transform duration-200 group-open:rotate-180" />
           </summary>
           <div class="mt-2 space-y-1">
             <RouterLink
@@ -172,7 +190,7 @@ async function handleLogout() {
               inactive-class="text-white/80 hover:bg-white/15 hover:text-white hover:shadow-md"
             >
               <div class="flex items-center gap-3">
-                <span class="material-symbols-rounded text-xl">{{ child.icon }}</span>
+                <HugeiconsIcon :icon="child.icon" :size="20" />
                 <span>{{ child.label }}</span>
               </div>
               <span v-if="child.badge" class="badge badge-sm bg-white/25 text-white border-0 font-semibold shadow-sm">
@@ -211,18 +229,18 @@ async function handleLogout() {
         </div>
         <div class="dropdown dropdown-top dropdown-end">
           <div tabindex="0" role="button" class="btn btn-ghost btn-sm btn-circle hover:bg-white/15">
-            <span class="material-symbols-rounded text-white text-lg">more_vert</span>
+            <HugeiconsIcon :icon="MoreVerticalIcon" :size="18" class="text-white" />
           </div>
           <ul tabindex="0" class="dropdown-content z-[1] menu p-2 shadow-2xl bg-white rounded-xl w-52 border border-gray-100 mb-2">
             <li>
               <RouterLink :to="{ name: 'profile' }" class="flex items-center gap-3 text-gray-700 hover:bg-gray-50 rounded-lg px-4 py-2">
-                <span class="material-symbols-rounded text-lg">person</span>
+                <HugeiconsIcon :icon="User02Icon" :size="18" />
                 <span>Mon profil</span>
               </RouterLink>
             </li>
             <li>
               <button @click="handleLogout" class="flex items-center gap-3 text-red-600 hover:bg-red-50 rounded-lg px-4 py-2">
-                <span class="material-symbols-rounded text-lg">logout</span>
+                <HugeiconsIcon :icon="Logout01Icon" :size="18" />
                 <span>Déconnexion</span>
               </button>
             </li>

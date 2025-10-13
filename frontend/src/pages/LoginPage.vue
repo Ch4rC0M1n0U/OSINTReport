@@ -3,6 +3,17 @@ import { reactive, computed, onMounted } from "vue";
 import { useRouter, useRoute } from "vue-router";
 import { useAuthStore } from "@/stores/auth";
 import { useSystemSettings } from "@/composables/useSystemSettings";
+import { HugeiconsIcon } from "@hugeicons/vue";
+import {
+  SearchVisualIcon,
+  SecurityCheckIcon,
+  DashboardSpeed01Icon,
+  LockIcon,
+  Mail01Icon,
+  AlertCircleIcon,
+  Login01Icon,
+  UserAdd01Icon,
+} from "@hugeicons/core-free-icons";
 
 const auth = useAuthStore();
 const router = useRouter();
@@ -71,7 +82,7 @@ onMounted(() => {
               />
             </div>
             <!-- Icône par défaut si pas de logo -->
-            <span v-else class="material-symbols-rounded text-5xl drop-shadow-lg">search_insights</span>
+            <HugeiconsIcon v-else :icon="SearchVisualIcon" :size="48" class="drop-shadow-lg" />
             
             <!-- Nom du service -->
             <div>
@@ -90,15 +101,15 @@ onMounted(() => {
         
         <div class="space-y-4 text-lg text-primary-content/90">
           <div class="flex items-start gap-3">
-            <span class="material-symbols-rounded mt-1">verified</span>
+            <HugeiconsIcon :icon="SecurityCheckIcon" :size="24" class="mt-1" />
             <p>Créez et gérez vos rapports d'investigation en toute sécurité</p>
           </div>
           <div class="flex items-start gap-3">
-            <span class="material-symbols-rounded mt-1">team_dashboard</span>
+            <HugeiconsIcon :icon="DashboardSpeed01Icon" :size="24" class="mt-1" />
             <p>Collaborez efficacement avec votre équipe d'analystes</p>
           </div>
           <div class="flex items-start gap-3">
-            <span class="material-symbols-rounded mt-1">lock</span>
+            <HugeiconsIcon :icon="LockIcon" :size="24" class="mt-1" />
             <p>Données chiffrées et conformité aux normes de sécurité</p>
           </div>
         </div>
@@ -125,7 +136,7 @@ onMounted(() => {
               class="h-12 w-auto object-contain"
             />
             <!-- Icône par défaut si pas de logo -->
-            <span v-else class="material-symbols-rounded text-4xl text-primary">search_insights</span>
+            <HugeiconsIcon v-else :icon="SearchVisualIcon" :size="40" class="text-primary" />
             
             <div class="text-center">
               <h1 class="text-2xl font-bold text-primary">{{ serviceName }}</h1>
@@ -151,9 +162,9 @@ onMounted(() => {
                 <span class="label-text font-medium">Email professionnel</span>
               </div>
               <div class="relative">
-                <span class="absolute left-3 top-3.5 material-symbols-rounded text-base-content/40">
-                  mail
-                </span>
+                <div class="absolute left-3 top-3.5 text-base-content/40">
+                  <HugeiconsIcon :icon="Mail01Icon" :size="20" />
+                </div>
                 <input 
                   v-model="form.email" 
                   type="email" 
@@ -169,9 +180,9 @@ onMounted(() => {
                 <span class="label-text font-medium">Mot de passe</span>
               </div>
               <div class="relative">
-                <span class="absolute left-3 top-3.5 material-symbols-rounded text-base-content/40">
-                  lock
-                </span>
+                <div class="absolute left-3 top-3.5 text-base-content/40">
+                  <HugeiconsIcon :icon="LockIcon" :size="20" />
+                </div>
                 <input 
                   v-model="form.password" 
                   type="password" 
@@ -193,7 +204,7 @@ onMounted(() => {
             </div>
 
             <div v-if="auth.error" class="alert alert-error">
-              <span class="material-symbols-rounded">error</span>
+              <HugeiconsIcon :icon="AlertCircleIcon" :size="20" />
               <span>{{ auth.error }}</span>
             </div>
 
@@ -203,7 +214,7 @@ onMounted(() => {
               :disabled="auth.loading"
             >
               <span v-if="auth.loading" class="loading loading-spinner loading-sm"></span>
-              <span v-else class="material-symbols-rounded">login</span>
+              <HugeiconsIcon v-else :icon="Login01Icon" :size="20" />
               Se connecter
             </button>
           </form>
@@ -211,7 +222,7 @@ onMounted(() => {
           <div class="divider text-sm text-base-content/50">Nouveau sur la plateforme ?</div>
 
           <RouterLink to="/register" class="btn btn-outline w-full text-base">
-            <span class="material-symbols-rounded">person_add</span>
+            <HugeiconsIcon :icon="UserAdd01Icon" :size="20" />
             Créer un compte
           </RouterLink>
 

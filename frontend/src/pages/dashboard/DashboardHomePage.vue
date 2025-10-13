@@ -4,6 +4,8 @@ import { storeToRefs } from "pinia";
 import { RouterLink } from "vue-router";
 
 import { useDashboardStore, type DashboardStatus } from "@/stores/dashboard";
+import { HugeiconsIcon } from '@hugeicons/vue';
+import { TableIcon, RefreshIcon } from '@hugeicons/core-free-icons';
 
 const dashboardStore = useDashboardStore();
 const { summary, loading, error, lastUpdated } = storeToRefs(dashboardStore);
@@ -102,13 +104,11 @@ function refresh() {
       </div>
       <div class="flex items-center gap-2">
         <RouterLink class="btn btn-sm btn-primary" :to="{ name: 'reports.list' }">
-          <span class="material-symbols-rounded text-base" aria-hidden="true">table_view</span>
+          <HugeiconsIcon :icon="TableIcon" :size="16" aria-hidden="true" />
           Voir les rapports
         </RouterLink>
         <button class="btn btn-sm btn-outline" :disabled="loading" @click="refresh">
-          <span class="material-symbols-rounded text-base" aria-hidden="true">
-            autorenew
-          </span>
+          <HugeiconsIcon :icon="RefreshIcon" :size="16" aria-hidden="true" />
           Actualiser
         </button>
         <span v-if="loading" class="loading loading-spinner loading-sm"></span>

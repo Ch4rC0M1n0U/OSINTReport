@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from "vue";
 import { useUsersStore } from "@/stores/users";
+import { HugeiconsIcon } from "@hugeicons/vue";
+import { Add01Icon } from "@hugeicons/core-free-icons";
 
 const usersStore = useUsersStore();
 const search = ref("");
@@ -82,7 +84,7 @@ async function handleActivateUser(userId: string) {
           </select>
         </div>
         <RouterLink :to="{ name: 'admin.users.create' }" class="btn btn-primary">
-          <span class="material-symbols-rounded">add</span>
+          <HugeiconsIcon :icon="Add01Icon" :size="20" />
           Nouvel utilisateur
         </RouterLink>
       </div>

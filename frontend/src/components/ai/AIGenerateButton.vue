@@ -3,6 +3,8 @@ import { ref, computed } from 'vue';
 import AIGenerationModal from './AIGenerationModal.vue';
 import type { AIGenerationModalProps } from './AIGenerationModal.vue';
 import type { PersonalDataToProtect } from '@/services/ai-generation.service';
+import { HugeiconsIcon } from '@hugeicons/vue';
+import { ArtificialIntelligence01Icon } from '@hugeicons/core-free-icons';
 
 export interface AIGenerateButtonProps {
   label?: string;
@@ -84,7 +86,7 @@ const buttonClass = computed(() => {
       :class="buttonClass"
       :title="iconOnly ? label : undefined"
     >
-      <span class="material-symbols-rounded">psychology</span>
+      <HugeiconsIcon :icon="ArtificialIntelligence01Icon" :size="18" />
       <span v-if="!iconOnly">{{ label }}</span>
     </button>
 

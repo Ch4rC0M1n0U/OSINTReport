@@ -1,6 +1,21 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted } from "vue";
 import { api } from "@/services/http";
+import { HugeiconsIcon } from "@hugeicons/vue";
+import {
+  Mail01Icon,
+  Add01Icon,
+  CheckmarkCircle01Icon,
+  Cancel01Icon,
+  AlertCircleIcon,
+  WifiConnected01Icon,
+  MailRemove01Icon,
+  DatabaseIcon,
+  ViewIcon,
+  ViewOffIcon,
+  Edit02Icon,
+  Delete02Icon,
+} from "@hugeicons/core-free-icons";
 
 interface SmtpConfig {
   id: string;
@@ -171,7 +186,7 @@ onMounted(() => {
     <div class="flex items-center justify-between mb-6">
       <div>
         <h1 class="text-3xl font-bold flex items-center gap-2">
-          <span class="material-symbols-rounded text-primary">mail</span>
+          <HugeiconsIcon :icon="Mail01Icon" :size="32" class="text-primary" />
           Configuration SMTP
         </h1>
         <p class="text-base-content/60 mt-1">
@@ -183,25 +198,25 @@ onMounted(() => {
         class="btn btn-primary" 
         @click="showForm = true"
       >
-        <span class="material-symbols-rounded">add</span>
+        <HugeiconsIcon :icon="Add01Icon" :size="20" />
         Nouvelle configuration
       </button>
     </div>
 
     <!-- Alerts -->
     <div v-if="success" class="alert alert-success mb-4">
-      <span class="material-symbols-rounded">check_circle</span>
+      <HugeiconsIcon :icon="CheckmarkCircle01Icon" :size="20" />
       <span>{{ success }}</span>
       <button class="btn btn-sm btn-ghost" @click="success = ''">
-        <span class="material-symbols-rounded">close</span>
+        <HugeiconsIcon :icon="Cancel01Icon" :size="18" />
       </button>
     </div>
 
     <div v-if="error" class="alert alert-error mb-4">
-      <span class="material-symbols-rounded">error</span>
+      <HugeiconsIcon :icon="AlertCircleIcon" :size="20" />
       <span>{{ error }}</span>
       <button class="btn btn-sm btn-ghost" @click="error = ''">
-        <span class="material-symbols-rounded">close</span>
+        <HugeiconsIcon :icon="Cancel01Icon" :size="18" />
       </button>
     </div>
 
@@ -213,7 +228,7 @@ onMounted(() => {
             {{ editingId ? 'Modifier' : 'Nouvelle' }} configuration SMTP
           </h2>
           <button class="btn btn-ghost btn-sm" @click="resetForm">
-            <span class="material-symbols-rounded">close</span>
+            <HugeiconsIcon :icon="Cancel01Icon" :size="18" />
           </button>
         </div>
 
@@ -337,9 +352,7 @@ onMounted(() => {
 
           <!-- Test Result -->
           <div v-if="testResult" class="alert" :class="testResult.success ? 'alert-success' : 'alert-error'">
-            <span class="material-symbols-rounded">
-              {{ testResult.success ? 'check_circle' : 'error' }}
-            </span>
+            <HugeiconsIcon :icon="testResult.success ? CheckmarkCircle01Icon : AlertCircleIcon" :size="20" />
             <span>{{ testResult.message }}</span>
           </div>
 
@@ -352,7 +365,7 @@ onMounted(() => {
               :disabled="loading || testingConnection"
             >
               <span v-if="testingConnection" class="loading loading-spinner loading-sm"></span>
-              <span v-else class="material-symbols-rounded">network_check</span>
+              <HugeiconsIcon v-else :icon="WifiConnected01Icon" :size="20" />
               Tester la connexion
             </button>
             <button 
@@ -361,7 +374,7 @@ onMounted(() => {
               :disabled="loading || testingConnection"
             >
               <span v-if="loading" class="loading loading-spinner loading-sm"></span>
-              <span v-else class="material-symbols-rounded">save</span>
+              <HugeiconsIcon v-else :icon="CheckmarkCircle01Icon" :size="20" />
               {{ editingId ? 'Mettre à jour' : 'Créer' }}
             </button>
             <button 
@@ -386,7 +399,7 @@ onMounted(() => {
         </div>
 
         <div v-else-if="configs.length === 0" class="text-center p-8 text-base-content/60">
-          <span class="material-symbols-rounded text-6xl mb-4">mail_off</span>
+          <HugeiconsIcon :icon="MailRemove01Icon" :size="64" class="mb-4" />
           <p>Aucune configuration SMTP</p>
           <p class="text-sm">Créez-en une pour activer l'envoi d'emails</p>
         </div>
@@ -407,15 +420,13 @@ onMounted(() => {
               <tr v-for="config in configs" :key="config.id">
                 <td>
                   <div class="flex items-center gap-2">
-                    <span class="material-symbols-rounded text-base-content/40">dns</span>
+                    <HugeiconsIcon :icon="DatabaseIcon" :size="18" class="text-base-content/40" />
                     {{ config.host }}
                   </div>
                 </td>
                 <td>
                   <div class="flex items-center gap-1">
-                    <span class="material-symbols-rounded text-sm">
-                      {{ config.secure ? 'lock' : 'lock_open' }}
-                    </span>
+                    <HugeiconsIcon :icon="config.secure ? ViewOffIcon : ViewIcon" :size="16" />
                     {{ config.port }}
                   </div>
                 </td>
@@ -444,21 +455,21 @@ onMounted(() => {
                       @click="activateConfig(config.id)"
                       title="Activer"
                     >
-                      <span class="material-symbols-rounded">check_circle</span>
+                      <HugeiconsIcon :icon="CheckmarkCircle01Icon" :size="18" />
                     </button>
                     <button 
                       class="btn btn-sm btn-ghost"
                       @click="editConfig(config)"
                       title="Modifier"
                     >
-                      <span class="material-symbols-rounded">edit</span>
+                      <HugeiconsIcon :icon="Edit02Icon" :size="18" />
                     </button>
                     <button 
                       class="btn btn-sm btn-error btn-outline"
                       @click="deleteConfig(config.id)"
                       title="Supprimer"
                     >
-                      <span class="material-symbols-rounded">delete</span>
+                      <HugeiconsIcon :icon="Delete02Icon" :size="18" />
                     </button>
                   </div>
                 </td>

@@ -1,6 +1,16 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue';
 import { AIGenerationService, type PersonalDataToProtect } from '@/services/ai-generation.service';
+import { HugeiconsIcon } from '@hugeicons/vue';
+import {
+  ArtificialIntelligence01Icon,
+  Cancel01Icon,
+  CheckmarkCircle01Icon,
+  AlertCircleIcon,
+  UserShield01Icon,
+  RefreshIcon,
+  AiMagicIcon,
+} from '@hugeicons/core-free-icons';
 
 export interface AIGenerationModalProps {
   isOpen: boolean;
@@ -152,19 +162,17 @@ const closeModal = () => {
       <!-- Header -->
       <div class="flex items-center justify-between mb-4">
         <h3 class="font-bold text-lg flex items-center gap-2">
-          <span class="material-symbols-rounded text-primary">psychology</span>
+          <HugeiconsIcon :icon="ArtificialIntelligence01Icon" :size="24" class="text-primary" />
           {{ modalTitle }}
         </h3>
         <button @click="closeModal" class="btn btn-sm btn-circle btn-ghost">
-          <span class="material-symbols-rounded">close</span>
+          <HugeiconsIcon :icon="Cancel01Icon" :size="18" />
         </button>
       </div>
 
       <!-- Statut IA -->
       <div v-if="aiStatus" class="alert mb-4" :class="aiStatus.available ? 'alert-info' : 'alert-warning'">
-        <span class="material-symbols-rounded">
-          {{ aiStatus.available ? 'check_circle' : 'warning' }}
-        </span>
+        <HugeiconsIcon :icon="aiStatus.available ? CheckmarkCircle01Icon : AlertCircleIcon" :size="20" />
         <div class="flex-1">
           <div v-if="aiStatus.available">
             <strong>IA configurée :</strong> {{ aiStatus.provider }} 
@@ -179,7 +187,7 @@ const closeModal = () => {
 
       <!-- Protection des données -->
       <div class="alert alert-success mb-4">
-        <span class="material-symbols-rounded">verified_user</span>
+        <HugeiconsIcon :icon="UserShield01Icon" :size="20" />
         <div class="text-sm">
           <strong>Protection RGPD active :</strong> Les données personnelles sont automatiquement anonymisées avant envoi à l'IA.
         </div>
@@ -197,9 +205,11 @@ const closeModal = () => {
           :disabled="isGenerating || !aiStatus?.available"
           class="btn btn-primary w-full gap-2"
         >
-          <span class="material-symbols-rounded" :class="{ 'animate-spin': isGenerating }">
-            {{ isGenerating ? 'progress_activity' : 'auto_awesome' }}
-          </span>
+          <HugeiconsIcon 
+            :icon="isGenerating ? RefreshIcon : AiMagicIcon" 
+            :size="20" 
+            :class="{ 'animate-spin': isGenerating }" 
+          />
           {{ isGenerating ? 'Génération en cours...' : 'Générer le texte' }}
         </button>
       </div>
@@ -207,7 +217,7 @@ const closeModal = () => {
       <!-- Texte généré -->
       <div v-else class="space-y-4">
         <div class="alert alert-success">
-          <span class="material-symbols-rounded">check_circle</span>
+          <HugeiconsIcon :icon="CheckmarkCircle01Icon" :size="20" />
           <span>Texte généré avec succès !</span>
         </div>
 
@@ -227,11 +237,11 @@ const closeModal = () => {
 
         <div class="flex gap-2 justify-end">
           <button @click="generatedText = ''" class="btn btn-ghost gap-2">
-            <span class="material-symbols-rounded">refresh</span>
+            <HugeiconsIcon :icon="RefreshIcon" :size="18" />
             Générer à nouveau
           </button>
           <button @click="useGeneratedText" class="btn btn-primary gap-2">
-            <span class="material-symbols-rounded">check</span>
+            <HugeiconsIcon :icon="CheckmarkCircle01Icon" :size="18" />
             Utiliser ce texte
           </button>
         </div>
@@ -239,7 +249,7 @@ const closeModal = () => {
 
       <!-- Erreur -->
       <div v-if="error" class="alert alert-error mt-4">
-        <span class="material-symbols-rounded">error</span>
+        <HugeiconsIcon :icon="AlertCircleIcon" :size="20" />
         <span>{{ error }}</span>
       </div>
 

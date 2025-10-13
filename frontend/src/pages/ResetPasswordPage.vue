@@ -2,6 +2,18 @@
 import { reactive, ref, computed, onMounted } from "vue";
 import { useRouter, useRoute } from "vue-router";
 import { api } from "@/services/http";
+import { HugeiconsIcon } from "@hugeicons/vue";
+import {
+  SearchVisualIcon,
+  LockIcon,
+  CheckmarkCircle01Icon,
+  AlertCircleIcon,
+  ViewIcon,
+  ViewOffIcon,
+  CheckmarkCircle02Icon,
+  CircleIcon,
+  ArrowLeft01Icon,
+} from "@hugeicons/core-free-icons";
 
 const router = useRouter();
 const route = useRoute();
@@ -123,7 +135,7 @@ async function handleSubmit() {
     <div class="w-full max-w-md">
       <!-- Logo -->
       <div class="flex items-center justify-center gap-2 mb-8">
-        <span class="material-symbols-rounded text-4xl text-primary">search_insights</span>
+        <HugeiconsIcon :icon="SearchVisualIcon" :size="40" class="text-primary" />
         <h1 class="text-2xl font-bold text-primary">OSINT Report</h1>
       </div>
 
@@ -133,7 +145,7 @@ async function handleSubmit() {
           <!-- Icon -->
           <div class="flex justify-center mb-4">
             <div class="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center">
-              <span class="material-symbols-rounded text-4xl text-primary">password</span>
+              <HugeiconsIcon :icon="LockIcon" :size="40" class="text-primary" />
             </div>
           </div>
 
@@ -147,7 +159,7 @@ async function handleSubmit() {
 
           <!-- Success Message -->
           <div v-if="success" class="alert alert-success mb-4">
-            <span class="material-symbols-rounded">check_circle</span>
+            <HugeiconsIcon :icon="CheckmarkCircle01Icon" :size="20" />
             <div>
               <div class="font-bold">Mot de passe réinitialisé !</div>
               <div class="text-sm">
@@ -158,7 +170,7 @@ async function handleSubmit() {
 
           <!-- Error Message -->
           <div v-if="error" class="alert alert-error mb-4">
-            <span class="material-symbols-rounded">error</span>
+            <HugeiconsIcon :icon="AlertCircleIcon" :size="20" />
             <span>{{ error }}</span>
           </div>
 
@@ -170,9 +182,9 @@ async function handleSubmit() {
                 <span class="label-text font-medium">Nouveau mot de passe</span>
               </div>
               <div class="relative">
-                <span class="absolute left-3 top-3.5 material-symbols-rounded text-base-content/40">
-                  lock
-                </span>
+                <div class="absolute left-3 top-3.5 text-base-content/40">
+                  <HugeiconsIcon :icon="LockIcon" :size="20" />
+                </div>
                 <input 
                   v-model="form.newPassword" 
                   :type="showPassword ? 'text' : 'password'"
@@ -187,9 +199,7 @@ async function handleSubmit() {
                   class="absolute right-3 top-3.5 text-base-content/40 hover:text-base-content"
                   @click="showPassword = !showPassword"
                 >
-                  <span class="material-symbols-rounded text-xl">
-                    {{ showPassword ? 'visibility_off' : 'visibility' }}
-                  </span>
+                  <HugeiconsIcon :icon="showPassword ? ViewOffIcon : ViewIcon" :size="20" />
                 </button>
               </div>
 
@@ -214,9 +224,9 @@ async function handleSubmit() {
                 <span class="label-text font-medium">Confirmer le mot de passe</span>
               </div>
               <div class="relative">
-                <span class="absolute left-3 top-3.5 material-symbols-rounded text-base-content/40">
-                  lock
-                </span>
+                <div class="absolute left-3 top-3.5 text-base-content/40">
+                  <HugeiconsIcon :icon="LockIcon" :size="20" />
+                </div>
                 <input 
                   v-model="form.confirmPassword" 
                   :type="showConfirmPassword ? 'text' : 'password'"
@@ -231,9 +241,7 @@ async function handleSubmit() {
                   class="absolute right-3 top-3.5 text-base-content/40 hover:text-base-content"
                   @click="showConfirmPassword = !showConfirmPassword"
                 >
-                  <span class="material-symbols-rounded text-xl">
-                    {{ showConfirmPassword ? 'visibility_off' : 'visibility' }}
-                  </span>
+                  <HugeiconsIcon :icon="showConfirmPassword ? ViewOffIcon : ViewIcon" :size="20" />
                 </button>
               </div>
               <div v-if="form.confirmPassword && !passwordsMatch" class="label">
@@ -246,33 +254,23 @@ async function handleSubmit() {
               <p class="text-sm font-medium mb-2">Le mot de passe doit contenir :</p>
               <ul class="text-xs space-y-1">
                 <li :class="hasMinLength ? 'text-success' : 'text-base-content/60'">
-                  <span class="material-symbols-rounded text-sm align-middle">
-                    {{ hasMinLength ? 'check_circle' : 'circle' }}
-                  </span>
+                  <HugeiconsIcon :icon="hasMinLength ? CheckmarkCircle02Icon : CircleIcon" :size="14" class="inline align-middle" />
                   Au moins 12 caractères
                 </li>
                 <li :class="hasUpperCase ? 'text-success' : 'text-base-content/60'">
-                  <span class="material-symbols-rounded text-sm align-middle">
-                    {{ hasUpperCase ? 'check_circle' : 'circle' }}
-                  </span>
+                  <HugeiconsIcon :icon="hasUpperCase ? CheckmarkCircle02Icon : CircleIcon" :size="14" class="inline align-middle" />
                   Une majuscule
                 </li>
                 <li :class="hasLowerCase ? 'text-success' : 'text-base-content/60'">
-                  <span class="material-symbols-rounded text-sm align-middle">
-                    {{ hasLowerCase ? 'check_circle' : 'circle' }}
-                  </span>
+                  <HugeiconsIcon :icon="hasLowerCase ? CheckmarkCircle02Icon : CircleIcon" :size="14" class="inline align-middle" />
                   Une minuscule
                 </li>
                 <li :class="hasNumber ? 'text-success' : 'text-base-content/60'">
-                  <span class="material-symbols-rounded text-sm align-middle">
-                    {{ hasNumber ? 'check_circle' : 'circle' }}
-                  </span>
+                  <HugeiconsIcon :icon="hasNumber ? CheckmarkCircle02Icon : CircleIcon" :size="14" class="inline align-middle" />
                   Un chiffre
                 </li>
                 <li :class="hasSpecialChar ? 'text-success' : 'text-base-content/60'">
-                  <span class="material-symbols-rounded text-sm align-middle">
-                    {{ hasSpecialChar ? 'check_circle' : 'circle' }}
-                  </span>
+                  <HugeiconsIcon :icon="hasSpecialChar ? CheckmarkCircle02Icon : CircleIcon" :size="14" class="inline align-middle" />
                   Un caractère spécial
                 </li>
               </ul>
@@ -284,7 +282,7 @@ async function handleSubmit() {
               :disabled="loading || !passwordsMatch || passwordStrength < 5"
             >
               <span v-if="loading" class="loading loading-spinner loading-sm"></span>
-              <span v-else class="material-symbols-rounded">check</span>
+              <HugeiconsIcon v-else :icon="CheckmarkCircle01Icon" :size="20" />
               Réinitialiser le mot de passe
             </button>
           </form>
@@ -293,7 +291,7 @@ async function handleSubmit() {
           <div class="divider text-sm">OU</div>
           
           <RouterLink to="/login" class="btn btn-ghost btn-block">
-            <span class="material-symbols-rounded">arrow_back</span>
+            <HugeiconsIcon :icon="ArrowLeft01Icon" :size="20" />
             Retour à la connexion
           </RouterLink>
         </div>

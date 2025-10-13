@@ -2,6 +2,8 @@
 import { onMounted, reactive, ref } from "vue";
 import { useAuthStore } from "@/stores/auth";
 import { api } from "@/services/http";
+import { HugeiconsIcon } from "@hugeicons/vue";
+import { Upload01Icon } from "@hugeicons/core-free-icons";
 
 const authStore = useAuthStore();
 const saving = ref(false);
@@ -153,7 +155,7 @@ function getInitials(firstName: string, lastName: string): string {
           <div class="flex-1 space-y-3">
             <div>
               <label class="btn btn-primary btn-sm">
-                <span class="material-symbols-rounded text-sm">upload</span>
+                <HugeiconsIcon :icon="Upload01Icon" :size="16" />
                 <span>Choisir une image</span>
                 <input
                   type="file"

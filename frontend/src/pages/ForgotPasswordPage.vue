@@ -2,6 +2,16 @@
 import { reactive, ref } from "vue";
 import { RouterLink } from "vue-router";
 import { api } from "@/services/http";
+import { HugeiconsIcon } from "@hugeicons/vue";
+import {
+  SearchVisualIcon,
+  LockIcon,
+  CheckmarkCircle01Icon,
+  AlertCircleIcon,
+  Mail01Icon,
+  SentIcon,
+  ArrowLeft01Icon,
+} from "@hugeicons/core-free-icons";
 
 const form = reactive({
   email: "",
@@ -34,7 +44,7 @@ async function handleSubmit() {
     <div class="w-full max-w-md">
       <!-- Logo -->
       <div class="flex items-center justify-center gap-2 mb-8">
-        <span class="material-symbols-rounded text-4xl text-primary">search_insights</span>
+        <HugeiconsIcon :icon="SearchVisualIcon" :size="40" class="text-primary" />
         <h1 class="text-2xl font-bold text-primary">OSINT Report</h1>
       </div>
 
@@ -44,7 +54,7 @@ async function handleSubmit() {
           <!-- Icon -->
           <div class="flex justify-center mb-4">
             <div class="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center">
-              <span class="material-symbols-rounded text-4xl text-primary">lock_reset</span>
+              <HugeiconsIcon :icon="LockIcon" :size="40" class="text-primary" />
             </div>
           </div>
 
@@ -58,7 +68,7 @@ async function handleSubmit() {
 
           <!-- Success Message -->
           <div v-if="success" class="alert alert-success mb-4">
-            <span class="material-symbols-rounded">check_circle</span>
+            <HugeiconsIcon :icon="CheckmarkCircle01Icon" :size="20" />
             <div>
               <div class="font-bold">Email envoyé !</div>
               <div class="text-sm">
@@ -69,7 +79,7 @@ async function handleSubmit() {
 
           <!-- Error Message -->
           <div v-if="error" class="alert alert-error mb-4">
-            <span class="material-symbols-rounded">error</span>
+            <HugeiconsIcon :icon="AlertCircleIcon" :size="20" />
             <span>{{ error }}</span>
           </div>
 
@@ -80,9 +90,9 @@ async function handleSubmit() {
                 <span class="label-text font-medium">Email professionnel</span>
               </div>
               <div class="relative">
-                <span class="absolute left-3 top-3.5 material-symbols-rounded text-base-content/40">
-                  mail
-                </span>
+                <div class="absolute left-3 top-3.5 text-base-content/40">
+                  <HugeiconsIcon :icon="Mail01Icon" :size="20" />
+                </div>
                 <input 
                   v-model="form.email" 
                   type="email" 
@@ -100,7 +110,7 @@ async function handleSubmit() {
               :disabled="loading"
             >
               <span v-if="loading" class="loading loading-spinner loading-sm"></span>
-              <span v-else class="material-symbols-rounded">send</span>
+              <HugeiconsIcon v-else :icon="SentIcon" :size="20" />
               Envoyer le lien de réinitialisation
             </button>
           </form>
@@ -109,7 +119,7 @@ async function handleSubmit() {
           <div class="divider text-sm">OU</div>
           
           <RouterLink to="/login" class="btn btn-ghost btn-block">
-            <span class="material-symbols-rounded">arrow_back</span>
+            <HugeiconsIcon :icon="ArrowLeft01Icon" :size="20" />
             Retour à la connexion
           </RouterLink>
         </div>

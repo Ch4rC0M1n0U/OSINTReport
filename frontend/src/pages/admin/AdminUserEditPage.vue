@@ -2,6 +2,8 @@
 import { onMounted, reactive, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useUsersStore } from "@/stores/users";
+import { HugeiconsIcon } from "@hugeicons/vue";
+import { ArrowLeft01Icon } from "@hugeicons/core-free-icons";
 
 const route = useRoute();
 const router = useRouter();
@@ -49,7 +51,7 @@ function goBack() {
   <section class="space-y-6">
     <header class="flex items-center gap-4">
       <button class="btn btn-ghost btn-sm" @click="goBack">
-        <span class="material-symbols-rounded">arrow_back</span>
+        <HugeiconsIcon :icon="ArrowLeft01Icon" :size="20" />
       </button>
       <div>
         <h2 class="text-2xl font-semibold">Modifier l'utilisateur</h2>

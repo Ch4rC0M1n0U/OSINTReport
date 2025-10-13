@@ -2,6 +2,8 @@
 import { onMounted, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useUsersStore } from "@/stores/users";
+import { HugeiconsIcon } from "@hugeicons/vue";
+import { ArrowLeft01Icon, Edit02Icon } from "@hugeicons/core-free-icons";
 
 const route = useRoute();
 const router = useRouter();
@@ -36,7 +38,7 @@ function editUser() {
     <header class="flex items-center justify-between">
       <div class="flex items-center gap-4">
         <button class="btn btn-ghost btn-sm" @click="goBack">
-          <span class="material-symbols-rounded">arrow_back</span>
+          <HugeiconsIcon :icon="ArrowLeft01Icon" :size="20" />
         </button>
         <div>
           <h2 class="text-2xl font-semibold">Détails de l'utilisateur</h2>
@@ -46,7 +48,7 @@ function editUser() {
         </div>
       </div>
       <button class="btn btn-primary" @click="editUser">
-        <span class="material-symbols-rounded">edit</span>
+        <HugeiconsIcon :icon="Edit02Icon" :size="20" />
         Modifier
       </button>
     </header>
