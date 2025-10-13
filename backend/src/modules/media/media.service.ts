@@ -303,8 +303,8 @@ export async function processScreenshot(
       gpsAltitude, // Altitude GPS (si disponible)
     });
 
-    // 7. Génération URL signée (valide 48h)
-    const expiresAt = Date.now() + 48 * 60 * 60 * 1000; // 48h
+    // 7. Génération URL signée (valide 6 mois pour archivage long terme)
+    const expiresAt = Date.now() + 180 * 24 * 60 * 60 * 1000; // 6 mois (180 jours)
     const signedUrl = generateSignedUrl(finalFilename, expiresAt, baseUrl);
 
     return {
@@ -508,7 +508,7 @@ export async function listUserScreenshots(
       const caseMatch = !caseId || metadata.caseId === caseId;
 
       if (userMatch && caseMatch) {
-        const expiresAt = Date.now() + 48 * 60 * 60 * 1000;
+        const expiresAt = Date.now() + 180 * 24 * 60 * 60 * 1000; // 6 mois (180 jours)
         screenshots.push({
           filename: metadata.filename,
           originalName: metadata.originalName,

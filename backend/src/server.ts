@@ -4,6 +4,7 @@ import { logger } from "@config/logger";
 import { prisma } from "@shared/prisma";
 import { bootstrapAuth } from "@modules/auth/bootstrap";
 import { SearchService } from "@modules/search/search.service";
+import { startScreenshotUrlCron } from "@modules/cron/screenshot-url.cron";
 
 async function start() {
   try {
@@ -16,6 +17,15 @@ async function start() {
     } catch (error) {
       logger.warn({ err: error }, "⚠️  Impossible d'initialiser Meilisearch - la recherche sera indisponible");
     }
+    
+    // Démarrer le CRON de régénération des URLs de screenshots
+    try {
+      startScreenshotUrlCron();
+      logger.info("✅ CRON de régénération des URLs de screenshots démarré");
+    } catch (error) {
+      logger.warn({ err: error }, "⚠️  Impossible de démarrer le CRON de régénération des URLs");
+    }
+    
     const server = app.listen(env.PORT, () => {
       logger.info({ port: env.PORT }, "Backend démarré");
     });

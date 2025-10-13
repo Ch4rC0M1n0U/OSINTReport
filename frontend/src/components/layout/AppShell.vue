@@ -17,10 +17,10 @@ const secondaryColorRgb = computed(() => {
   return `${r}, ${g}, ${b}`;
 });
 
-// Générer les classes de style dynamiquement
+// Générer les classes de style dynamiquement avec plus de contraste
 const sidebarStyle = computed(() => ({
-  background: `linear-gradient(to bottom, rgba(${secondaryColorRgb.value}, 0.85), rgba(${secondaryColorRgb.value}, 0.95))`,
-  backdropFilter: 'blur(10px)',
+  background: `linear-gradient(to bottom, rgba(${secondaryColorRgb.value}, 0.92), rgba(${secondaryColorRgb.value}, 0.98))`,
+  backdropFilter: 'blur(12px)',
 }));
 </script>
 

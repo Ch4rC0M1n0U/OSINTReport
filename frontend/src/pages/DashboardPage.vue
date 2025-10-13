@@ -151,49 +151,49 @@ async function handleLogout() {
   <AppShell v-else>
     <template #sidebar>
       <!-- Navigation principale -->
-      <div class="space-y-1 mb-8">
+      <div class="space-y-2 mb-8">
         <RouterLink
           v-for="item in mainNavigation"
           :key="item.label"
           :to="item.to"
-          class="group flex items-center justify-between px-4 py-3 text-sm font-medium rounded-xl transition-all duration-200"
-          active-class="bg-white/25 text-white shadow-lg backdrop-blur-sm"
-          inactive-class="text-white/80 hover:bg-white/15 hover:text-white hover:shadow-md"
+          class="group flex items-center justify-between px-4 py-3.5 text-base font-bold rounded-xl transition-all duration-200 backdrop-blur-md"
+          active-class="bg-white/40 text-white shadow-2xl ring-2 ring-white/40"
+          inactive-class="bg-white/10 text-white/95 hover:bg-white/25 hover:text-white hover:shadow-xl hover:ring-2 hover:ring-white/20"
         >
-          <div class="flex items-center gap-3">
-            <HugeiconsIcon :icon="item.icon" :size="20" />
-            <span>{{ item.label }}</span>
+          <div class="flex items-center gap-3.5">
+            <HugeiconsIcon :icon="item.icon" :size="22" class="flex-shrink-0 drop-shadow-md" />
+            <span class="tracking-wide drop-shadow-md">{{ item.label }}</span>
           </div>
-          <span v-if="item.badge" class="badge badge-sm bg-white/25 text-white border-0 font-semibold shadow-sm">
+          <span v-if="item.badge" class="badge badge-sm bg-white/40 text-white border-0 font-bold shadow-lg ring-1 ring-white/30">
             {{ item.badge }}
           </span>
         </RouterLink>
       </div>
 
       <!-- Section Administration (déroulant) -->
-      <div v-if="adminNavigation" class="mt-8">
+      <div v-if="adminNavigation" class="mt-8 pt-8 border-t border-white/30">
         <details class="group">
-          <summary class="flex items-center justify-between px-4 py-3 text-sm font-semibold text-white/80 hover:text-white hover:bg-white/10 rounded-xl cursor-pointer transition-all duration-200 list-none">
+          <summary class="flex items-center justify-between px-4 py-3 text-sm font-bold text-white hover:text-white bg-white/10 hover:bg-white/20 rounded-xl cursor-pointer transition-all duration-200 list-none mb-2 backdrop-blur-md shadow-lg">
             <div class="flex items-center gap-3">
-              <HugeiconsIcon :icon="adminNavigation.icon" :size="20" />
-              <span class="uppercase tracking-wider text-xs">{{ adminNavigation.label }}</span>
+              <HugeiconsIcon :icon="adminNavigation.icon" :size="20" class="flex-shrink-0 drop-shadow-md" />
+              <span class="uppercase tracking-widest text-xs drop-shadow-md">{{ adminNavigation.label }}</span>
             </div>
-            <HugeiconsIcon :icon="ArrowDown01Icon" :size="18" class="transition-transform duration-200 group-open:rotate-180" />
+            <HugeiconsIcon :icon="ArrowDown01Icon" :size="18" class="transition-transform duration-200 group-open:rotate-180 flex-shrink-0 drop-shadow-md" />
           </summary>
-          <div class="mt-2 space-y-1">
+          <div class="mt-2 space-y-1.5 ml-1">
             <RouterLink
               v-for="child in adminNavigation.children"
               :key="child.label"
               :to="child.to"
-              class="group flex items-center justify-between px-4 py-3 text-sm font-medium rounded-xl transition-all duration-200 ml-2"
-              active-class="bg-white/25 text-white shadow-lg backdrop-blur-sm"
-              inactive-class="text-white/80 hover:bg-white/15 hover:text-white hover:shadow-md"
+              class="group flex items-center justify-between px-4 py-3 text-sm font-semibold rounded-xl transition-all duration-200 backdrop-blur-md"
+              active-class="bg-white/35 text-white shadow-xl ring-2 ring-white/30"
+              inactive-class="bg-white/10 text-white/95 hover:bg-white/20 hover:text-white hover:shadow-lg"
             >
               <div class="flex items-center gap-3">
-                <HugeiconsIcon :icon="child.icon" :size="20" />
-                <span>{{ child.label }}</span>
+                <HugeiconsIcon :icon="child.icon" :size="20" class="flex-shrink-0 drop-shadow" />
+                <span class="drop-shadow">{{ child.label }}</span>
               </div>
-              <span v-if="child.badge" class="badge badge-sm bg-white/25 text-white border-0 font-semibold shadow-sm">
+              <span v-if="child.badge" class="badge badge-sm bg-white/35 text-white border-0 font-bold shadow-md ring-1 ring-white/20">
                 {{ child.badge }}
               </span>
             </RouterLink>
@@ -203,10 +203,10 @@ async function handleLogout() {
     </template>
 
     <template #user>
-      <div class="flex items-center gap-3">
+      <div class="flex items-center gap-3 p-2 rounded-xl bg-white/10 hover:bg-white/20 transition-all duration-200 backdrop-blur-md shadow-lg ring-1 ring-white/20">
         <div
           v-if="auth.user.avatarUrl"
-          class="w-11 h-11 rounded-xl overflow-hidden ring-2 ring-white/20 shadow-lg"
+          class="w-12 h-12 rounded-xl overflow-hidden ring-2 ring-white/40 shadow-xl flex-shrink-0"
         >
           <img 
             :src="auth.user.avatarUrl" 
@@ -217,30 +217,30 @@ async function handleLogout() {
         </div>
         <div
           v-else
-          class="w-11 h-11 rounded-xl bg-white/20 text-white flex items-center justify-center font-bold ring-2 ring-white/10 shadow-lg backdrop-blur-sm"
+          class="w-12 h-12 rounded-xl bg-white/35 text-white flex items-center justify-center font-bold ring-2 ring-white/30 shadow-xl backdrop-blur-sm text-base flex-shrink-0 drop-shadow-lg"
         >
           {{ userInitials }}
         </div>
         <div class="flex-1 min-w-0">
-          <p class="text-sm font-semibold text-white truncate drop-shadow-sm">
+          <p class="text-sm font-bold text-white truncate drop-shadow-lg">
             {{ auth.user.firstName }} {{ auth.user.lastName }}
           </p>
-          <p class="text-xs text-white/70 truncate">{{ auth.user.roleName }}</p>
+          <p class="text-xs text-white/90 truncate font-semibold drop-shadow">{{ auth.user.roleName }}</p>
         </div>
-        <div class="dropdown dropdown-top dropdown-end">
-          <div tabindex="0" role="button" class="btn btn-ghost btn-sm btn-circle hover:bg-white/15">
-            <HugeiconsIcon :icon="MoreVerticalIcon" :size="18" class="text-white" />
+        <div class="dropdown dropdown-top dropdown-end flex-shrink-0">
+          <div tabindex="0" role="button" class="btn btn-ghost btn-sm btn-circle hover:bg-white/25 bg-white/15 border border-white/30 hover:border-white/40 shadow-md">
+            <HugeiconsIcon :icon="MoreVerticalIcon" :size="18" class="text-white drop-shadow" />
           </div>
           <ul tabindex="0" class="dropdown-content z-[1] menu p-2 shadow-2xl bg-white rounded-xl w-52 border border-gray-100 mb-2">
             <li>
-              <RouterLink :to="{ name: 'profile' }" class="flex items-center gap-3 text-gray-700 hover:bg-gray-50 rounded-lg px-4 py-2">
-                <HugeiconsIcon :icon="User02Icon" :size="18" />
+              <RouterLink :to="{ name: 'profile' }" class="flex items-center gap-3 text-gray-700 hover:bg-gray-50 rounded-lg px-4 py-3 font-medium">
+                <HugeiconsIcon :icon="User02Icon" :size="20" />
                 <span>Mon profil</span>
               </RouterLink>
             </li>
             <li>
-              <button @click="handleLogout" class="flex items-center gap-3 text-red-600 hover:bg-red-50 rounded-lg px-4 py-2">
-                <HugeiconsIcon :icon="Logout01Icon" :size="18" />
+              <button @click="handleLogout" class="flex items-center gap-3 text-red-600 hover:bg-red-50 rounded-lg px-4 py-3 font-medium">
+                <HugeiconsIcon :icon="Logout01Icon" :size="20" />
                 <span>Déconnexion</span>
               </button>
             </li>

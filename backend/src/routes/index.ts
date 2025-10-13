@@ -10,6 +10,7 @@ import pdfRouter from "@modules/pdf/pdf.router";
 import { mediaRouter } from "@modules/media/media.router";
 import settingsRouter from "@modules/settings/settings.router";
 import aiRouter from "@modules/ai/ai.router";
+import cronRouter from "@modules/cron/cron.router";
 
 const router = Router();
 
@@ -28,5 +29,6 @@ router.use("/search", searchRouter);
 router.use("/media", mediaRouter);
 router.use("/settings", settingsRouter);
 router.use("/ai", aiRouter);
+router.use("/cron", cronRouter); // CRON: screenshot URL regeneration
 
 export { router };
