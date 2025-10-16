@@ -10,7 +10,10 @@ export type AuthenticatedUser = {
   id: string;
   firstName: string;
   lastName: string;
+  matricule: string;
   email: string;
+  phone: string | null;
+  grade: string | null;
   avatarUrl: string | null;
   roleId: string;
   roleName: string;
@@ -28,7 +31,10 @@ async function getUserWithRoleByEmail(email: string) {
       id: true,
       firstName: true,
       lastName: true,
+      matricule: true,
       email: true,
+      phone: true,
+      grade: true,
       avatarUrl: true,
       passwordHash: true,
       roleId: true,
@@ -55,7 +61,10 @@ function buildAuthenticatedUser(user: UserWithRole): AuthenticatedUser {
     id: user.id,
     firstName: user.firstName,
     lastName: user.lastName,
+    matricule: user.matricule,
     email: user.email,
+    phone: user.phone,
+    grade: user.grade,
     avatarUrl: user.avatarUrl,
     roleId: user.roleId,
     roleName: user.role.name,
@@ -92,6 +101,8 @@ export class AuthService {
         lastName: input.lastName,
         matricule: input.matricule,
         email: input.email.toLowerCase(),
+        phone: input.phone || null,
+        grade: input.grade || null,
         passwordHash,
         roleId: role.id,
   status: "ACTIVE",

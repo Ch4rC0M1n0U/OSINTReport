@@ -25,6 +25,8 @@ export class UserController {
         lastName: true,
         matricule: true,
         email: true,
+        phone: true,
+        grade: true,
         status: true,
         createdAt: true,
         updatedAt: true,
@@ -57,6 +59,8 @@ export class UserController {
       lastName: user.lastName,
       matricule: user.matricule,
       email: user.email,
+      phone: user.phone,
+      grade: user.grade,
       role: user.role.name,
       status: user.status,
       lastLoginAt: user.sessions[0]?.createdAt ?? null,
@@ -78,6 +82,8 @@ export class UserController {
         lastName: true,
         matricule: true,
         email: true,
+        phone: true,
+        grade: true,
         status: true,
         createdAt: true,
         updatedAt: true,
@@ -145,7 +151,7 @@ export class UserController {
 
   static async update(req: Request, res: Response) {
     const { id } = req.params;
-    const { firstName, lastName, email, roleId } = req.body;
+    const { firstName, lastName, email, phone, grade, roleId } = req.body;
 
     const user = await prisma.user.update({
       where: { id },
@@ -153,6 +159,8 @@ export class UserController {
         firstName,
         lastName,
         email,
+        ...(phone !== undefined && { phone: phone || null }),
+        ...(grade !== undefined && { grade: grade || null }),
         roleId,
       },
       select: {
@@ -161,6 +169,8 @@ export class UserController {
         lastName: true,
         matricule: true,
         email: true,
+        phone: true,
+        grade: true,
         status: true,
         role: {
           select: {
@@ -191,7 +201,7 @@ export class UserController {
 
   static async updateProfile(req: Request, res: Response) {
     const userId = req.user!.id;
-    const { firstName, lastName, email, avatarUrl } = req.body;
+    const { firstName, lastName, matricule, email, phone, grade, avatarUrl } = req.body;
 
     // Check if email is already used by another user
     if (email) {
@@ -208,6 +218,46 @@ export class UserController {
         res.status(409).json({ message: "Cet email est déjà utilisé" });
         return;
       }
+    }
+
+    // Check if matricule is already used by another user
+    if (matricule) {
+      const existingMatricule = await prisma.user.findFirst({
+        where: {
+          matricule: matricule,
+          NOT: {
+            id: userId,
+          },
+        },
+      });
+
+      if (existingMatricule) {
+        res.status(409).json({ message: "Ce matricule est déjà utilisé" });
+        return;
+      }
+    }
+
+    // Validate grade if provided
+    const validGrades = [
+      "Inspecteur",
+      "Premier Inspecteur",
+      "Inspecteur principal",
+      "Premier Inspecteur Principal",
+      "Commissaire",
+      "Premier Commissaire"
+    ];
+
+    if (grade && !validGrades.includes(grade)) {
+      res.status(400).json({ 
+        message: `Grade invalide. Valeurs acceptées: ${validGrades.join(", ")}` 
+      });
+      return;
+    }
+
+    // Validate phone format (basic validation)
+    if (phone && !/^[\d\s\+\-\(\)]+$/.test(phone)) {
+      res.status(400).json({ message: "Format de téléphone invalide" });
+      return;
     }
 
     let finalAvatarUrl = avatarUrl;
@@ -278,7 +328,10 @@ export class UserController {
       data: {
         ...(firstName && { firstName }),
         ...(lastName && { lastName }),
+        ...(matricule && { matricule }),
         ...(email && { email: email.toLowerCase() }),
+        ...(phone !== undefined && { phone: phone || null }),
+        ...(grade !== undefined && { grade: grade || null }),
         ...(finalAvatarUrl !== undefined && { avatarUrl: finalAvatarUrl }),
       },
     });

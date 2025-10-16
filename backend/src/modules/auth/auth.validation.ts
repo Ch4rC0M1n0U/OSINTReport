@@ -12,6 +12,24 @@ export const registerSchema = z
     email: z.string().email().refine((value) => value.toLowerCase().endsWith(policeEmailDomain), {
       message: "L'adresse email doit appartenir au domaine @police.belgium.eu",
     }),
+    phone: z
+      .string()
+      .regex(/^[\d\s\+\-\(\)]+$/, {
+        message: "Le numéro de téléphone contient des caractères invalides",
+      })
+      .optional()
+      .or(z.literal("")),
+    grade: z
+      .enum([
+        "Inspecteur",
+        "Premier Inspecteur",
+        "Inspecteur principal",
+        "Premier Inspecteur Principal",
+        "Commissaire",
+        "Premier Commissaire",
+      ])
+      .optional()
+      .or(z.literal("")),
     password: z
       .string()
       .min(12)

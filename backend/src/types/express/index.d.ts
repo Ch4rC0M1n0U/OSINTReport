@@ -4,9 +4,12 @@ declare global {
   namespace Express {
     interface UserPayload {
       id: string;
-      email: string;
       firstName: string;
       lastName: string;
+      matricule: string;
+      email: string;
+      phone: string | null;
+      grade: string | null;
       avatarUrl: string | null;
       roleId: string;
       roleName: string;

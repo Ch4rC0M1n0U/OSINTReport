@@ -1,10 +1,10 @@
-# Docker Compose - EasyPanel
-# Configuration simplifiée pour EasyPanel (sans healthchecks stricts)
+# Configuration Easypanel pour OSINTReport
+# Version simplifiée pour Easypanel
 
 version: '3.8'
 
 services:
-  # Base de données PostgreSQL
+  # === PostgreSQL ===
   postgres:
     image: postgres:16-alpine
     restart: unless-stopped
@@ -15,9 +15,9 @@ services:
     volumes:
       - postgres-data:/var/lib/postgresql/data
     networks:
-      - osintreport-network
+      - osintreport
 
-  # Moteur de recherche Meilisearch
+  # === Meilisearch ===
   meilisearch:
     image: getmeili/meilisearch:v1.5
     restart: unless-stopped
@@ -28,16 +28,14 @@ services:
     volumes:
       - meilisearch-data:/meili_data
     networks:
-      - osintreport-network
+      - osintreport
 
-  # API Backend
+  # === Backend API ===
   backend:
     build:
       context: ./backend
       dockerfile: Dockerfile
     restart: unless-stopped
-    expose:
-      - "4000"
     environment:
       NODE_ENV: production
       PORT: 4000
@@ -45,7 +43,7 @@ services:
       JWT_SECRET: ${JWT_SECRET}
       JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-7d}
       COOKIE_SECRET: ${COOKIE_SECRET}
-      COOKIE_DOMAIN: ${COOKIE_DOMAIN:-}
+      COOKIE_DOMAIN: ${COOKIE_DOMAIN}
       FRONTEND_URL: ${FRONTEND_URL}
       MEILI_HOST: http://meilisearch:7700
       MEILI_MASTER_KEY: ${MEILI_MASTER_KEY}
@@ -67,9 +65,11 @@ services:
       - postgres
       - meilisearch
     networks:
-      - osintreport-network
+      - osintreport
+    expose:
+      - "4000"
 
-  # Frontend Vue.js
+  # === Frontend ===
   frontend:
     build:
       context: ./frontend
@@ -77,23 +77,19 @@ services:
       args:
         VITE_API_BASE_URL: ${VITE_API_BASE_URL}
     restart: unless-stopped
-    expose:
-      - "8080"
     depends_on:
       - backend
     networks:
-      - osintreport-network
+      - osintreport
+    ports:
+      - "80:8080"
 
 volumes:
   postgres-data:
-    driver: local
   meilisearch-data:
-    driver: local
   backend-uploads:
-    driver: local
   backend-logs:
-    driver: local
 
 networks:
-  osintreport-network:
+  osintreport:
     driver: bridge
