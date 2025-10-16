@@ -198,7 +198,7 @@ VITE_API_BASE_URL=https://api.votre-domaine.com
 server {
     listen 80;
     server_name votre-domaine.com;
-    
+
     location / {
         proxy_pass http://localhost:8080;
         proxy_http_version 1.1;
@@ -212,7 +212,7 @@ server {
 server {
     listen 80;
     server_name api.votre-domaine.com;
-    
+
     location / {
         proxy_pass http://localhost:4000;
         proxy_http_version 1.1;

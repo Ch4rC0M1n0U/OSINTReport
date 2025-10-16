@@ -108,6 +108,7 @@ docker ps
 ```
 
 Vous devriez voir 4 conteneurs :
+
 - osintreport-postgres
 - osintreport-meilisearch
 - osintreport-backend
@@ -164,12 +165,14 @@ openssl rand -base64 24
 Easypanel gère automatiquement Let's Encrypt pour HTTPS.
 
 Assurez-vous que :
+
 - Vos domaines pointent vers votre serveur
 - Les certificats sont générés et renouvelés automatiquement
 
 ### 3. Pare-feu
 
 Configurez votre pare-feu pour autoriser uniquement :
+
 - Port 80 (HTTP → HTTPS redirect)
 - Port 443 (HTTPS)
 - Port 22 (SSH pour administration)
@@ -219,11 +222,13 @@ docker compose up -d --build
 ## 📊 Monitoring
 
 Easypanel fournit des métriques de base :
+
 - CPU et RAM utilisés
 - Logs en temps réel
 - État des conteneurs
 
 Pour un monitoring avancé, installez :
+
 - Prometheus + Grafana
 - Uptime Kuma
 - Sentry pour les erreurs
@@ -250,6 +255,7 @@ docker run --rm -v osintreport_backend-uploads:/data -v $(pwd):/backup alpine ta
 ## 📞 Support
 
 Pour toute question :
+
 - Documentation complète : `/docs/QUICKSTART.md`
 - Documentation Docker : `/DOCKER.md`
 - Issues GitHub : https://github.com/Ch4rC0M1n0U/OSINTReport/issues
