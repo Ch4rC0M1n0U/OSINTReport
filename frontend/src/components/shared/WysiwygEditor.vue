@@ -103,6 +103,21 @@
       >
         ―
       </button>
+
+      <div class="w-px h-6 bg-gray-300 dark:bg-gray-600 mx-1"></div>
+
+      <button
+        v-if="enableEntityInsertion"
+        type="button"
+        @click="openEntityModal"
+        class="toolbar-btn"
+        title="Insérer une entité"
+      >
+        👤
+      </button>
+
+      <div class="w-px h-6 bg-gray-300 dark:bg-gray-600 mx-1"></div>
+
       <button
         type="button"
         @click="editor.chain().focus().undo().run()"
@@ -123,6 +138,14 @@
       </button>
     </div>
 
+    <!-- Modal de sélection d'entité -->
+    <EntityInsertModal
+      :is-open="isEntityModalOpen"
+      :report-id="reportId"
+      @close="closeEntityModal"
+      @select="handleEntitySelect"
+    />
+
     <!-- Editor content -->
     <editor-content
       :editor="editor"
@@ -132,14 +155,18 @@
 </template>
 
 <script setup lang="ts">
-import { watch, onBeforeUnmount } from "vue";
+import { ref, watch, onBeforeUnmount } from "vue";
 import { useEditor, EditorContent } from "@tiptap/vue-3";
 import StarterKit from "@tiptap/starter-kit";
 import Placeholder from "@tiptap/extension-placeholder";
+import EntityInsertModal from "./EntityInsertModal.vue";
+import type { Entity } from "../../services/api/entities";
 
 interface Props {
   modelValue: string;
   placeholder?: string;
+  enableEntityInsertion?: boolean;
+  reportId?: string;
 }
 
 interface Emits {
@@ -148,9 +175,13 @@ interface Emits {
 
 const props = withDefaults(defineProps<Props>(), {
   placeholder: "Commencez à écrire...",
+  enableEntityInsertion: false,
 });
 
 const emit = defineEmits<Emits>();
+
+// État du modal d'insertion d'entité
+const isEntityModalOpen = ref(false);
 
 const editor = useEditor({
   extensions: [
@@ -227,6 +258,28 @@ watch(
 onBeforeUnmount(() => {
   editor.value?.destroy();
 });
+
+// Fonctions pour gérer le modal d'insertion d'entité
+function openEntityModal() {
+  isEntityModalOpen.value = true;
+}
+
+function closeEntityModal() {
+  isEntityModalOpen.value = false;
+}
+
+function handleEntitySelect(entity: Entity) {
+  if (!editor.value) return;
+  
+  // Insérer le label de l'entité à la position du curseur
+  editor.value
+    .chain()
+    .focus()
+    .insertContent(entity.label)
+    .run();
+  
+  closeEntityModal();
+}
 </script>
 
 <style scoped>

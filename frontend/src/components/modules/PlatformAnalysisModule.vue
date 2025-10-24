@@ -6,15 +6,48 @@
         <span class="text-lg font-semibold">📱 Analyse de plateformes</span>
         <span class="badge badge-neutral">{{ findings.length }}</span>
       </div>
-      <button
-        v-if="!readonly"
-        type="button"
-        class="btn btn-sm btn-primary gap-2"
-        @click="openCreateModal"
-      >
-        <span>➕</span>
-        <span>Nouveau profil</span>
-      </button>
+      <div class="flex items-center gap-2">
+        <button
+          v-if="!readonly"
+          type="button"
+          class="btn btn-sm btn-outline gap-2"
+          @click="toggleTextSection"
+        >
+          <span>📝</span>
+          <span>{{ showTextSection ? 'Masquer' : 'Ajouter' }} une rubrique texte</span>
+        </button>
+        <button
+          v-if="!readonly"
+          type="button"
+          class="btn btn-sm btn-primary gap-2"
+          @click="openCreateModal"
+        >
+          <span>➕</span>
+          <span>Nouveau profil</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Section de texte enrichi (optionnelle) -->
+    <div v-if="showTextSection" class="card bg-base-100 border border-base-300 p-4 mb-4">
+      <div class="flex items-center justify-between mb-3">
+        <h4 class="font-semibold text-base">📝 Notes et analyse</h4>
+        <button
+          v-if="!readonly"
+          type="button"
+          @click="toggleTextSection"
+          class="btn btn-ghost btn-xs btn-circle"
+          title="Masquer la section"
+        >
+          ✕
+        </button>
+      </div>
+      <WysiwygEditor
+        v-model="notesText"
+        placeholder="Ajoutez vos notes, analyses et observations concernant les plateformes... Utilisez le bouton 👤 pour insérer des entités."
+        :enable-entity-insertion="true"
+        :report-id="reportId"
+      />
     </div>
 
     <!-- Liste des profils (cartes compactes) -->
@@ -63,22 +96,26 @@ import { ref, computed, watch } from 'vue';
 import type { Finding } from '@/services/api/reports';
 import PlatformCard from './PlatformCard.vue';
 import PlatformEditModal from './PlatformEditModal.vue';
+import WysiwygEditor from '../shared/WysiwygEditor.vue';
 
 const props = defineProps<{
   modelValue: {
     findings?: Finding[];
     platform?: string;
+    notes?: string;
   };
   readonly?: boolean;
   reportId?: string; // UID du rapport pour isolation des screenshots
 }>();
 
 const emit = defineEmits<{
-  (e: 'update:modelValue', value: { findings: Finding[]; platform?: string }): void;
+  (e: 'update:modelValue', value: { findings: Finding[]; platform?: string; notes?: string }): void;
 }>();
 
 // État local
 const findings = ref<Finding[]>([]);
+const notesText = ref<string>('');
+const showTextSection = ref(false);
 const isModalOpen = ref(false);
 const editingProfile = ref<Finding | null>(null);
 const editingIndex = ref<number | null>(null);
@@ -88,9 +125,24 @@ watch(
   () => props.modelValue,
   (newValue) => {
     findings.value = newValue?.findings || [];
+    notesText.value = newValue?.notes || '';
+    // Afficher automatiquement la section si des notes existent
+    if (newValue?.notes && newValue.notes.trim().length > 0) {
+      showTextSection.value = true;
+    }
   },
   { immediate: true, deep: true }
 );
+
+// Synchroniser les notes avec le parent
+watch(notesText, () => {
+  emitUpdate();
+});
+
+// Basculer l'affichage de la section de texte
+function toggleTextSection() {
+  showTextSection.value = !showTextSection.value;
+}
 
 // Profils existants pour validation d'unicité
 const existingProfiles = computed(() => {
@@ -158,7 +210,8 @@ function handleSave(profile: Finding) {
 function emitUpdate() {
   emit('update:modelValue', { 
     findings: findings.value,
-    platform: props.modelValue.platform 
+    platform: props.modelValue.platform,
+    notes: notesText.value
   });
 }
 </script>
