@@ -142,6 +142,7 @@
     <EntityInsertModal
       :is-open="isEntityModalOpen"
       :report-id="reportId"
+      :findings="findings"
       @close="closeEntityModal"
       @select="handleEntitySelect"
     />
@@ -159,14 +160,20 @@ import { ref, watch, onBeforeUnmount } from "vue";
 import { useEditor, EditorContent } from "@tiptap/vue-3";
 import StarterKit from "@tiptap/starter-kit";
 import Placeholder from "@tiptap/extension-placeholder";
+import { Table } from "@tiptap/extension-table";
+import { TableRow } from "@tiptap/extension-table-row";
+import { TableCell } from "@tiptap/extension-table-cell";
+import { TableHeader } from "@tiptap/extension-table-header";
 import EntityInsertModal from "./EntityInsertModal.vue";
 import type { Entity } from "../../services/api/entities";
+import type { Finding } from "../../services/api/reports";
 
 interface Props {
   modelValue: string;
   placeholder?: string;
   enableEntityInsertion?: boolean;
   reportId?: string;
+  findings?: Finding[]; // Données de plateformes disponibles
 }
 
 interface Emits {
@@ -186,6 +193,15 @@ const isEntityModalOpen = ref(false);
 const editor = useEditor({
   extensions: [
     StarterKit,
+    Table.configure({
+      resizable: true,
+      HTMLAttributes: {
+        class: 'border-collapse border border-base-300',
+      },
+    }),
+    TableRow,
+    TableHeader,
+    TableCell,
     Placeholder.configure({
       placeholder: props.placeholder,
     }),
@@ -197,60 +213,21 @@ const editor = useEditor({
     },
   },
   onUpdate: ({ editor }) => {
-    // Convertir en Markdown pour le stockage
+    // Convertir en HTML pour le stockage (TipTap gère mieux le HTML que le Markdown)
     const html = editor.getHTML();
-    const markdown = htmlToMarkdown(html);
-    emit("update:modelValue", markdown);
+    emit("update:modelValue", html);
   },
 });
-
-// Convertir HTML Tiptap vers Markdown (simplifiée)
-function htmlToMarkdown(html: string): string {
-  return html
-    .replace(/<h1>(.*?)<\/h1>/g, "# $1\n\n")
-    .replace(/<h2>(.*?)<\/h2>/g, "## $1\n\n")
-    .replace(/<h3>(.*?)<\/h3>/g, "### $1\n\n")
-    .replace(/<strong>(.*?)<\/strong>/g, "**$1**")
-    .replace(/<em>(.*?)<\/em>/g, "*$1*")
-    .replace(/<s>(.*?)<\/s>/g, "~~$1~~")
-    .replace(/<ul><li>(.*?)<\/li><\/ul>/gs, (match, content) => {
-      return content.split("</li><li>").map((item: string) => `- ${item}`).join("\n") + "\n\n";
-    })
-    .replace(/<ol><li>(.*?)<\/li><\/ol>/gs, (match, content) => {
-      return content.split("</li><li>").map((item: string, idx: number) => `${idx + 1}. ${item}`).join("\n") + "\n\n";
-    })
-    .replace(/<blockquote><p>(.*?)<\/p><\/blockquote>/g, "> $1\n\n")
-    .replace(/<hr\s*\/?>/g, "---\n\n")
-    .replace(/<p>(.*?)<\/p>/g, "$1\n\n")
-    .replace(/<br\s*\/?>/g, "\n")
-    .replace(/&nbsp;/g, " ")
-    .trim();
-}
-
-// Convertir Markdown vers HTML pour l'affichage initial
-function markdownToHtml(markdown: string): string {
-  return markdown
-    .replace(/^# (.*?)$/gm, "<h1>$1</h1>")
-    .replace(/^## (.*?)$/gm, "<h2>$1</h2>")
-    .replace(/^### (.*?)$/gm, "<h3>$1</h3>")
-    .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
-    .replace(/\*(.*?)\*/g, "<em>$1</em>")
-    .replace(/~~(.*?)~~/g, "<s>$1</s>")
-    .replace(/^- (.*?)$/gm, "<ul><li>$1</li></ul>")
-    .replace(/^\d+\. (.*?)$/gm, "<ol><li>$1</li></ol>")
-    .replace(/^> (.*?)$/gm, "<blockquote><p>$1</p></blockquote>")
-    .replace(/^---$/gm, "<hr>")
-    .replace(/\n\n/g, "</p><p>")
-    .replace(/^(.+)$/gm, "<p>$1</p>");
-}
 
 // Mettre à jour l'éditeur quand modelValue change de l'extérieur
 watch(
   () => props.modelValue,
   (newValue) => {
-    if (editor.value && newValue !== htmlToMarkdown(editor.value.getHTML())) {
-      const html = markdownToHtml(newValue);
-      editor.value.commands.setContent(html);
+    if (editor.value) {
+      const currentHtml = editor.value.getHTML();
+      if (newValue !== currentHtml) {
+        editor.value.commands.setContent(newValue);
+      }
     }
   }
 );
@@ -268,15 +245,25 @@ function closeEntityModal() {
   isEntityModalOpen.value = false;
 }
 
-function handleEntitySelect(entity: Entity) {
+function handleEntitySelect(entity: Entity | Finding, htmlContent?: string) {
   if (!editor.value) return;
   
-  // Insérer le label de l'entité à la position du curseur
-  editor.value
-    .chain()
-    .focus()
-    .insertContent(entity.label)
-    .run();
+  if (htmlContent) {
+    // Insérer du contenu HTML structuré (tableau)
+    editor.value
+      .chain()
+      .focus()
+      .insertContent(htmlContent)
+      .run();
+  } else {
+    // Insérer le label de l'entité à la position du curseur
+    const label = 'label' in entity ? entity.label : '';
+    editor.value
+      .chain()
+      .focus()
+      .insertContent(label)
+      .run();
+  }
   
   closeEntityModal();
 }
@@ -389,5 +376,68 @@ function handleEntitySelect(entity: Entity) {
 
 :deep(.dark) :deep(.ProseMirror hr) {
   border-color: rgb(75 85 99);
+}
+
+/* Styles pour les tableaux */
+:deep(.ProseMirror table) {
+  border-collapse: collapse;
+  table-layout: fixed;
+  width: 100%;
+  margin: 1rem 0;
+  overflow: hidden;
+  border: 1px solid rgb(209 213 219);
+}
+
+:deep(.dark) :deep(.ProseMirror table) {
+  border-color: rgb(75 85 99);
+}
+
+:deep(.ProseMirror td),
+:deep(.ProseMirror th) {
+  min-width: 1em;
+  border: 1px solid rgb(209 213 219);
+  padding: 8px;
+  vertical-align: top;
+  box-sizing: border-box;
+  position: relative;
+}
+
+:deep(.dark) :deep(.ProseMirror td),
+:deep(.dark) :deep(.ProseMirror th) {
+  border-color: rgb(75 85 99);
+}
+
+:deep(.ProseMirror th) {
+  font-weight: 600;
+  text-align: left;
+  background-color: rgb(249 250 251);
+}
+
+:deep(.dark) :deep(.ProseMirror th) {
+  background-color: rgb(55 65 81);
+}
+
+:deep(.ProseMirror .selectedCell:after) {
+  z-index: 2;
+  position: absolute;
+  content: "";
+  left: 0; right: 0; top: 0; bottom: 0;
+  background: rgba(200, 200, 255, 0.4);
+  pointer-events: none;
+}
+
+:deep(.ProseMirror .column-resize-handle) {
+  position: absolute;
+  right: -2px;
+  top: 0;
+  bottom: -2px;
+  width: 4px;
+  background-color: rgb(59 130 246);
+  pointer-events: none;
+}
+
+:deep(.ProseMirror.resize-cursor) {
+  cursor: ew-resize;
+  cursor: col-resize;
 }
 </style>

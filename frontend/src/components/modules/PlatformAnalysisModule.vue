@@ -5,16 +5,20 @@
       <div class="flex items-center gap-2">
         <span class="text-lg font-semibold">📱 Analyse de plateformes</span>
         <span class="badge badge-neutral">{{ findings.length }}</span>
+        <span v-if="richTextBlocks.length > 0" class="badge badge-info">
+          {{ richTextBlocks.length }} bloc{{ richTextBlocks.length > 1 ? 's' : '' }} de texte
+        </span>
       </div>
       <div class="flex items-center gap-2">
         <button
           v-if="!readonly"
           type="button"
           class="btn btn-sm btn-outline gap-2"
-          @click="toggleTextSection"
+          @click="addRichTextBlock"
+          title="Ajouter un bloc de texte enrichi"
         >
           <span>📝</span>
-          <span>{{ showTextSection ? 'Masquer' : 'Ajouter' }} une rubrique texte</span>
+          <span>Ajouter un bloc de texte</span>
         </button>
         <button
           v-if="!readonly"
@@ -28,26 +32,67 @@
       </div>
     </div>
 
-    <!-- Section de texte enrichi (optionnelle) -->
-    <div v-if="showTextSection" class="card bg-base-100 border border-base-300 p-4 mb-4">
-      <div class="flex items-center justify-between mb-3">
-        <h4 class="font-semibold text-base">📝 Notes et analyse</h4>
-        <button
-          v-if="!readonly"
-          type="button"
-          @click="toggleTextSection"
-          class="btn btn-ghost btn-xs btn-circle"
-          title="Masquer la section"
-        >
-          ✕
-        </button>
+    <!-- Blocs de texte enrichi -->
+    <div v-if="richTextBlocks.length > 0" class="space-y-4 mb-6">
+      <div
+        v-for="(block, index) in richTextBlocks"
+        :key="block.id"
+        class="card bg-base-100 border border-base-300 p-4"
+      >
+        <div class="flex items-center justify-between mb-3">
+          <div class="flex items-center gap-2">
+            <span class="font-semibold text-base">📝 Bloc {{ index + 1 }}</span>
+            <input
+              v-if="!readonly"
+              v-model="block.title"
+              type="text"
+              placeholder="Titre du bloc (optionnel)"
+              class="input input-sm input-bordered flex-1 max-w-xs"
+              @input="emitUpdate"
+            />
+            <span v-else-if="block.title" class="text-base-content/70">
+              — {{ block.title }}
+            </span>
+          </div>
+          <div class="flex items-center gap-2">
+            <button
+              v-if="!readonly && index > 0"
+              type="button"
+              @click="moveBlockUp(index)"
+              class="btn btn-ghost btn-xs"
+              title="Déplacer vers le haut"
+            >
+              ↑
+            </button>
+            <button
+              v-if="!readonly && index < richTextBlocks.length - 1"
+              type="button"
+              @click="moveBlockDown(index)"
+              class="btn btn-ghost btn-xs"
+              title="Déplacer vers le bas"
+            >
+              ↓
+            </button>
+            <button
+              v-if="!readonly"
+              type="button"
+              @click="deleteBlock(index)"
+              class="btn btn-ghost btn-xs btn-circle text-error"
+              title="Supprimer ce bloc"
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+        <WysiwygEditor
+          v-model="block.content"
+          :placeholder="`Ajoutez votre analyse... Utilisez le bouton 👤 pour insérer des entités ou des données de plateforme.`"
+          :enable-entity-insertion="true"
+          :report-id="reportId"
+          :findings="findings"
+          @update:model-value="emitUpdate"
+        />
       </div>
-      <WysiwygEditor
-        v-model="notesText"
-        placeholder="Ajoutez vos notes, analyses et observations concernant les plateformes... Utilisez le bouton 👤 pour insérer des entités."
-        :enable-entity-insertion="true"
-        :report-id="reportId"
-      />
     </div>
 
     <!-- Liste des profils (cartes compactes) -->
@@ -98,24 +143,35 @@ import PlatformCard from './PlatformCard.vue';
 import PlatformEditModal from './PlatformEditModal.vue';
 import WysiwygEditor from '../shared/WysiwygEditor.vue';
 
+interface RichTextBlock {
+  id: string;
+  title: string;
+  content: string;
+}
+
 const props = defineProps<{
   modelValue: {
     findings?: Finding[];
     platform?: string;
-    notes?: string;
+    notes?: string; // LEGACY: pour compatibilité ascendante
+    richTextBlocks?: RichTextBlock[];
   };
   readonly?: boolean;
   reportId?: string; // UID du rapport pour isolation des screenshots
 }>();
 
 const emit = defineEmits<{
-  (e: 'update:modelValue', value: { findings: Finding[]; platform?: string; notes?: string }): void;
+  (e: 'update:modelValue', value: { 
+    findings: Finding[]; 
+    platform?: string; 
+    notes?: string;
+    richTextBlocks?: RichTextBlock[];
+  }): void;
 }>();
 
 // État local
 const findings = ref<Finding[]>([]);
-const notesText = ref<string>('');
-const showTextSection = ref(false);
+const richTextBlocks = ref<RichTextBlock[]>([]);
 const isModalOpen = ref(false);
 const editingProfile = ref<Finding | null>(null);
 const editingIndex = ref<number | null>(null);
@@ -125,23 +181,65 @@ watch(
   () => props.modelValue,
   (newValue) => {
     findings.value = newValue?.findings || [];
-    notesText.value = newValue?.notes || '';
-    // Afficher automatiquement la section si des notes existent
-    if (newValue?.notes && newValue.notes.trim().length > 0) {
-      showTextSection.value = true;
+    
+    // Migrer les anciennes notes vers richTextBlocks si nécessaire
+    if (newValue?.richTextBlocks) {
+      richTextBlocks.value = newValue.richTextBlocks;
+    } else if (newValue?.notes && newValue.notes.trim().length > 0) {
+      // Migration: convertir l'ancien champ notes en un bloc
+      richTextBlocks.value = [{
+        id: generateId(),
+        title: 'Notes migrées',
+        content: newValue.notes
+      }];
+    } else {
+      richTextBlocks.value = [];
     }
   },
   { immediate: true, deep: true }
 );
 
-// Synchroniser les notes avec le parent
-watch(notesText, () => {
-  emitUpdate();
-});
+// Générer un ID unique
+function generateId(): string {
+  return `block-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+}
 
-// Basculer l'affichage de la section de texte
-function toggleTextSection() {
-  showTextSection.value = !showTextSection.value;
+// Ajouter un nouveau bloc de texte
+function addRichTextBlock() {
+  richTextBlocks.value.push({
+    id: generateId(),
+    title: '',
+    content: ''
+  });
+  emitUpdate();
+}
+
+// Supprimer un bloc
+function deleteBlock(index: number) {
+  if (confirm('Supprimer ce bloc de texte ?')) {
+    richTextBlocks.value.splice(index, 1);
+    emitUpdate();
+  }
+}
+
+// Déplacer un bloc vers le haut
+function moveBlockUp(index: number) {
+  if (index > 0) {
+    const temp = richTextBlocks.value[index];
+    richTextBlocks.value[index] = richTextBlocks.value[index - 1];
+    richTextBlocks.value[index - 1] = temp;
+    emitUpdate();
+  }
+}
+
+// Déplacer un bloc vers le bas
+function moveBlockDown(index: number) {
+  if (index < richTextBlocks.value.length - 1) {
+    const temp = richTextBlocks.value[index];
+    richTextBlocks.value[index] = richTextBlocks.value[index + 1];
+    richTextBlocks.value[index + 1] = temp;
+    emitUpdate();
+  }
 }
 
 // Profils existants pour validation d'unicité
@@ -211,7 +309,11 @@ function emitUpdate() {
   emit('update:modelValue', { 
     findings: findings.value,
     platform: props.modelValue.platform,
-    notes: notesText.value
+    richTextBlocks: richTextBlocks.value,
+    // notes: deprecated, gardé pour compatibilité
+    notes: richTextBlocks.value.length > 0 
+      ? richTextBlocks.value.map(b => b.content).join('\n\n')
+      : undefined
   });
 }
 </script>
