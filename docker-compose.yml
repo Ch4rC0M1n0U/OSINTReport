@@ -1,37 +1,36 @@
-version: '3.8'
-
 services:
-  # === 1. Base de données PostgreSQL ===
   postgres:
     image: postgres:16-alpine
     container_name: osintreport-postgres
     restart: unless-stopped
+    env_file:
+      - .env
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-osint_admin}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change_me}
       POSTGRES_DB: ${POSTGRES_DB:-osint_db}
     ports:
       - "${POSTGRES_PORT:-5432}:5432"
     volumes:
       - postgres-data:/var/lib/postgresql/data
+      - ./postgres/init:/docker-entrypoint-initdb.d
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-osint_admin} -d ${POSTGRES_DB:-osint_db}"]
       interval: 10s
       timeout: 5s
       retries: 5
       start_period: 10s
-    networks:
-      - osintreport-network
 
-  # === 2. Moteur de recherche Meilisearch ===
   meilisearch:
     image: getmeili/meilisearch:v1.5
     container_name: osintreport-meilisearch
     restart: unless-stopped
+    env_file:
+      - .env
     environment:
-      MEILI_MASTER_KEY: ${MEILI_MASTER_KEY}
+      MEILI_MASTER_KEY: ${MEILI_MASTER_KEY:-masterKey123456789}
       MEILI_ENV: ${MEILI_ENV:-development}
-      MEILI_NO_ANALYTICS: "true"
+      MEILI_NO_ANALYTICS: ${MEILI_NO_ANALYTICS:-true}
     ports:
       - "${MEILI_PORT:-7700}:7700"
     volumes:
@@ -42,77 +41,9 @@ services:
       timeout: 5s
       retries: 5
       start_period: 10s
-    networks:
-      - osintreport-network
-
-  # === 3. Backend API (Node.js + Express) ===
-  backend:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
-    container_name: osintreport-backend
-    restart: unless-stopped
-    ports:
-      - "${BACKEND_PORT:-4000}:4000"
-    environment:
-      NODE_ENV: ${NODE_ENV:-production}
-      PORT: 4000
-      DATABASE_URL: postgresql://${POSTGRES_USER:-osint_admin}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-osint_db}?schema=public
-      JWT_SECRET: ${JWT_SECRET}
-      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-7d}
-      COOKIE_SECRET: ${COOKIE_SECRET}
-      COOKIE_DOMAIN: ${COOKIE_DOMAIN:-}
-      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:5173}
-      MEILI_HOST: http://meilisearch:7700
-      MEILI_MASTER_KEY: ${MEILI_MASTER_KEY}
-      ADMIN_EMAIL: ${ADMIN_EMAIL}
-      ADMIN_PASSWORD: ${ADMIN_PASSWORD}
-      ADMIN_FIRST_NAME: ${ADMIN_FIRST_NAME:-Admin}
-      ADMIN_LAST_NAME: ${ADMIN_LAST_NAME:-System}
-      SMTP_HOST: ${SMTP_HOST:-}
-      SMTP_PORT: ${SMTP_PORT:-587}
-      SMTP_SECURE: ${SMTP_SECURE:-false}
-      SMTP_USER: ${SMTP_USER:-}
-      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
-      SMTP_FROM_EMAIL: ${SMTP_FROM_EMAIL:-}
-      SMTP_FROM_NAME: ${SMTP_FROM_NAME:-OSINTReport}
-    volumes:
-      - backend-uploads:/app/uploads
-      - backend-logs:/app/logs
-    depends_on:
-      postgres:
-        condition: service_healthy
-      meilisearch:
-        condition: service_healthy
-    networks:
-      - osintreport-network
-
-  # === 4. Frontend (Vue.js + Nginx) ===
-  frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
-      args:
-        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:4000}
-    container_name: osintreport-frontend
-    restart: unless-stopped
-    ports:
-      - "${FRONTEND_PORT:-8080}:8080"
-    depends_on:
-      - backend
-    networks:
-      - osintreport-network
 
 volumes:
   postgres-data:
     driver: local
   meilisearch-data:
     driver: local
-  backend-uploads:
-    driver: local
-  backend-logs:
-    driver: local
-
-networks:
-  osintreport-network:
-    driver: bridge
