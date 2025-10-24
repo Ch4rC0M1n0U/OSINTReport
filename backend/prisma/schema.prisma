@@ -36,6 +36,8 @@ model User {
   lastName     String
   matricule    String     @unique
   email        String     @unique
+  phone        String?
+  grade        String?
   passwordHash String
   avatarUrl    String?
   roleId       String

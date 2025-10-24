@@ -9,6 +9,8 @@ interface UserInfo {
   firstName: string;
   lastName: string;
   matricule: string;
+  phone: string | null;
+  grade: string | null;
   avatarUrl: string | null;
   roleName: string;
   permissions: string[];

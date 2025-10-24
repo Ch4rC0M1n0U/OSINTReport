@@ -1,6 +1,10 @@
-# === Stage 1: Build ===
+# Dockerfile Frontend - OSINTReport Interface
+# Multi-stage build pour optimiser la taille de l'image
+
+# Stage 1: Build de l'application Vue.js
 FROM node:20-alpine AS builder
 
+# Argument de build pour l'URL de l'API
 ARG VITE_API_BASE_URL=http://localhost:4000
 
 WORKDIR /app
@@ -14,19 +18,19 @@ RUN npm ci
 # Copier le code source
 COPY . .
 
-# Créer le fichier .env.production
+# Créer le fichier .env.production avec l'URL de l'API
 RUN echo "VITE_API_BASE_URL=${VITE_API_BASE_URL}" > .env.production
 
 # Build de production
 RUN npm run build
 
-# === Stage 2: Nginx ===
+# Stage 2: Serveur Nginx
 FROM nginx:alpine
 
-# Copier la configuration Nginx
+# Copier la configuration Nginx personnalisée
 COPY nginx.conf /etc/nginx/nginx.conf
 
-# Copier les fichiers buildés
+# Copier les fichiers buildés depuis le stage précédent
 COPY --from=builder /app/dist /usr/share/nginx/html
 
 # Créer un utilisateur non-root
@@ -38,6 +42,7 @@ RUN addgroup -g 1001 -S nginx-user && \
     touch /var/run/nginx.pid && \
     chown -R nginx-user:nginx-user /var/run/nginx.pid
 
+# Changer vers l'utilisateur non-root
 USER nginx-user
 
 # Exposer le port

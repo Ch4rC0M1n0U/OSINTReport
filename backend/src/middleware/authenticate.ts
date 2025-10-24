@@ -18,13 +18,16 @@ export async function requireAuth(req: Request, _res: Response, next: NextFuncti
 
     req.user = {
       id: user.id,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      matricule: user.matricule,
+      email: user.email,
+      phone: user.phone,
+      grade: user.grade,
+      avatarUrl: user.avatarUrl,
       roleId: user.roleId,
       roleName: user.roleName,
       permissions: user.permissions,
-      email: user.email,
-      firstName: user.firstName,
-      lastName: user.lastName,
-      avatarUrl: user.avatarUrl,
     };
 
     next();

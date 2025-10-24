@@ -15,6 +15,8 @@ const form = reactive({
   firstName: "",
   lastName: "",
   email: "",
+  phone: "",
+  grade: "",
   roleId: "",
 });
 
@@ -26,6 +28,8 @@ onMounted(async () => {
     form.firstName = user.firstName;
     form.lastName = user.lastName;
     form.email = user.email;
+    form.phone = user.phone || "";
+    form.grade = user.grade || "";
     form.roleId = user.role.id;
   }
 });
@@ -113,6 +117,38 @@ function goBack() {
             placeholder="jean.dupont@police.belgium.eu"
           />
         </label>
+
+        <div class="grid gap-4 md:grid-cols-2">
+          <label class="form-control">
+            <div class="label">
+              <span class="label-text">Téléphone</span>
+            </div>
+            <input
+              v-model="form.phone"
+              type="tel"
+              class="input input-bordered"
+              placeholder="+32 2 123 45 67"
+            />
+          </label>
+
+          <label class="form-control">
+            <div class="label">
+              <span class="label-text">Grade</span>
+            </div>
+            <select v-model="form.grade" class="select select-bordered">
+              <option value="">Sélectionnez un grade</option>
+              <option value="Inspecteur">Inspecteur</option>
+              <option value="Premier Inspecteur">Premier Inspecteur</option>
+              <option value="Inspecteur principal">Inspecteur principal</option>
+              <option value="Premier Inspecteur Principal">Premier Inspecteur Principal</option>
+              <option value="Commissaire">Commissaire</option>
+              <option value="Premier Commissaire">Premier Commissaire</option>
+            </select>
+            <div class="label">
+              <span class="label-text-alt">Utilisé pour la signature des rapports</span>
+            </div>
+          </label>
+        </div>
 
         <label class="form-control">
           <div class="label">

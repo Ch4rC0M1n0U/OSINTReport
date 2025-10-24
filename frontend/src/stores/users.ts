@@ -23,6 +23,8 @@ export interface UserDetail {
   lastName: string;
   matricule: string;
   email: string;
+  phone: string | null;
+  grade: string | null;
   status: UserStatus;
   role: {
     id: string;
@@ -109,7 +111,7 @@ export const useUsersStore = defineStore("users", () => {
     }
   }
 
-  async function updateUser(userId: string, data: { firstName: string; lastName: string; email: string; roleId: string }) {
+  async function updateUser(userId: string, data: { firstName: string; lastName: string; email: string; phone?: string; grade?: string; roleId: string }) {
     loading.value = true;
     error.value = null;
 
@@ -138,7 +140,7 @@ export const useUsersStore = defineStore("users", () => {
     }
   }
 
-  async function createUser(data: { firstName: string; lastName: string; email: string; password: string; roleId: string; matricule: string }) {
+  async function createUser(data: { firstName: string; lastName: string; email: string; password: string; roleId: string; matricule: string; phone?: string; grade?: string }) {
     loading.value = true;
     error.value = null;
 
@@ -162,6 +164,8 @@ export const useUsersStore = defineStore("users", () => {
         email: data.email,
         password: data.password,
         matricule: data.matricule,
+        phone: data.phone || null,
+        grade: data.grade || null,
         role: role.name, // Send role name instead of roleId
       };
 

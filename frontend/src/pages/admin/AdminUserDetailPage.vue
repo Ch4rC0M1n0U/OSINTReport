@@ -78,6 +78,14 @@ function editUser() {
               <label class="text-sm text-base-content/70">Email</label>
               <p class="font-medium">{{ usersStore.currentUser.email }}</p>
             </div>
+            <div>
+              <label class="text-sm text-base-content/70">Téléphone</label>
+              <p class="font-medium">{{ usersStore.currentUser.phone || "Non renseigné" }}</p>
+            </div>
+            <div>
+              <label class="text-sm text-base-content/70">Grade</label>
+              <p class="font-medium">{{ usersStore.currentUser.grade || "Non renseigné" }}</p>
+            </div>
           </div>
         </div>
       </div>
