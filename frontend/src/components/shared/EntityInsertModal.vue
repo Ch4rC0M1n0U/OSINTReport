@@ -198,6 +198,14 @@ async function loadReportFindings() {
     const allFindings: Finding[] = [];
     
     for (const module of modules) {
+      // Module "entities" (👥 Entités concernées / Entités Identifiées)
+      if (module.type === 'entities' && module.payload) {
+        const payload = module.payload as any;
+        if (payload.findings && Array.isArray(payload.findings)) {
+          allFindings.push(...payload.findings);
+        }
+      }
+      
       // Module "entity_overview" (👤 Vue d'ensemble d'une entité)
       if (module.type === 'entity_overview' && module.payload) {
         const payload = module.payload as any;
@@ -286,9 +294,32 @@ function selectEntity(entity: Entity) {
   // Décider automatiquement si un tableau est nécessaire
   const needsTable = shouldUseTable(entity);
   
+  // Essayer de parser les metadata depuis notes pour récupérer les attachments
+  let attachments: string[] = [];
+  if (entity.notes) {
+    try {
+      if (entity.notes.trim().startsWith('{')) {
+        const metadata = JSON.parse(entity.notes);
+        console.log('📝 Metadata parsed:', metadata);
+        if (metadata.attachments && Array.isArray(metadata.attachments)) {
+          attachments = metadata.attachments;
+          console.log('📎 Attachments trouvés:', attachments);
+        } else {
+          console.log('⚠️ Pas d\'attachments dans metadata');
+        }
+      }
+    } catch (e) {
+      console.log('⚠️ Notes n\'est pas du JSON:', entity.notes);
+    }
+  } else {
+    console.log('⚠️ Pas de notes sur cette entité');
+  }
+  
+  console.log(`🎯 selectEntity: ${entity.label}, needsTable=${needsTable}, attachments=${attachments.length}`);
+  
   if (needsTable) {
-    // Insérer un tableau structuré HTML
-    emit('select', entity, generateEntityTable(entity));
+    // Insérer un tableau structuré HTML avec attachments si disponibles
+    emit('select', entity, generateEntityTable(entity, attachments.length > 0 ? attachments : undefined));
   } else {
     // Insérer du texte simple
     emit('select', entity, generateSimpleText(entity));
@@ -298,6 +329,9 @@ function selectEntity(entity: Entity) {
 
 // Sélectionner un finding
 function selectFinding(finding: Finding) {
+  console.log('🔍 selectFinding:', finding.label);
+  console.log('📎 Attachments dans finding:', finding.attachments);
+  
   // Les findings nécessitent toujours un tableau structuré
   emit('select', finding as any, generateFindingTable(finding));
   handleClose();
@@ -328,7 +362,7 @@ function generateSimpleText(entity: Entity): string {
 }
 
 // Générer un tableau HTML structuré pour une entité
-function generateEntityTable(entity: Entity): string {
+function generateEntityTable(entity: Entity, attachments?: string[]): string {
   const rows: string[] = [];
   
   // En-tête avec fond coloré
@@ -403,9 +437,19 @@ function generateEntityTable(entity: Entity): string {
     rows.push(`<tr><td style="font-weight: 600; padding: 10px; border: 1px solid #cbd5e1; background-color: #f8fafc;">📝 Notes</td><td style="padding: 10px; border: 1px solid #cbd5e1;">${entity.notes}</td></tr>`);
   }
   
+  // Pièces jointes avec miniatures (si fournies)
+  if (attachments && attachments.length > 0) {
+    const thumbnailsHtml = attachments.map((attachmentUrl: string) => {
+      // L'URL est déjà complète (URL signée depuis l'API)
+      const imageUrl = attachmentUrl;
+      return `<img src="${imageUrl}" alt="Photo ${entity.label}" style="width: 120px; height: 120px; object-fit: cover; display: block; border: 2px solid #e2e8f0; border-radius: 8px;" title="Cliquez pour agrandir" onclick="window.open('${imageUrl}', '_blank')" />`;
+    }).join('');
+    rows.push(`<tr><td style="font-weight: 600; padding: 10px; border: 1px solid #cbd5e1; background-color: #f8fafc; vertical-align: top;">📷 Photo${attachments.length > 1 ? 's' : ''} / Logo (${attachments.length})</td><td style="padding: 0; border: 1px solid #cbd5e1;">${thumbnailsHtml}</td></tr>`);
+  }
+  
   rows.push(`<tr><td style="font-weight: 600; padding: 10px; border: 1px solid #cbd5e1; background-color: #f8fafc;">🔑 ID système</td><td style="padding: 10px; border: 1px solid #cbd5e1; font-family: 'Courier New', monospace; font-size: 0.875rem; color: #64748b;">${entity.id}</td></tr>`);
   
-  return `<table style="border-collapse: collapse; border: 2px solid #8b5cf6; width: 100%; margin: 1.5rem 0; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
+  return `<table style="border-collapse: collapse; border: 2px solid #8b5cf6; width: 100%; margin: 0 0 1.5rem 0; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
     <tbody>${rows.join('')}</tbody>
   </table>`;
 }
@@ -607,9 +651,27 @@ function generateFindingTable(finding: Finding): string {
       rows.push(`<tr><td style="font-weight: 600; padding: 10px; border: 1px solid #cbd5e1; background-color: #f8fafc;">📱 Plateformes liées</td><td style="padding: 10px; border: 1px solid #cbd5e1;">${meta.relatedPlatforms.length} plateforme(s)</td></tr>`);
     }
   
-  // Pièces jointes
+  // Pièces jointes avec miniatures
   if (finding.attachments && finding.attachments.length > 0) {
-    rows.push(`<tr><td style="font-weight: 600; padding: 10px; border: 1px solid #cbd5e1; background-color: #f8fafc;">📎 Pièces jointes</td><td style="padding: 10px; border: 1px solid #cbd5e1;">${finding.attachments.length} fichier(s)</td></tr>`);
+    console.log('🖼️ generateFindingTable: Génération des miniatures');
+    console.log('📎 finding.attachments:', finding.attachments);
+    console.log('📊 Nombre d\'attachments:', finding.attachments.length);
+    
+    // Convertir le Proxy en tableau normal
+    const attachmentsArray = Array.from(finding.attachments);
+    console.log('📋 attachmentsArray:', attachmentsArray);
+    
+    const thumbnailsHtml = attachmentsArray.map((attachmentUrl: string, index: number) => {
+      console.log(`  🔗 [${index}] URL:`, attachmentUrl);
+      
+      // L'URL est déjà complète (URL signée depuis l'API)
+      const imageUrl = attachmentUrl;
+      return `<img src="${imageUrl}" alt="Pièce jointe" style="width: 120px; height: 120px; object-fit: cover; display: block; border: 2px solid #e2e8f0; border-radius: 8px;" title="Cliquez pour agrandir" onclick="window.open('${imageUrl}', '_blank')" />`;
+    }).join('');
+    
+    console.log('🎨 HTML généré:', thumbnailsHtml);
+    
+    rows.push(`<tr><td style="font-weight: 600; padding: 10px; border: 1px solid #cbd5e1; background-color: #f8fafc; vertical-align: top;">📎 Pièces jointes (${finding.attachments.length})</td><td style="padding: 0; border: 1px solid #cbd5e1;">${thumbnailsHtml}</td></tr>`);
   }
   
   // Entités liées
@@ -617,9 +679,14 @@ function generateFindingTable(finding: Finding): string {
     rows.push(`<tr><td style="font-weight: 600; padding: 10px; border: 1px solid #cbd5e1; background-color: #f8fafc;">👥 Entités liées</td><td style="padding: 10px; border: 1px solid #cbd5e1;">${finding.relatedEntities.length} entité(s)</td></tr>`);
   }
   
-  return `<table style="border-collapse: collapse; border: 2px solid #3b82f6; width: 100%; margin: 1.5rem 0; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
+  const tableHtml = `<table style="border-collapse: collapse; border: 2px solid #3b82f6; width: 100%; margin: 0 0 1.5rem 0; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
     <tbody>${rows.join('')}</tbody>
   </table>`;
+  
+  console.log('📋 Tableau HTML complet généré pour:', finding.label);
+  console.log('📏 Nombre de lignes (rows):', rows.length);
+  
+  return tableHtml;
 }
 
 // Labels pour les niveaux de confiance

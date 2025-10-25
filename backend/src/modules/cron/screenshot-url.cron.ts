@@ -2,6 +2,7 @@ import cron from 'node-cron';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import { generateSignedUrl } from '../media/media.service';
+import { prisma } from '@/shared/prisma';
 
 /**
  * Service CRON pour régénérer automatiquement les URLs de screenshots
@@ -239,4 +240,113 @@ export function startScreenshotUrlCron(): void {
 export async function manuallyRegenerateUrls(): Promise<void> {
   console.log('🔧 [MANUAL] Régénération manuelle démarrée');
   await regenerateExpiringUrls();
+  await regenerateFindingAttachmentUrls();
+}
+
+/**
+ * Régénère les URLs signées dans les Finding.attachments (entités avec photos)
+ * Parcourt tous les modules de type 'entities' et met à jour les URLs expirées
+ */
+async function regenerateFindingAttachmentUrls(): Promise<void> {
+  console.log('🔄 [CRON] Démarrage régénération URLs dans Finding.attachments...');
+  
+  const startTime = Date.now();
+  let modulesUpdated = 0;
+  let urlsRegenerated = 0;
+  let errorsCount = 0;
+
+  try {
+    // Récupérer tous les modules qui peuvent contenir des Finding avec attachments
+    const modules = await prisma.reportModule.findMany({
+      where: {
+        type: {
+          in: ['entities', 'entity_overview', 'identifier_lookup', 'platform_analysis'],
+        },
+      },
+      include: {
+        report: {
+          select: {
+            id: true,
+            title: true,
+          },
+        },
+      },
+    });
+
+    console.log(`📊 [CRON] ${modules.length} module(s) à analyser`);
+
+    for (const module of modules) {
+      try {
+        const payload = module.payload as any;
+        
+        // Vérifier si le module a des findings avec attachments
+        if (!payload || !payload.findings || !Array.isArray(payload.findings)) {
+          continue;
+        }
+
+        let moduleModified = false;
+        
+        for (const finding of payload.findings) {
+          if (!finding.attachments || !Array.isArray(finding.attachments) || finding.attachments.length === 0) {
+            continue;
+          }
+
+          const updatedAttachments: string[] = [];
+          
+          for (const attachmentUrl of finding.attachments) {
+            try {
+              // Extraire le filename de l'URL signée
+              // Format: https://domain/api/media/screenshot/filename.png?signature=...&expires=...
+              const urlObj = new URL(attachmentUrl);
+              const pathParts = urlObj.pathname.split('/');
+              const filename = pathParts[pathParts.length - 1];
+
+              // Vérifier si le fichier existe
+              const filePath = path.join(uploadsDir, filename);
+              if (await fileExists(filePath)) {
+                // Générer nouvelle URL signée (6 mois)
+                const newUrl = await generateSignedUrl(filename, NEW_EXPIRATION_DAYS * 24 * 60 * 60);
+                updatedAttachments.push(newUrl);
+                urlsRegenerated++;
+                
+                console.log(`  ✅ URL régénérée: ${filename} (${finding.label})`);
+              } else {
+                console.warn(`  ⚠️ Fichier absent: ${filename} (conservé URL originale)`);
+                updatedAttachments.push(attachmentUrl); // Garder l'ancienne URL
+              }
+            } catch (urlError: any) {
+              console.error(`  ❌ Erreur parsing URL: ${attachmentUrl}:`, urlError.message);
+              updatedAttachments.push(attachmentUrl); // Garder l'ancienne URL
+              errorsCount++;
+            }
+          }
+
+          // Mettre à jour les attachments
+          finding.attachments = updatedAttachments;
+          moduleModified = true;
+        }
+
+        // Sauvegarder le module si modifié
+        if (moduleModified) {
+          await prisma.reportModule.update({
+            where: { id: module.id },
+            data: { payload: payload },
+          });
+          
+          modulesUpdated++;
+          console.log(`✅ [CRON] Module "${module.title}" mis à jour (rapport: ${module.report.title})`);
+        }
+      } catch (moduleError: any) {
+        console.error(`❌ [CRON] Erreur module ${module.id}:`, moduleError.message);
+        errorsCount++;
+      }
+    }
+
+    const duration = ((Date.now() - startTime) / 1000).toFixed(2);
+    console.log(`✅ [CRON] Régénération Finding.attachments terminée en ${duration}s`);
+    console.log(`📊 [CRON] Modules mis à jour: ${modulesUpdated}, URLs régénérées: ${urlsRegenerated}, Erreurs: ${errorsCount}`);
+  } catch (error: any) {
+    console.error('❌ [CRON] Erreur fatale régénération Finding.attachments:', error.message);
+    console.error(error.stack);
+  }
 }

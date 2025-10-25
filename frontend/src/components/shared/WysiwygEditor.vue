@@ -160,6 +160,7 @@ import { ref, watch, onBeforeUnmount } from "vue";
 import { useEditor, EditorContent } from "@tiptap/vue-3";
 import StarterKit from "@tiptap/starter-kit";
 import Placeholder from "@tiptap/extension-placeholder";
+import Image from "@tiptap/extension-image";
 import { Table } from "@tiptap/extension-table";
 import { TableRow } from "@tiptap/extension-table-row";
 import { TableCell } from "@tiptap/extension-table-cell";
@@ -193,6 +194,11 @@ const isEntityModalOpen = ref(false);
 const editor = useEditor({
   extensions: [
     StarterKit,
+    Image.configure({
+      HTMLAttributes: {
+        class: 'max-w-full h-auto rounded',
+      },
+    }),
     Table.configure({
       resizable: true,
       HTMLAttributes: {
@@ -248,16 +254,41 @@ function closeEntityModal() {
 function handleEntitySelect(entity: Entity | Finding, htmlContent?: string) {
   if (!editor.value) return;
   
+  console.log('📝 WysiwygEditor.handleEntitySelect appelé');
+  console.log('👤 Entity:', entity);
+  console.log('📄 htmlContent:', htmlContent);
+  console.log('📏 htmlContent length:', htmlContent?.length || 0);
+  
   if (htmlContent) {
     // Insérer du contenu HTML structuré (tableau)
-    editor.value
-      .chain()
-      .focus()
-      .insertContent(htmlContent)
-      .run();
+    console.log('✅ Insertion de HTML dans l\'éditeur...');
+    
+    // Supprimer le paragraphe vide si on est dedans
+    const { $from } = editor.value.state.selection;
+    const currentNode = $from.parent;
+    
+    if (currentNode.type.name === 'paragraph' && currentNode.childCount === 0) {
+      // On est dans un paragraphe vide, le remplacer par le tableau
+      editor.value
+        .chain()
+        .focus()
+        .deleteNode('paragraph')
+        .insertContent(htmlContent)
+        .run();
+    } else {
+      // Insertion normale
+      editor.value
+        .chain()
+        .focus()
+        .insertContent(htmlContent)
+        .run();
+    }
+    
+    console.log('✅ HTML inséré avec succès');
   } else {
     // Insérer le label de l'entité à la position du curseur
     const label = 'label' in entity ? entity.label : '';
+    console.log('✅ Insertion du label:', label);
     editor.value
       .chain()
       .focus()

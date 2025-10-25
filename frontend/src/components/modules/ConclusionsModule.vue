@@ -86,7 +86,9 @@
             </div>
             <WysiwygEditor
               v-model="editableStatements[index]"
-              :placeholder="`Ex: Les recherches ont permis d'identifier formellement...`"
+              :placeholder="`Ex: Les recherches ont permis d'identifier formellement... Utilisez le bouton 👤 pour insérer des entités.`"
+              :enable-entity-insertion="true"
+              :report-id="report?.id"
               @update:model-value="() => debouncedSave()"
             />
           </div>
@@ -111,8 +113,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from "vue";
+import { ref, computed, inject } from "vue";
 import type { ConclusionsPayload } from "@/services/api/reports";
+import type { Report } from "@/services/api/reports";
 import WysiwygEditor from "@/components/shared/WysiwygEditor.vue";
 import MarkdownRenderer from "@/components/shared/MarkdownRenderer.vue";
 
@@ -126,6 +129,9 @@ interface Emits {
 
 const props = defineProps<Props>();
 const emit = defineEmits<Emits>();
+
+// Injecter les données du rapport depuis le parent
+const report = inject<Report>('report', null as any);
 
 const isEditing = ref(false);
 const editableStatements = ref<string[]>([]);

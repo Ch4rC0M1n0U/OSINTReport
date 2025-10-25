@@ -1,9 +1,11 @@
 <template>
-  <div v-if="isOpen" class="modal modal-open">
-    <div class="modal-box w-11/12 max-w-3xl">
-      <h3 class="text-lg font-bold mb-4">
-        {{ isNew ? '➕ Nouvelle entité' : '✏️ Modifier l\'entité' }}
-      </h3>
+  <div>
+    <!-- Modal principale -->
+    <div v-if="isOpen" class="modal modal-open">
+      <div class="modal-box w-11/12 max-w-3xl">
+        <h3 class="text-lg font-bold mb-4">
+          {{ isNew ? '➕ Nouvelle entité' : '✏️ Modifier l\'entité' }}
+        </h3>
 
       <form @submit.prevent="handleSubmit" class="space-y-4">
         <!-- Nom de l'entité -->
@@ -314,6 +316,83 @@
           </label>
         </div>
 
+        <!-- Pièces jointes / Images -->
+        <div class="form-control">
+          <label class="label">
+            <span class="label-text">📷 Photos / Captures d'écran ({{ attachmentsCount }})</span>
+            <span class="label-text-alt text-xs opacity-60">
+              Logos, photos d'identité, documents...
+            </span>
+          </label>
+          
+          <!-- Liste des images actuelles -->
+          <div v-if="attachmentsCount > 0" class="grid grid-cols-2 md:grid-cols-3 gap-2 mb-3">
+            <div
+              v-for="(attachmentUrl, idx) in localEntity.attachments"
+              :key="idx"
+              class="relative group"
+            >
+              <img
+                :src="attachmentUrl"
+                alt="Pièce jointe"
+                class="w-full h-24 object-cover rounded border border-base-300"
+                @error="handleImageError"
+              />
+              <button
+                type="button"
+                class="absolute top-1 right-1 btn btn-xs btn-circle btn-error opacity-0 group-hover:opacity-100 transition-opacity"
+                @click="removeAttachment(idx)"
+                title="Supprimer"
+              >
+                ✕
+              </button>
+            </div>
+          </div>
+          
+          <!-- Loader pendant upload -->
+          <div v-if="isUploadingFile" class="flex items-center gap-2 mb-3 text-sm">
+            <span class="loading loading-spinner loading-sm"></span>
+            <span>Upload en cours...</span>
+          </div>
+          
+          <!-- Boutons d'ajout -->
+          <div class="flex gap-2">
+            <button
+              type="button"
+              class="btn btn-sm btn-outline flex-1"
+              @click="openScreenshotGallery"
+            >
+              <span>🖼️</span>
+              <span>Choisir depuis la galerie</span>
+            </button>
+            <label class="btn btn-sm btn-outline cursor-pointer">
+              <span>📤</span>
+              <span>Upload</span>
+              <input
+                ref="fileInput"
+                type="file"
+                class="hidden"
+                accept="image/png,image/jpeg,image/jpg,image/webp"
+                multiple
+                @change="handleFileUpload"
+              />
+            </label>
+          </div>
+          
+          <!-- Erreur d'upload -->
+          <div v-if="uploadError" class="alert alert-error mt-2 text-sm">
+            <span>⚠️</span>
+            <span>{{ uploadError }}</span>
+          </div>
+          
+          <!-- Info -->
+          <label class="label">
+            <span class="label-text-alt text-xs opacity-60">
+              💡 Ces images apparaîtront dans les blocs de texte enrichi
+            </span>
+          </label>
+        </div>
+
         <!-- Sources -->
         <div class="form-control">
           <label class="label">
@@ -398,6 +477,85 @@
       </form>
     </div>
     <div class="modal-backdrop" @click="handleCancel"></div>
+  </div>
+
+  <!-- Modal Galerie de Screenshots -->
+  <div v-if="showGalleryModal" class="modal modal-open">
+    <div class="modal-box max-w-4xl">
+      <h3 class="font-bold text-lg mb-4">
+        📸 Galerie de captures d'écran
+      </h3>
+
+      <!-- Loader -->
+      <div v-if="isLoadingGallery" class="flex justify-center items-center py-12">
+        <span class="loading loading-spinner loading-lg"></span>
+        <p class="ml-3">Chargement...</p>
+      </div>
+
+      <!-- Grille de screenshots -->
+      <div
+        v-else-if="availableScreenshots.length > 0"
+        class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 max-h-[60vh] overflow-y-auto"
+      >
+        <div
+          v-for="screenshot in availableScreenshots"
+          :key="screenshot.filename"
+          class="relative group cursor-pointer rounded-lg overflow-hidden border-2 border-transparent hover:border-primary transition-all"
+          @click="selectScreenshotFromGallery(screenshot)"
+        >
+          <img
+            :src="screenshot.url"
+            :alt="screenshot.originalName"
+            class="w-full h-32 object-cover"
+          />
+          <div
+            class="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-1"
+          >
+            <p class="text-white text-xs font-semibold px-2 text-center">
+              {{ screenshot.originalName }}
+            </p>
+            <p class="text-white/70 text-xs">
+              {{ formatSize(screenshot.size) }} • {{ screenshot.width }}x{{ screenshot.height }}
+            </p>
+            <button
+              type="button"
+              class="btn btn-xs btn-primary mt-2"
+            >
+              ✓ Sélectionner
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Aucun screenshot -->
+      <div v-else class="text-center py-12">
+        <p class="text-base-content/60">
+          Aucune capture d'écran disponible.
+        </p>
+        <p class="text-sm text-base-content/40 mt-2">
+          Utilisez le bouton "Upload" pour ajouter une capture.
+        </p>
+      </div>
+
+      <!-- Erreur -->
+      <div v-if="galleryError" class="alert alert-error mt-4">
+        <span>⚠️</span>
+        <span>{{ galleryError }}</span>
+      </div>
+
+      <!-- Boutons du modal -->
+      <div class="modal-action">
+        <button
+          type="button"
+          class="btn"
+          @click="closeGalleryModal"
+        >
+          Fermer
+        </button>
+      </div>
+    </div>
+    <div class="modal-backdrop" @click="closeGalleryModal"></div>
+  </div>
   </div>
 </template>
 
@@ -738,6 +896,151 @@ function getIdentifierBadgeClass(identifier: string): string {
   }
   
   return 'badge-outline'; // Autre = outline
+}
+
+// ==================== GESTION DES PIÈCES JOINTES / IMAGES ====================
+
+import type { Screenshot } from '@/services/screenshot';
+
+const uploadError = ref<string | null>(null);
+const fileInput = ref<HTMLInputElement | null>(null);
+const isUploadingFile = ref(false);
+
+// Galerie de sélection
+const showGalleryModal = ref(false);
+const isLoadingGallery = ref(false);
+const availableScreenshots = ref<Screenshot[]>([]);
+const galleryError = ref<string | null>(null);
+
+const attachmentsCount = computed(() => {
+  return localEntity.value.attachments?.length || 0;
+});
+
+/**
+ * Upload d'un ou plusieurs fichiers depuis le bouton Upload
+ */
+async function handleFileUpload(event: Event) {
+  const input = event.target as HTMLInputElement;
+  const files = input.files;
+  
+  if (!files || files.length === 0) return;
+  
+  uploadError.value = null;
+  isUploadingFile.value = true;
+  
+  try {
+    // Import dynamique du service
+    const { screenshotService } = await import('@/services/screenshot');
+    
+    for (const file of Array.from(files)) {
+      // Vérification taille (2 MB max)
+      if (file.size > 2 * 1024 * 1024) {
+        uploadError.value = `Le fichier "${file.name}" dépasse 2 MB`;
+        continue;
+      }
+      
+      // Upload
+      const response = await screenshotService.upload(file, {
+        caseId: undefined, // Pas de caseId pour les entités
+      });
+      
+      // Ajouter l'URL signée aux attachments (pas le filename)
+      if (!localEntity.value.attachments) {
+        localEntity.value.attachments = [];
+      }
+      localEntity.value.attachments.push(response.url);
+    }
+  } catch (error: any) {
+    uploadError.value = error.message || 'Erreur lors de l\'upload';
+  } finally {
+    isUploadingFile.value = false;
+    // Reset l'input pour permettre un nouvel upload du même fichier
+    if (input) {
+      input.value = '';
+    }
+  }
+}
+
+/**
+ * Supprimer une pièce jointe par son index
+ */
+function removeAttachment(index: number) {
+  if (!localEntity.value.attachments) return;
+  localEntity.value.attachments.splice(index, 1);
+}
+
+/**
+ * Gestion d'erreur de chargement d'image
+ */
+function handleImageError(event: Event) {
+  const img = event.target as HTMLImageElement;
+  console.error('Erreur de chargement d\'image:', img.src);
+  uploadError.value = 'Une image n\'a pas pu être chargée (URL expirée ?)';
+}
+
+/**
+ * Ouvrir la galerie de screenshots
+ */
+async function openScreenshotGallery() {
+  showGalleryModal.value = true;
+  isLoadingGallery.value = true;
+  galleryError.value = null;
+  
+  try {
+    const { screenshotService } = await import('@/services/screenshot');
+    
+    // Charger tous les screenshots (sans caseId pour voir tous les screenshots)
+    // Note: Il faudrait idéalement avoir un endpoint qui liste TOUS les screenshots
+    // Pour l'instant, on va charger avec un caseId vide qui devrait retourner une erreur
+    // ou tous les screenshots selon l'implémentation backend
+    
+    // Workaround: Essayer de charger sans caseId
+    try {
+      availableScreenshots.value = await screenshotService.list('');
+    } catch (e) {
+      // Si ça échoue, on pourrait afficher un message
+      galleryError.value = 'Impossible de charger la galerie. Veuillez utiliser le bouton Upload.';
+      availableScreenshots.value = [];
+    }
+  } catch (error: any) {
+    galleryError.value = error.message || 'Erreur lors du chargement de la galerie';
+  } finally {
+    isLoadingGallery.value = false;
+  }
+}
+
+/**
+ * Fermer la modal galerie
+ */
+function closeGalleryModal() {
+  showGalleryModal.value = false;
+  availableScreenshots.value = [];
+  galleryError.value = null;
+}
+
+/**
+ * Sélectionner un screenshot depuis la galerie
+ */
+function selectScreenshotFromGallery(screenshot: Screenshot) {
+  if (!localEntity.value.attachments) {
+    localEntity.value.attachments = [];
+  }
+  
+  // Vérifier que l'image n'est pas déjà ajoutée
+  if (!localEntity.value.attachments.includes(screenshot.url)) {
+    localEntity.value.attachments.push(screenshot.url);
+  }
+  
+  closeGalleryModal();
+}
+
+/**
+ * Formater la taille du fichier
+ */
+function formatSize(bytes: number): string {
+  if (bytes < 1024) return bytes + ' B';
+  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+  return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
 }
 
 function handleSubmit() {

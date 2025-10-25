@@ -8,7 +8,9 @@ import puppeteer from "puppeteer";
 import handlebars from "handlebars";
 import { PDFDocument, rgb, StandardFonts, degrees } from "pdf-lib";
 import { readFile } from "fs/promises";
+import { readFileSync } from "fs";
 import { join, resolve } from "path";
+import axios from "axios";
 import { logger } from "@/config/logger";
 import { prisma } from "@/config/prisma";
 import { SettingsService } from "@/modules/settings/settings.service";
@@ -149,6 +151,56 @@ export class PDFService {
     }
 
     return report;
+  }
+
+  /**
+   * Convertir toutes les images d'un HTML en base64
+   */
+  private static async convertImagesToBase64(html: string): Promise<string> {
+    // Regex pour trouver tous les tags <img src="...">
+    const imgRegex = /<img[^>]+src=["']([^"']+)["']/g;
+    let match;
+    const urlsToReplace: { original: string; base64: string }[] = [];
+
+    // Extraire toutes les URLs d'images
+    const urls: string[] = [];
+    while ((match = imgRegex.exec(html)) !== null) {
+      const url = match[1];
+      if (!url.startsWith('data:')) {
+        urls.push(url);
+      }
+    }
+
+    // Télécharger et convertir chaque image en base64
+    for (const url of urls) {
+      try {
+        logger.debug(`Téléchargement image: ${url.substring(0, 80)}...`);
+        const response = await axios.get(url, { responseType: 'arraybuffer' });
+        const buffer = Buffer.from(response.data, 'binary');
+        
+        // Détecter le type MIME
+        const contentType = response.headers['content-type'] || 'image/png';
+        const base64 = buffer.toString('base64');
+        const dataUri = `data:${contentType};base64,${base64}`;
+        
+        urlsToReplace.push({ original: url, base64: dataUri });
+        logger.debug(`✅ Image convertie (${contentType}, ${(base64.length / 1024).toFixed(2)} KB)`);
+      } catch (error) {
+        logger.warn(`❌ Erreur téléchargement image ${url}: ${error}`);
+        // Continuer même si une image échoue
+      }
+    }
+
+    // Remplacer toutes les URLs par leur version base64
+    let modifiedHtml = html;
+    for (const { original, base64 } of urlsToReplace) {
+      // Échapper les caractères spéciaux dans l'URL pour le regex
+      const escapedUrl = original.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const replaceRegex = new RegExp(escapedUrl, 'g');
+      modifiedHtml = modifiedHtml.replace(replaceRegex, base64);
+    }
+
+    return modifiedHtml;
   }
 
   /**
@@ -337,38 +389,82 @@ export class PDFService {
       
       if (entity.metadata) {
         const meta = entity.metadata;
+        
+        // Type d'entité
         if (meta.entityType) {
-          html += `<p><strong>Type:</strong> ${meta.entityType}</p>`;
+          html += `<div class="field-label">Type</div>`;
+          html += `<div class="field-value">${meta.entityType}</div>`;
         }
+        
+        // Alias
         if (meta.aliases && meta.aliases.length > 0) {
-          html += `<p><strong>Alias:</strong> ${meta.aliases.join(", ")}</p>`;
+          html += `<div class="field-label">Alias / Pseudonymes</div>`;
+          html += `<div class="field-value">${meta.aliases.join(", ")}</div>`;
         }
         
         // Détails personne
         if (meta.personDetails) {
           const pd = meta.personDetails;
-          if (pd.dateOfBirth) html += `<p><strong>Date de naissance:</strong> ${pd.dateOfBirth}</p>`;
-          if (pd.nationalRegistryNumber) html += `<p><strong>RRN:</strong> ${pd.nationalRegistryNumber}</p>`;
-          if (pd.physicalAddress) html += `<p><strong>Adresse:</strong> ${pd.physicalAddress}</p>`;
+          
+          if (pd.dateOfBirth) {
+            html += `<div class="field-label">Date de naissance</div>`;
+            html += `<div class="field-value">${pd.dateOfBirth}</div>`;
+          }
+          
+          if (pd.nationalRegistryNumber) {
+            html += `<div class="field-label">Numéro de Registre National</div>`;
+            html += `<div class="field-value">${pd.nationalRegistryNumber}</div>`;
+          }
+          
+          if (pd.physicalAddress) {
+            html += `<div class="field-label">Adresse physique</div>`;
+            html += `<div class="field-value">${pd.physicalAddress}</div>`;
+          }
+          
           if (pd.phoneNumbers && pd.phoneNumbers.length > 0) {
-            html += `<p><strong>Téléphones:</strong> ${pd.phoneNumbers.join(", ")}</p>`;
+            html += `<div class="field-label">Téléphones</div>`;
+            html += `<div class="field-value">${pd.phoneNumbers.join(", ")}</div>`;
           }
         }
         
         // Détails société
         if (meta.companyDetails) {
           const cd = meta.companyDetails;
-          if (cd.bceNumber) html += `<p><strong>BCE:</strong> ${cd.bceNumber}</p>`;
-          if (cd.headquartersAddress) html += `<p><strong>Siège:</strong> ${cd.headquartersAddress}</p>`;
-          if (cd.website) html += `<p><strong>Site web:</strong> ${cd.website}</p>`;
+          
+          if (cd.bceNumber) {
+            html += `<div class="field-label">Numéro BCE</div>`;
+            html += `<div class="field-value">${cd.bceNumber}</div>`;
+          }
+          
+          if (cd.headquartersAddress) {
+            html += `<div class="field-label">Siège social</div>`;
+            html += `<div class="field-value">${cd.headquartersAddress}</div>`;
+          }
+          
+          if (cd.website) {
+            html += `<div class="field-label">Site web</div>`;
+            html += `<div class="field-value"><a href="${cd.website}">${cd.website}</a></div>`;
+          }
+          
           if (cd.phoneNumbers && cd.phoneNumbers.length > 0) {
-            html += `<p><strong>Téléphones:</strong> ${cd.phoneNumbers.join(", ")}</p>`;
+            html += `<div class="field-label">Téléphones</div>`;
+            html += `<div class="field-value">${cd.phoneNumbers.join(", ")}</div>`;
           }
         }
       }
       
-      if (entry.role) html += `<p><strong>Rôle:</strong> ${entry.role}</p>`;
-      if (entry.notes) html += `<p class="notes">${entry.notes}</p>`;
+      // Rôle
+      if (entry.role) {
+        html += `<div class="field-label">Rôle</div>`;
+        html += `<div class="field-value">${entry.role}</div>`;
+      }
+      
+      // Notes
+      if (entry.notes) {
+        html += `<div class="field-label">Notes</div>`;
+        html += `<div class="field-value notes">${entry.notes}</div>`;
+      }
+      
       html += '</div>';
     });
     html += '</div>';
@@ -478,7 +574,18 @@ export class PDFService {
     if (payload.screenshots && payload.screenshots.length > 0) {
       html += '<div class="screenshots">';
       html += '<h4>Captures d\'écran</h4>';
-      html += `<p>${payload.screenshots.length} capture(s) disponible(s)</p>`;
+      html += '<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 15px; margin-top: 10px;">';
+      payload.screenshots.forEach((screenshot: any) => {
+        const imageUrl = typeof screenshot === 'string' ? screenshot : screenshot.url;
+        const caption = typeof screenshot === 'object' && screenshot.caption ? screenshot.caption : '';
+        html += '<div style="border: 1px solid #ddd; border-radius: 4px; overflow: hidden;">';
+        html += `<img src="${imageUrl}" style="width: 100%; height: auto; display: block;" alt="Screenshot" />`;
+        if (caption) {
+          html += `<p style="padding: 8px; margin: 0; font-size: 12px; background: #f5f5f5;">${caption}</p>`;
+        }
+        html += '</div>';
+      });
+      html += '</div>';
       html += '</div>';
     }
     
@@ -599,19 +706,105 @@ export class PDFService {
     
     findings.forEach((finding: any) => {
       html += '<div class="finding-card">';
-      html += `<h4>${finding.label}</h4>`;
-      html += `<p>${finding.description}</p>`;
       
-      if (finding.confidence) {
-        html += `<p class="confidence confidence-${finding.confidence}">Confiance: ${finding.confidence}</p>`;
+      // Titre et description
+      html += `<h4>${finding.label}</h4>`;
+      if (finding.description) {
+        html += `<p>${finding.description}</p>`;
       }
       
+      // Métadonnées structurées
+      if (finding.metadata) {
+        const meta = finding.metadata;
+        
+        // Plateforme
+        if (meta.platform) {
+          html += `<div class="field-label">Plateforme</div>`;
+          html += `<div class="field-value">${meta.platform.toUpperCase()}</div>`;
+        }
+        
+        // URL du profil
+        if (meta.profileUrl) {
+          html += `<div class="field-label">URL du profil</div>`;
+          html += `<div class="field-value"><a href="${meta.profileUrl}">${meta.profileUrl}</a></div>`;
+        }
+        
+        // Statut du compte
+        if (meta.accountStatus) {
+          html += `<div class="field-label">Statut du compte</div>`;
+          html += `<div class="field-value">${meta.accountStatus}</div>`;
+        }
+        
+        // Statistiques de followers/abonnés
+        if (meta.followersCount !== undefined) {
+          html += `<div class="field-label">Abonnés</div>`;
+          html += `<div class="field-value">${meta.followersCount}</div>`;
+        }
+        if (meta.followingCount !== undefined) {
+          html += `<div class="field-label">Abonnements</div>`;
+          html += `<div class="field-value">${meta.followingCount}</div>`;
+        }
+        
+        // Date de création
+        if (meta.accountCreationDate) {
+          html += `<div class="field-label">Compte créé le</div>`;
+          html += `<div class="field-value">${meta.accountCreationDate}</div>`;
+        }
+        
+        // Localisation
+        if (meta.location) {
+          html += `<div class="field-label">Localisation</div>`;
+          html += `<div class="field-value">${meta.location}</div>`;
+        }
+        
+        // Données de contact
+        if (meta.contactInfo) {
+          const contact = meta.contactInfo;
+          if (contact.email) {
+            html += `<div class="field-label">Email</div>`;
+            html += `<div class="field-value">${contact.email}</div>`;
+          }
+          if (contact.phone) {
+            html += `<div class="field-label">Téléphone</div>`;
+            html += `<div class="field-value">${contact.phone}</div>`;
+          }
+          if (contact.website) {
+            html += `<div class="field-label">Site web</div>`;
+            html += `<div class="field-value"><a href="${contact.website}">${contact.website}</a></div>`;
+          }
+        }
+      }
+      
+      // Confiance
+      if (finding.confidence) {
+        html += `<div class="field-label">Niveau de confiance</div>`;
+        html += `<div class="field-value confidence-${finding.confidence}">${finding.confidence}</div>`;
+      }
+      
+      // Sources
       if (finding.sources && finding.sources.length > 0) {
-        html += '<div class="sources"><strong>Sources:</strong><ul>';
+        html += '<div class="field-label">Sources</div>';
+        html += '<div class="field-value"><ul style="margin: 0; padding-left: 20px;">';
         finding.sources.forEach((source: any) => {
           html += `<li>${source.type}: ${source.value}${source.note ? ` (${source.note})` : ""}</li>`;
         });
         html += '</ul></div>';
+      }
+      
+      // Pièces jointes (images)
+      if (finding.attachments && finding.attachments.length > 0) {
+        html += `<div class="field-label">Pièces jointes (${finding.attachments.length})</div>`;
+        html += '<div class="field-value" style="display: flex; flex-wrap: wrap; gap: 10px;">';
+        finding.attachments.forEach((attachment: string) => {
+          html += `<img src="${attachment}" style="max-width: 200px; max-height: 150px; object-fit: cover; border: 1px solid #ddd; border-radius: 4px;" alt="Pièce jointe" />`;
+        });
+        html += '</div>';
+      }
+      
+      // Entités liées
+      if (finding.relatedEntities && finding.relatedEntities.length > 0) {
+        html += `<div class="field-label">Entités liées</div>`;
+        html += `<div class="field-value">${finding.relatedEntities.length} entité(s)</div>`;
       }
       
       html += '</div>';
@@ -730,8 +923,12 @@ export class PDFService {
 
       // 3. Charger et rendre le template HTML
       const template = await this.loadTemplate("report-main");
-      const html = template(templateData);
+      let html = template(templateData);
       logger.debug("✅ Template HTML rendu");
+
+      // 3.5 Convertir toutes les images en base64 pour Puppeteer
+      html = await this.convertImagesToBase64(html);
+      logger.debug("✅ Images converties en base64");
 
       // 4. Générer le PDF avec Puppeteer
       const browser = await puppeteer.launch({

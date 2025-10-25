@@ -1,8 +1,62 @@
-# 📝 Intégration des Blocs de Texte Enrichi - Version 2.0
+# 📝 Intégration des Blocs de Texte Enrichi - Version 2.1
 
 ## 🎯 Objectif
 
 Permettre d'ajouter des **blocs de texte enrichi** dans les rubriques de rapport (commençant par "Analyse de plateforme"), avec possibilité d'insérer des **entités** et des **données de plateformes** (findings) sous forme de **texte simple** ou de **tableau structuré automatique**.
+
+## 🆕 Nouveautés Version 2.1 (25 octobre 2025)
+
+### ✅ Correction : Ajout du module "Entités Identifiées"
+
+Les éléments du module **"Entités Identifiées"** (👥) sont désormais **disponibles** dans le modal d'insertion d'entités.
+
+**Modules supportés** (complet) :
+
+- ✅ **Entités Identifiées** (`entities`) - 👥 - **NOUVEAU**
+- ✅ Vue d'ensemble d'une entité (`entity_overview`) - 🔍
+- ✅ Recherche d'identifiant (`identifier_lookup`) - 🔎
+- ✅ Analyse de plateforme (`platform_analysis`) - 🌐
+
+**Exemple d'utilisation** :
+
+- Ajoutez "Robert Redford" dans "Entités Identifiées"
+- Dans un bloc de texte enrichi, cliquez sur 👤
+- Sélectionnez "Robert Redford" dans l'onglet "📊 Éléments du rapport"
+- L'entité est insérée automatiquement (texte simple ou tableau selon complexité)
+
+Voir détails : [`docs/BUGFIX-ENTITIES-IN-TEXT-BLOCKS.md`](./BUGFIX-ENTITIES-IN-TEXT-BLOCKS.md)
+
+### 🖼️ Nouvelle fonctionnalité : Miniatures d'images
+
+Les **captures d'écran et images** attachées aux findings sont maintenant affichées sous forme de **miniatures visuelles** (120x120px) dans les tableaux insérés, au lieu d'un simple compteur.
+
+**Modules avec miniatures** :
+
+- ✅ **Entités Identifiées** - Photos de personnes, logos d'organisations
+- ✅ **Vue d'ensemble d'entité** - Documents d'identité, photos
+- ✅ **Recherche d'identifiant** - Captures d'écran de recherches
+- ✅ **Analyse de plateforme** - Screenshots de profils sociaux
+- ✅ **Entités système** - Support optionnel via paramètre
+
+**Avantages** :
+
+- ✅ Visualisation immédiate des images
+- ✅ Clic pour agrandir dans un nouvel onglet
+- ✅ Bordures et ombres élégantes
+- ✅ Inclus dans l'export PDF
+- ✅ Support pour photos de personnes ET logos d'organisations
+
+**Cas d'usage** :
+
+- 👤 **Personnes** : Photo de Robert Redford, documents d'identité
+- 🏢 **Organisations** : Logo ACME Corporation, façade du bâtiment
+- 📞 **Identifiants** : Captures d'écran de recherches inversées
+- 🏠 **Adresses** : Google Street View, photos sur place
+
+Voir détails :
+
+- [`docs/FEATURE-IMAGE-THUMBNAILS-IN-TEXT-BLOCKS.md`](./FEATURE-IMAGE-THUMBNAILS-IN-TEXT-BLOCKS.md)
+- [`docs/FEATURE-THUMBNAILS-ALL-ENTITIES.md`](./FEATURE-THUMBNAILS-ALL-ENTITIES.md)
 
 ## ✨ Fonctionnalités implémentées
 

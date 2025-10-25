@@ -66,7 +66,9 @@
         </label>
         <WysiwygEditor
           v-model="editablePayload.summary"
-          placeholder="Décrivez les résultats globaux des recherches effectuées..."
+          placeholder="Décrivez les résultats globaux des recherches effectuées... Utilisez le bouton 👤 pour insérer des entités."
+          :enable-entity-insertion="true"
+          :report-id="report?.id"
         />
         <label class="label">
           <span class="label-text-alt">Synthèse des informations trouvées (sauvegardera au clic sur "Enregistrer")</span>
@@ -80,7 +82,9 @@
         </label>
         <WysiwygEditor
           v-model="methodologyModel"
-          placeholder="Décrivez les méthodes et outils utilisés pour les recherches..."
+          placeholder="Décrivez les méthodes et outils utilisés pour les recherches... Utilisez le bouton 👤 pour insérer des entités."
+          :enable-entity-insertion="true"
+          :report-id="report?.id"
         />
         <label class="label">
           <span class="label-text-alt">Sources, outils, techniques utilisés</span>
@@ -137,7 +141,9 @@
         </label>
         <WysiwygEditor
           v-model="notesModel"
-          placeholder="Ajoutez des notes, remarques ou observations supplémentaires..."
+          placeholder="Ajoutez des notes, remarques ou observations supplémentaires... Utilisez le bouton 👤 pour insérer des entités."
+          :enable-entity-insertion="true"
+          :report-id="report?.id"
         />
         <label class="label">
           <span class="label-text-alt">Informations additionnelles</span>
@@ -158,9 +164,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from "vue";
+import { ref, computed, watch, inject } from "vue";
 import WysiwygEditor from "@/components/shared/WysiwygEditor.vue";
 import MarkdownRenderer from "@/components/shared/MarkdownRenderer.vue";
+import type { Report } from "@/services/api/reports";
 
 interface ResearchSummaryPayload {
   summary: string;
@@ -179,6 +186,9 @@ interface Emits {
 
 const props = defineProps<Props>();
 const emit = defineEmits<Emits>();
+
+// Injecter les données du rapport depuis le parent
+const report = inject<Report>('report', null as any);
 
 const isEditing = ref(false);
 const editablePayload = ref<ResearchSummaryPayload>({

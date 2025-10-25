@@ -40,7 +40,9 @@
         </h3>
         <WysiwygEditor
           v-model="editableContent"
-          placeholder="Décrivez les éléments recueillis par les enquêteurs, le contexte, les faits principaux..."
+          placeholder="Décrivez les éléments recueillis par les enquêteurs, le contexte, les faits principaux... Utilisez le bouton 👤 pour insérer des entités."
+          :enable-entity-insertion="true"
+          :report-id="report?.id"
         />
         <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">
           💡 Sauvegarde automatique après 30 secondes d'inactivité.

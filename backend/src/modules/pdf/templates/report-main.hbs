@@ -125,51 +125,49 @@
 
     /* Sections */
     section {
-      margin-bottom: 25px;
+      margin-bottom: 30px;
       page-break-inside: avoid;
     }
 
     section h2 {
-      font-size: 16pt;
+      font-size: 18pt;
+      font-weight: bold;
       color: {{primaryColor}};
-      border-bottom: 2px solid {{primaryColor}};
-      padding-bottom: 5px;
-      margin-bottom: 15px;
+      border-bottom: 3px solid {{primaryColor}};
+      padding-bottom: 8px;
+      margin-bottom: 20px;
       page-break-after: avoid;
     }
 
     section h3 {
-      font-size: 13pt;
-      color: #555;
-      margin: 15px 0 10px;
+      font-size: 14pt;
+      font-weight: bold;
+      color: #333;
+      margin: 20px 0 12px;
       page-break-after: avoid;
     }
 
-    section p {
-      margin-bottom: 10px;
+    section p, section div {
+      margin-bottom: 12px;
       text-align: justify;
+      line-height: 1.8;
     }
 
-    /* Modules */
-    .module {
-      background: #fafafa;
-      border-left: 3px solid {{secondaryColor}};
-      padding: 15px;
-      margin-bottom: 15px;
-      page-break-inside: avoid;
+    section ul, section ol {
+      margin: 10px 0 10px 25px;
+      line-height: 1.8;
     }
 
-    .module-title {
-      font-size: 13pt;
-      font-weight: bold;
-      color: {{primaryColor}};
-      margin-bottom: 10px;
+    section li {
+      margin-bottom: 8px;
     }
 
+    /* Module headline */
     .module-headline {
       font-style: italic;
       color: #666;
-      margin-bottom: 10px;
+      font-size: 11pt;
+      margin-bottom: 15px;
     }
 
     /* Content générique */
@@ -180,26 +178,46 @@
 
     /* Entities */
     .entities-list {
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
+      margin: 10px 0;
     }
 
     .entity-card {
-      background: white;
-      padding: 12px;
-      border-left: 3px solid {{secondaryColor}};
-      border-radius: 4px;
+      background: #fafafa;
+      padding: 15px;
+      margin-bottom: 15px;
+      border-left: 4px solid {{secondaryColor}};
+      page-break-inside: avoid;
     }
 
     .entity-card h4 {
       color: {{primaryColor}};
-      margin-bottom: 8px;
+      font-size: 13pt;
+      font-weight: bold;
+      margin-bottom: 12px;
+      border-bottom: 1px solid #e0e0e0;
+      padding-bottom: 5px;
     }
 
-    .entity-card p {
-      margin: 5px 0;
-      font-size: 10pt;
+    /* Findings */
+    .findings-section {
+      margin: 10px 0;
+    }
+
+    .finding-card {
+      background: #fafafa;
+      padding: 15px;
+      margin-bottom: 15px;
+      border-left: 4px solid {{primaryColor}};
+      page-break-inside: avoid;
+    }
+
+    .finding-card h4 {
+      color: {{primaryColor}};
+      font-size: 13pt;
+      font-weight: bold;
+      margin-bottom: 12px;
+      border-bottom: 1px solid #e0e0e0;
+      padding-bottom: 5px;
     }
 
     /* Objectives & Conclusions */
@@ -586,6 +604,62 @@
     .no-break {
       page-break-inside: avoid;
     }
+
+    /* Tables dans le contenu */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 15px 0;
+      page-break-inside: avoid;
+      font-size: 10pt;
+    }
+
+    table th {
+      background-color: {{primaryColor}};
+      color: white;
+      padding: 10px;
+      text-align: left;
+      font-weight: bold;
+      border: 1px solid #ddd;
+    }
+
+    table td {
+      padding: 8px 10px;
+      border: 1px solid #ddd;
+      vertical-align: top;
+    }
+
+    table tr:nth-child(even) {
+      background-color: #f9f9f9;
+    }
+
+    table td:first-child {
+      font-weight: 600;
+      background-color: #f5f5f5;
+      width: 35%;
+    }
+
+    /* Images dans les tables */
+    table img {
+      max-width: 120px;
+      max-height: 120px;
+      border: 2px solid #e2e8f0;
+      border-radius: 4px;
+    }
+
+    /* Field labels dans le contenu */
+    .field-label {
+      font-weight: 600;
+      color: #555;
+      margin-top: 10px;
+      margin-bottom: 5px;
+    }
+
+    .field-value {
+      margin-bottom: 10px;
+      padding-left: 10px;
+      border-left: 3px solid {{secondaryColor}};
+    }
   </style>
 </head>
 <body>
@@ -660,24 +734,24 @@
   <!-- Section : Objectif -->
   {{#if purpose}}
     <section>
-      <h2>1. Objectif de la recherche</h2>
-      <p>{{purpose}}</p>
+      <h2>Objectif de la recherche</h2>
+      <p>{{{purpose}}}</p>
     </section>
   {{/if}}
 
   <!-- Section : Résumé -->
   {{#if summary}}
     <section>
-      <h2>2. Résumé exécutif</h2>
-      <p>{{{summary}}}</p>
+      <h2>Résumé des faits</h2>
+      <div>{{{summary}}}</div>
     </section>
   {{/if}}
 
   <!-- Section : Contexte d'investigation -->
   {{#if investigationContext}}
     <section>
-      <h2>3. Contexte de l'investigation</h2>
-      <p>{{{investigationContext}}}</p>
+      <h2>Contexte de l'investigation</h2>
+      <div>{{{investigationContext}}}</div>
       {{#if legalBasis}}
         <h3>Base légale</h3>
         <p>{{legalBasis}}</p>
@@ -685,42 +759,23 @@
     </section>
   {{/if}}
 
-  <!-- Section : Statistiques -->
-  {{#if modulesCount}}
-    <section>
-      <h2>4. Aperçu des recherches</h2>
-      <div class="statistics">
-        <div class="stat-box">
-          <div class="stat-number">{{modulesCount}}</div>
-          <div class="stat-label">Modules de recherche</div>
-        </div>
-        {{#if correlationsCount}}
-          <div class="stat-box">
-            <div class="stat-number">{{correlationsCount}}</div>
-            <div class="stat-label">Corrélations détectées</div>
-          </div>
-        {{/if}}
-      </div>
-    </section>
-  {{/if}}
-
   <!-- Section : Modules détaillés -->
   {{#if modules.length}}
-    <section class="page-break">
-      <h2>5. Détail des recherches</h2>
-      {{#each modules}}
-        <div class="module">
-          <div class="module-title">{{this.title}}</div>
-          {{{this.content}}}
-        </div>
-      {{/each}}
-    </section>
+    {{#each modules}}
+      <section>
+        <h2>{{this.title}}</h2>
+        {{#if this.headline}}
+          <p class="module-headline">{{{this.headline}}}</p>
+        {{/if}}
+        <div>{{{this.content}}}</div>
+      </section>
+    {{/each}}
   {{/if}}
 
   <!-- Section : Corrélations -->
   {{#if correlations.length}}
     <section>
-      <h2>6. Corrélations identifiées</h2>
+      <h2>Corrélations identifiées</h2>
       <ul class="correlation-list">
         {{#each correlations}}
           <li class="correlation-item">
