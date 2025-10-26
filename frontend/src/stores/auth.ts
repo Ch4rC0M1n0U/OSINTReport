@@ -12,6 +12,7 @@ interface UserInfo {
   phone: string | null;
   grade: string | null;
   avatarUrl: string | null;
+  signatureUrl: string | null;
   roleName: string;
   permissions: string[];
 }

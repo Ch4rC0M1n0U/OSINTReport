@@ -40,6 +40,7 @@ model User {
   grade        String?
   passwordHash String
   avatarUrl    String?
+  signatureUrl String?
   roleId       String
   status       UserStatus @default(PENDING)
   createdAt    DateTime   @default(now())

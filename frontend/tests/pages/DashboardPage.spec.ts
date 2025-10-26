@@ -34,6 +34,11 @@ describe("DashboardPage navigation", () => {
       email: "admin@osint.local",
       firstName: "Admin",
       lastName: "User",
+      matricule: "ADMIN-001",
+      phone: null,
+      grade: null,
+      avatarUrl: null,
+      signatureUrl: null,
       roleName: "Administrateur",
       permissions: ["system:admin", "users:read"],
     };
@@ -61,6 +66,11 @@ describe("DashboardPage navigation", () => {
       email: "reader@osint.local",
       firstName: "Reader",
       lastName: "User",
+      matricule: "READER-001",
+      phone: null,
+      grade: null,
+      avatarUrl: null,
+      signatureUrl: null,
       roleName: "Lecteur",
       permissions: ["reports:read"],
     };

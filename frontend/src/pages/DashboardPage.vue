@@ -3,6 +3,7 @@ import { computed } from "vue";
 import { RouterLink, RouterView } from "vue-router";
 import { useAuthStore } from "@/stores/auth";
 import AppShell from "@/components/layout/AppShell.vue";
+import ProtectedSignature from "@/components/ProtectedSignature.vue";
 
 // Import HugeIcons
 import { HugeiconsIcon } from "@hugeicons/vue";
@@ -237,6 +238,14 @@ async function handleLogout() {
                 <HugeiconsIcon :icon="User02Icon" :size="20" />
                 <span>Mon profil</span>
               </RouterLink>
+            </li>
+            <!-- Signature display with protection -->
+            <li v-if="auth.user.signatureUrl" class="px-2 py-2">
+              <div class="text-xs text-gray-500 font-semibold mb-1 px-2">Ma signature</div>
+              <ProtectedSignature 
+                :src="auth.user.signatureUrl"
+                max-height="64px"
+              />
             </li>
             <li>
               <button @click="handleLogout" class="flex items-center gap-3 text-red-600 hover:bg-red-50 rounded-lg px-4 py-3 font-medium">

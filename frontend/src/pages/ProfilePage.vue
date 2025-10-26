@@ -8,12 +8,16 @@ import {
   Time01Icon,
   Upload01Icon,
   IdIcon,
-  Cancel01Icon
+  Cancel01Icon,
+  PencilEdit01Icon
 } from "@hugeicons/core-free-icons";
+import SignaturePad from "@/components/SignaturePad.vue";
+import ProtectedSignature from "@/components/ProtectedSignature.vue";
 
 const authStore = useAuthStore();
 const saving = ref(false);
 const message = ref<{ type: "success" | "error"; text: string } | null>(null);
+const showSignaturePad = ref(false);
 
 // Formulaire User Profile
 const profileForm = reactive({
@@ -24,6 +28,7 @@ const profileForm = reactive({
   phone: "",
   grade: "",
   avatarUrl: "",
+  signatureUrl: "",
 });
 
 // Liste des grades
@@ -83,6 +88,7 @@ onMounted(() => {
     profileForm.phone = authStore.user.phone || "";
     profileForm.grade = authStore.user.grade || "";
     profileForm.avatarUrl = authStore.user.avatarUrl || "";
+    profileForm.signatureUrl = authStore.user.signatureUrl || "";
   }
 });
 
@@ -188,6 +194,86 @@ async function handleImageUpload(event: Event) {
 async function handleTimePreferencesUpdate() {
   // TODO: Implémenter la sauvegarde des préférences temporelles
   console.log("Time preferences:", timeForm);
+}
+
+async function handleSignatureSave(dataUrl: string) {
+  saving.value = true;
+  message.value = null;
+
+  try {
+    // Convert data URL to blob
+    const response = await fetch(dataUrl);
+    const blob = await response.blob();
+    
+    // Create form data
+    const formData = new FormData();
+    formData.append("signature", blob, "signature.png");
+
+    // Upload signature
+    const uploadResponse = await api.post("/users/me/signature", formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    });
+
+    if (uploadResponse.data.user) {
+      authStore.updateUser(uploadResponse.data.user);
+      profileForm.signatureUrl = uploadResponse.data.user.signatureUrl || "";
+    }
+
+    showSignaturePad.value = false;
+    message.value = {
+      type: "success",
+      text: "Signature enregistrée avec succès !",
+    };
+
+    setTimeout(() => {
+      message.value = null;
+    }, 3000);
+  } catch (err: any) {
+    message.value = {
+      type: "error",
+      text: err.response?.data?.message || "Erreur lors de l'enregistrement de la signature",
+    };
+  } finally {
+    saving.value = false;
+  }
+}
+
+function handleSignatureCancel() {
+  showSignaturePad.value = false;
+}
+
+async function removeSignature() {
+  saving.value = true;
+  message.value = null;
+
+  try {
+    const response = await api.patch("/users/me/profile", {
+      signatureUrl: null,
+    });
+
+    if (response.data.user) {
+      authStore.updateUser(response.data.user);
+      profileForm.signatureUrl = "";
+    }
+
+    message.value = {
+      type: "success",
+      text: "Signature supprimée avec succès !",
+    };
+
+    setTimeout(() => {
+      message.value = null;
+    }, 3000);
+  } catch (err: any) {
+    message.value = {
+      type: "error",
+      text: err.response?.data?.message || "Erreur lors de la suppression de la signature",
+    };
+  } finally {
+    saving.value = false;
+  }
 }
 </script>
 
@@ -440,6 +526,66 @@ async function handleTimePreferencesUpdate() {
               Mettre à jour
             </button>
           </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Signature Section -->
+    <div class="bg-base-100 rounded-lg shadow-md border border-base-200">
+      <div class="p-6 border-b border-base-200">
+        <div class="flex items-center gap-3">
+          <HugeiconsIcon :icon="PencilEdit01Icon" class="w-6 h-6 text-primary" />
+          <div>
+            <h2 class="text-xl font-semibold">Signature manuscrite</h2>
+            <p class="text-sm text-base-content/60">Votre signature sera utilisée dans les rapports générés</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="p-6">
+        <!-- Current signature display -->
+        <div v-if="profileForm.signatureUrl && !showSignaturePad" class="mb-6">
+          <label class="label">
+            <span class="label-text font-medium">Signature actuelle</span>
+          </label>
+          <div class="inline-block max-w-md">
+            <ProtectedSignature 
+              :src="profileForm.signatureUrl"
+              max-height="200px"
+            />
+          </div>
+        </div>
+
+        <!-- Signature pad -->
+        <div v-if="showSignaturePad" class="mb-6">
+          <label class="label">
+            <span class="label-text font-medium">Dessinez votre signature</span>
+          </label>
+          <SignaturePad 
+            @save="handleSignatureSave"
+            @cancel="handleSignatureCancel"
+          />
+        </div>
+
+        <!-- Action buttons -->
+        <div class="flex gap-2">
+          <button 
+            v-if="!showSignaturePad"
+            @click="showSignaturePad = true"
+            class="btn btn-primary btn-sm"
+          >
+            <HugeiconsIcon :icon="PencilEdit01Icon" class="w-4 h-4" />
+            {{ profileForm.signatureUrl ? 'Modifier la signature' : 'Ajouter une signature' }}
+          </button>
+          <button 
+            v-if="profileForm.signatureUrl && !showSignaturePad"
+            @click="removeSignature"
+            class="btn btn-outline btn-error btn-sm"
+            :disabled="saving"
+          >
+            <HugeiconsIcon :icon="Cancel01Icon" class="w-4 h-4" />
+            Supprimer la signature
+          </button>
         </div>
       </div>
     </div>

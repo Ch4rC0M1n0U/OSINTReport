@@ -201,7 +201,7 @@ export class UserController {
 
   static async updateProfile(req: Request, res: Response) {
     const userId = req.user!.id;
-    const { firstName, lastName, matricule, email, phone, grade, avatarUrl } = req.body;
+    const { firstName, lastName, matricule, email, phone, grade, avatarUrl, signatureUrl } = req.body;
 
     // Check if email is already used by another user
     if (email) {
@@ -333,6 +333,7 @@ export class UserController {
         ...(phone !== undefined && { phone: phone || null }),
         ...(grade !== undefined && { grade: grade || null }),
         ...(finalAvatarUrl !== undefined && { avatarUrl: finalAvatarUrl }),
+        ...(signatureUrl !== undefined && { signatureUrl: signatureUrl || null }),
       },
     });
 
@@ -404,6 +405,73 @@ export class UserController {
     } catch (error) {
       console.error("Error processing image:", error);
       res.status(500).json({ message: "Erreur lors du traitement de l'image" });
+    }
+  }
+
+  static async uploadSignature(req: Request, res: Response) {
+    const userId = req.user!.id;
+    const file = req.file;
+
+    if (!file) {
+      res.status(400).json({ message: "Aucun fichier fourni" });
+      return;
+    }
+
+    try {
+      const sharp = require("sharp");
+      
+      // Process signature image - transparent background, resize to max 600x200
+      const processedImage = await sharp(file.buffer)
+        .resize(600, 200, {
+          fit: "inside",
+          position: "center",
+          background: { r: 0, g: 0, b: 0, alpha: 0 },
+        })
+        .png()
+        .toBuffer();
+
+      // Generate unique filename
+      const filename = `signature-${userId}-${crypto.randomBytes(8).toString("hex")}.png`;
+      
+      // Define paths
+      const signatureDir = path.join(__dirname, "../../../..", "frontend", "public", "images", "signatures");
+      const signaturePath = path.join(signatureDir, filename);
+      const signatureUrl = `/images/signatures/${filename}`;
+
+      // Ensure directory exists
+      await fs.mkdir(signatureDir, { recursive: true });
+
+      // Delete old signature file if exists
+      const oldUser = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { signatureUrl: true },
+      });
+
+      if (oldUser?.signatureUrl && oldUser.signatureUrl.startsWith("/images/signatures/")) {
+        const oldFilename = path.basename(oldUser.signatureUrl);
+        const oldPath = path.join(signatureDir, oldFilename);
+        try {
+          await fs.unlink(oldPath);
+        } catch (err) {
+          // Ignore if file doesn't exist
+        }
+      }
+
+      // Save new file
+      await fs.writeFile(signaturePath, processedImage);
+
+      // Update user signature URL in database
+      await prisma.user.update({
+        where: { id: userId },
+        data: { signatureUrl },
+      });
+
+      // Return full user data with permissions
+      const user = await AuthService.getAuthenticatedUser(userId);
+      res.json({ user, message: "Signature mise à jour avec succès" });
+    } catch (error) {
+      console.error("Error processing signature:", error);
+      res.status(500).json({ message: "Erreur lors du traitement de la signature" });
     }
   }
 }

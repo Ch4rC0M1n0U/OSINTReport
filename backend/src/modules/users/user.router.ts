@@ -26,6 +26,9 @@ const upload = multer({
 // Upload avatar image
 userRouter.post("/me/avatar", requireAuth, upload.single("avatar"), UserController.uploadAvatar);
 
+// Upload signature image
+userRouter.post("/me/signature", requireAuth, upload.single("signature"), UserController.uploadSignature);
+
 // Update current user's profile (no special permission needed, just authentication)
 userRouter.patch("/me/profile", requireAuth, UserController.updateProfile);
 
