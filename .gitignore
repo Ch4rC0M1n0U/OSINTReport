@@ -9,10 +9,10 @@ frontend/dist/
 postgres-data/
 *.log
 
-# Signatures manuscrites (données sensibles)
-frontend/public/images/signatures/
+# Signatures manuscrites (données sensibles) - ignorer tout sauf .gitkeep
+frontend/public/images/signatures/*
 !frontend/public/images/signatures/.gitkeep
 
-# Avatars utilisateurs (données personnelles)
-frontend/public/images/avatars/
+# Avatars utilisateurs (données personnelles) - ignorer tout sauf .gitkeep
+frontend/public/images/avatars/*
 !frontend/public/images/avatars/.gitkeep
