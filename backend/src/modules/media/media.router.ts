@@ -4,6 +4,7 @@ import { requireAuth } from '../../middleware/authenticate';
 import * as mediaController from './media.controller';
 import * as crypto from 'crypto';
 import * as path from 'path';
+import { checkMaintenanceMode } from '@middleware/maintenance';
 
 const router = Router();
 
@@ -35,6 +36,7 @@ const upload = multer({
 
 // Toutes les routes nécessitent une authentification
 router.use(requireAuth);
+router.use(checkMaintenanceMode);
 
 /**
  * POST /api/media/upload

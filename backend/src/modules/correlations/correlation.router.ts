@@ -1,11 +1,13 @@
 import { Router } from 'express';
 import { requireAuth } from '@/middleware/authenticate';
 import * as correlationController from './correlation.controller';
+import { checkMaintenanceMode } from '@middleware/maintenance';
 
 const router = Router();
 
 // Toutes les routes nécessitent une authentification
 router.use(requireAuth);
+router.use(checkMaintenanceMode);
 
 /**
  * POST /api/correlations/check

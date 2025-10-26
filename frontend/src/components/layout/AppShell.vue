@@ -1,11 +1,33 @@
 <script setup lang="ts">
-import { onMounted, computed } from "vue";
+import { onMounted, computed, ref } from "vue";
 import { useSystemSettings } from "@/composables/useSystemSettings";
+import { useAuthStore } from "@/stores/auth";
+import { api } from "@/services/http";
 
 const systemSettings = useSystemSettings();
+const authStore = useAuthStore();
+
+// État du mode maintenance
+const maintenanceStatus = ref({
+  maintenanceEnabled: false,
+  maintenanceMessage: '',
+  maintenanceScheduledAt: null as string | null,
+  lockUserCreation: false,
+});
+
+// Vérifier le statut de maintenance
+async function checkMaintenanceStatus() {
+  try {
+    const response = await api.get('/settings/maintenance-status');
+    maintenanceStatus.value = response.data;
+  } catch (error) {
+    console.error('Erreur vérification maintenance:', error);
+  }
+}
 
 onMounted(() => {
   systemSettings.loadSettings();
+  checkMaintenanceStatus();
 });
 
 // Convertir la couleur hex en RGB pour utiliser avec opacity
@@ -22,6 +44,19 @@ const sidebarStyle = computed(() => ({
   background: `linear-gradient(to bottom, rgba(${secondaryColorRgb.value}, 0.92), rgba(${secondaryColorRgb.value}, 0.98))`,
   backdropFilter: 'blur(12px)',
 }));
+
+// Vérifier si l'utilisateur est admin
+const isAdmin = computed(() => authStore.user?.roleName === 'admin');
+
+// Afficher la bannière seulement aux admins
+const showMaintenanceBanner = computed(() => {
+  return maintenanceStatus.value.maintenanceEnabled && isAdmin.value;
+});
+
+// Afficher la bannière de verrouillage des comptes
+const showLockBanner = computed(() => {
+  return maintenanceStatus.value.lockUserCreation && isAdmin.value;
+});
 </script>
 
 <template>
@@ -136,6 +171,45 @@ const sidebarStyle = computed(() => ({
 
       <!-- Page content -->
       <main class="flex-1">
+        <!-- Bannière de maintenance (admin seulement) -->
+        <div v-if="showMaintenanceBanner" class="bg-warning text-warning-content">
+          <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-3">
+                <svg class="w-6 h-6 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+                <div>
+                  <p class="font-bold">🚧 MODE MAINTENANCE ACTIVÉ</p>
+                  <p class="text-sm opacity-90">
+                    {{ maintenanceStatus.maintenanceMessage || 'Le site est en mode maintenance. Seuls les administrateurs peuvent y accéder.' }}
+                  </p>
+                  <p v-if="maintenanceStatus.maintenanceScheduledAt" class="text-xs opacity-75 mt-1">
+                    Maintenance prévue : {{ new Date(maintenanceStatus.maintenanceScheduledAt).toLocaleString('fr-BE') }}
+                  </p>
+                </div>
+              </div>
+              <RouterLink to="/admin/settings" class="btn btn-sm btn-ghost">
+                Gérer
+              </RouterLink>
+            </div>
+          </div>
+        </div>
+
+        <!-- Bannière de verrouillage des comptes (admin seulement) -->
+        <div v-if="showLockBanner" class="bg-info text-info-content">
+          <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2">
+            <div class="flex items-center gap-2 text-sm">
+              <svg class="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+              </svg>
+              <p>
+                🔒 <strong>Création de comptes verrouillée</strong> - Seuls les administrateurs peuvent inviter de nouveaux utilisateurs
+              </p>
+            </div>
+          </div>
+        </div>
+
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <slot />
         </div>

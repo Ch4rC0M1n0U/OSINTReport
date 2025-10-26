@@ -3,11 +3,13 @@ import { SearchController } from "./search.controller";
 import { requireAuth } from "@/middleware/authenticate";
 import { requirePermissions } from "@/middleware/authenticate";
 import { PermissionCode } from "@/modules/auth/auth.constants";
+import { checkMaintenanceMode } from "@middleware/maintenance";
 
 const router = Router();
 
 // Toutes les routes nécessitent l'authentification
 router.use(requireAuth);
+router.use(checkMaintenanceMode);
 
 /**
  * @route GET /search

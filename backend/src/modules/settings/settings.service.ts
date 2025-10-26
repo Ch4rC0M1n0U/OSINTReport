@@ -31,6 +31,15 @@ export interface SystemSettings {
   geminiApiKeyMasked?: string; // Version masquée pour affichage
   openaiApiKeyMasked?: string; // Version masquée pour affichage
   claudeApiKeyMasked?: string; // Version masquée pour affichage
+  // Paramètres généraux d'administration
+  maintenanceEnabled?: boolean;
+  maintenanceMessage?: string | null;
+  maintenanceScheduledAt?: Date | null;
+  lockUserCreation?: boolean;
+  // Notifications
+  criticalAlertsEnabled?: boolean;
+  teamsWebhookUrl?: string | null;
+  teamsNotificationsEnabled?: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -49,6 +58,15 @@ export interface UpdateSettingsData {
   logoUrl?: string | null;
   primaryColor?: string | null;
   secondaryColor?: string | null;
+  // Paramètres d'administration
+  maintenanceEnabled?: boolean;
+  maintenanceMessage?: string | null;
+  maintenanceScheduledAt?: Date | null;
+  lockUserCreation?: boolean;
+  // Notifications
+  criticalAlertsEnabled?: boolean;
+  teamsWebhookUrl?: string | null;
+  teamsNotificationsEnabled?: boolean;
 }
 
 export interface AISettings {

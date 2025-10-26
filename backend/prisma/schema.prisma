@@ -41,6 +41,12 @@ model User {
   passwordHash String
   avatarUrl    String?
   signatureUrl String?
+  
+  // Time preferences
+  timezone         String?  @default("Europe/Brussels")
+  dateFormat       String?  @default("24h")
+  firstDayOfWeek   String?  @default("monday")
+  
   roleId       String
   status       UserStatus @default(PENDING)
   createdAt    DateTime   @default(now())
@@ -383,6 +389,17 @@ model SystemSettings {
   aiProvider      String?  @default("gemini") // Provider par défaut: gemini, openai, claude
   aiModel         String?  @default("gemini-pro") // Modèle par défaut
   aiEnabled       Boolean  @default(false) // Activer/désactiver les fonctionnalités IA
+  
+  // Paramètres généraux d'administration
+  maintenanceEnabled    Boolean   @default(false) // Mode maintenance activé
+  maintenanceMessage    String?   // Message personnalisé de maintenance
+  maintenanceScheduledAt DateTime? // Date/heure prévue de la maintenance
+  lockUserCreation      Boolean   @default(false) // Verrouiller la création de comptes
+  
+  // Notifications
+  criticalAlertsEnabled Boolean   @default(true) // Alertes critiques par email
+  teamsWebhookUrl       String?   // URL du webhook Microsoft Teams
+  teamsNotificationsEnabled Boolean @default(false) // Notifications Teams activées
   
   // Métadonnées
   createdAt DateTime @default(now())

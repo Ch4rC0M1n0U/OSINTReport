@@ -6,6 +6,7 @@ import LoginPage from "@/pages/LoginPage.vue";
 import RegisterPage from "@/pages/RegisterPage.vue";
 import ForgotPasswordPage from "@/pages/ForgotPasswordPage.vue";
 import ResetPasswordPage from "@/pages/ResetPasswordPage.vue";
+import MaintenancePage from "@/pages/MaintenancePage.vue";
 import ProfilePage from "@/pages/ProfilePage.vue";
 import ReportListPage from "@/pages/reports/ReportListPage.vue";
 import ReportCreatePage from "@/pages/reports/ReportCreatePage.vue";
@@ -22,10 +23,17 @@ import AISettingsPage from "@/pages/admin/AISettingsPage.vue";
 import SearchManagementPage from "@/pages/admin/SearchManagementPage.vue";
 import EntitiesPage from "@/pages/EntitiesPage.vue";
 import { useAuthStore } from "@/stores/auth";
+import { useSystemSettings } from "@/composables/useSystemSettings";
 
 const router = createRouter({
   history: createWebHistory(),
   routes: [
+    {
+      path: "/maintenance",
+      name: "maintenance",
+      component: MaintenancePage,
+      meta: { public: true },
+    },
     {
       path: "/login",
       name: "login",
@@ -194,20 +202,49 @@ const router = createRouter({
 
 router.beforeEach(async (to) => {
   const auth = useAuthStore();
+  const { loadSettings, isMaintenanceMode } = useSystemSettings();
 
   if (!auth.initialized) {
     await auth.bootstrap();
   }
 
-  if (to.meta.public) {
-    if (auth.isAuthenticated) {
-      return { name: "dashboard" };
-    }
+  // Charger les paramètres système pour vérifier le mode maintenance
+  await loadSettings();
+
+  // Permettre l'accès à la page de maintenance
+  if (to.name === 'maintenance') {
     return true;
   }
 
+  // Permettre l'accès aux pages publiques (login, register, etc.)
+  if (to.meta.public) {
+    if (auth.isAuthenticated) {
+      // Si déjà authentifié, vérifier le mode maintenance
+      if (isMaintenanceMode.value && auth.user?.roleName !== 'admin') {
+        // Non-admin en mode maintenance → page de maintenance
+        return { name: 'maintenance' };
+      }
+      // Admin ou pas de maintenance → dashboard
+      return { name: "dashboard" };
+    }
+    // Non authentifié → accès libre aux pages publiques
+    return true;
+  }
+
+  // Vérifier l'authentification
   if (!auth.isAuthenticated) {
     return { name: "login", query: { redirect: to.fullPath } };
+  }
+
+  // Vérifier le mode maintenance SEULEMENT pour les utilisateurs authentifiés
+  if (isMaintenanceMode.value) {
+    const isAdmin = auth.user?.roleName === 'admin';
+    
+    // Si non-admin, rediriger vers la page de maintenance
+    if (!isAdmin) {
+      return { name: 'maintenance' };
+    }
+    // Les admins peuvent continuer
   }
 
   const requiredPermissions = to.matched

@@ -3,10 +3,12 @@ import { Router } from 'express';
 import { requireAuth, requirePermissions } from '@/middleware/authenticate';
 import { PermissionCode } from '@modules/auth/auth.constants';
 import { ReportController } from '@modules/reports/report.controller';
+import { checkMaintenanceMode } from '@middleware/maintenance';
 
 const entityRouter = Router();
 
 entityRouter.use(requireAuth);
+entityRouter.use(checkMaintenanceMode);
 
 /**
  * POST /api/entities

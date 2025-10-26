@@ -89,6 +89,11 @@ onMounted(() => {
     profileForm.grade = authStore.user.grade || "";
     profileForm.avatarUrl = authStore.user.avatarUrl || "";
     profileForm.signatureUrl = authStore.user.signatureUrl || "";
+    
+    // Charger les préférences de temps
+    timeForm.timezone = authStore.user.timezone || "Europe/Brussels";
+    timeForm.dateFormat = authStore.user.dateFormat || "24h";
+    timeForm.firstDayOfWeek = authStore.user.firstDayOfWeek || "monday";
   }
 });
 
@@ -192,8 +197,36 @@ async function handleImageUpload(event: Event) {
 }
 
 async function handleTimePreferencesUpdate() {
-  // TODO: Implémenter la sauvegarde des préférences temporelles
-  console.log("Time preferences:", timeForm);
+  saving.value = true;
+  message.value = null;
+
+  try {
+    const response = await api.patch("/users/me/profile", {
+      timezone: timeForm.timezone,
+      dateFormat: timeForm.dateFormat,
+      firstDayOfWeek: timeForm.firstDayOfWeek,
+    });
+
+    if (response.data.user) {
+      authStore.updateUser(response.data.user);
+      
+      message.value = {
+        type: "success",
+        text: "Préférences de temps mises à jour avec succès",
+      };
+
+      setTimeout(() => {
+        message.value = null;
+      }, 3000);
+    }
+  } catch (err: any) {
+    message.value = {
+      type: "error",
+      text: err.response?.data?.message || "Erreur lors de la mise à jour des préférences",
+    };
+  } finally {
+    saving.value = false;
+  }
 }
 
 async function handleSignatureSave(dataUrl: string) {

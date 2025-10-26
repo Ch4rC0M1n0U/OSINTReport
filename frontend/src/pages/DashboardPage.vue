@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { computed } from "vue";
-import { RouterLink, RouterView } from "vue-router";
+import { computed, ref } from "vue";
+import { RouterLink, RouterView, useRouter } from "vue-router";
 import { useAuthStore } from "@/stores/auth";
 import AppShell from "@/components/layout/AppShell.vue";
 
@@ -25,6 +25,8 @@ import {
 } from "@hugeicons/core-free-icons";
 
 const auth = useAuthStore();
+const router = useRouter();
+const logoutSuccess = ref(false);
 
 const canAccessAdmin = computed(() => {
   const permissions = auth.user?.permissions;
@@ -141,6 +143,13 @@ const adminNavigation = computed(() => {
 
 async function handleLogout() {
   await auth.logout();
+  logoutSuccess.value = true;
+  
+  // Redirection vers la page de login avec un message de succès
+  await router.push({ 
+    name: 'login',
+    query: { message: 'logout-success' }
+  });
 }
 </script>
 

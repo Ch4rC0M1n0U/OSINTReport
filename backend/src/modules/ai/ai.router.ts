@@ -6,8 +6,13 @@ import { Router } from 'express';
 import { requireAuth, requirePermissions } from '@/middleware/authenticate';
 import { PermissionCode } from '@/modules/auth/auth.constants';
 import { AIController } from './ai.controller';
+import { checkMaintenanceMode } from '@middleware/maintenance';
 
 const router = Router();
+
+// Toutes les routes AI nécessitent l'authentification
+router.use(requireAuth);
+router.use(checkMaintenanceMode);
 
 /**
  * POST /api/ai/generate/summary

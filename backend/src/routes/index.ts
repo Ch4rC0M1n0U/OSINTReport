@@ -18,17 +18,20 @@ router.get("/health", (_req, res) => {
   res.json({ status: "ok" });
 });
 
+// Routes publiques (toujours accessibles)
 router.use("/auth", authRouter);
+router.use("/settings", settingsRouter);
+
+// Routes protégées (chaque router applique requireAuth + checkMaintenanceMode)
 router.use("/reports", reportRouter);
-router.use("/reports", pdfRouter); // Export PDF: /reports/:id/export/pdf
+router.use("/reports", pdfRouter);
 router.use("/entities", entityRouter);
 router.use("/users", userRouter);
 router.use("/smtp", smtpRouter);
 router.use("/correlations", correlationRouter);
 router.use("/search", searchRouter);
 router.use("/media", mediaRouter);
-router.use("/settings", settingsRouter);
 router.use("/ai", aiRouter);
-router.use("/cron", cronRouter); // CRON: screenshot URL regeneration
+router.use("/cron", cronRouter);
 
 export { router };

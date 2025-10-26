@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { reactive, computed, onMounted } from "vue";
+import { reactive, computed, ref, onMounted } from "vue";
 import { useRouter, useRoute } from "vue-router";
 import { useAuthStore } from "@/stores/auth";
 import { useSystemSettings } from "@/composables/useSystemSettings";
@@ -13,17 +13,21 @@ import {
   AlertCircleIcon,
   Login01Icon,
   UserAdd01Icon,
+  CheckmarkCircle02Icon,
 } from "@hugeicons/core-free-icons";
 
 const auth = useAuthStore();
 const router = useRouter();
 const route = useRoute();
-const { settings, logoUrl, loadSettings } = useSystemSettings();
+const { settings, logoUrl } = useSystemSettings();
 
 const form = reactive({
   email: "",
   password: "",
 });
+
+// Message de succès après déconnexion
+const showLogoutSuccess = ref(false);
 
 // Textes dynamiques basés sur les paramètres système
 const serviceName = computed(() => settings.value?.serviceName || "OSINT");
@@ -42,6 +46,8 @@ const serviceAddress = computed(() => {
 async function handleSubmit() {
   try {
     await auth.login(form);
+    
+    // Laisser le router guard gérer la redirection (maintenance ou dashboard)
     const redirect = (route.query.redirect as string) ?? "/";
     await router.push(redirect);
   } catch (err) {
@@ -49,9 +55,16 @@ async function handleSubmit() {
   }
 }
 
-// Charger les paramètres au montage de la page
+// Vérifier si on arrive après une déconnexion
 onMounted(() => {
-  loadSettings();
+  if (route.query.message === 'logout-success') {
+    showLogoutSuccess.value = true;
+    
+    // Masquer le message après 5 secondes
+    setTimeout(() => {
+      showLogoutSuccess.value = false;
+    }, 5000);
+  }
 });
 </script>
 
@@ -154,6 +167,12 @@ onMounted(() => {
             <p class="text-base-content/70">
               Connectez-vous pour accéder à vos rapports
             </p>
+          </div>
+
+          <!-- Message de succès après déconnexion -->
+          <div v-if="showLogoutSuccess" class="alert alert-success">
+            <HugeiconsIcon :icon="CheckmarkCircle02Icon" :size="20" />
+            <span>Vous avez été déconnecté avec succès.</span>
           </div>
 
           <form class="space-y-5" @submit.prevent="handleSubmit">

@@ -3,10 +3,15 @@ import { Router } from "express";
 import { requireAuth, requirePermissions } from "@middleware/authenticate";
 import { PermissionCode } from "@modules/auth/auth.constants";
 import { ReportController } from "@modules/reports/report.controller";
+import { checkMaintenanceMode } from "@middleware/maintenance";
 
 const reportRouter = Router();
 
+// 1. D'abord authentifier l'utilisateur
 reportRouter.use(requireAuth);
+
+// 2. Ensuite vérifier le mode maintenance (req.user est maintenant disponible)
+reportRouter.use(checkMaintenanceMode);
 
 reportRouter.get(
   "/",

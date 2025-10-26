@@ -2,11 +2,13 @@ import { Router } from "express";
 import { PDFController } from "./pdf.controller";
 import { requireAuth, requirePermissions } from "@/middleware/authenticate";
 import { PermissionCode } from "@/modules/auth/auth.constants";
+import { checkMaintenanceMode } from "@middleware/maintenance";
 
 const router = Router();
 
 // Toutes les routes nécessitent l'authentification
 router.use(requireAuth);
+router.use(checkMaintenanceMode);
 
 /**
  * @route GET /reports/:reportId/export

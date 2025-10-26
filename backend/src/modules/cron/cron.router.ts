@@ -2,8 +2,13 @@ import { Router } from 'express';
 import { requireAuth, requirePermissions } from '@middleware/authenticate';
 import { PermissionCode } from '@modules/auth/auth.constants';
 import { manuallyRegenerateUrls } from './screenshot-url.cron';
+import { checkMaintenanceMode } from '@middleware/maintenance';
 
 const router = Router();
+
+// Toutes les routes cron nécessitent l'authentification
+router.use(requireAuth);
+router.use(checkMaintenanceMode);
 
 /**
  * POST /api/cron/screenshot-urls/regenerate

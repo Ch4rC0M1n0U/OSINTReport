@@ -56,6 +56,12 @@ const upload = multer({
 router.get("/", SettingsController.getSettings);
 
 /**
+ * GET /api/settings/maintenance-status
+ * Vérifier le statut du mode maintenance (public)
+ */
+router.get("/maintenance-status", SettingsController.getMaintenanceStatus);
+
+/**
  * PUT /api/settings
  * Mettre à jour les paramètres système
  * Requiert : authentification + permission SYSTEM_SETTINGS
@@ -126,6 +132,18 @@ router.post(
   requireAuth,
   requirePermissions(PermissionCode.SYSTEM_SETTINGS),
   SettingsController.testAIConnection
+);
+
+/**
+ * POST /api/settings/teams/test
+ * Tester le webhook Microsoft Teams
+ * Requiert : authentification + permission SYSTEM_SETTINGS
+ */
+router.post(
+  "/teams/test",
+  requireAuth,
+  requirePermissions(PermissionCode.SYSTEM_SETTINGS),
+  SettingsController.testTeamsWebhook
 );
 
 export default router;

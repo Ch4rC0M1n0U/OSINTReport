@@ -32,8 +32,8 @@ const corsOptions: cors.CorsOptions = {
 };
 
 const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  limit: 100,
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  limit: 500, // 500 requêtes par fenêtre (au lieu de 100)
   standardHeaders: "draft-7",
   legacyHeaders: false,
   message: "Trop de requêtes, veuillez réessayer plus tard.",

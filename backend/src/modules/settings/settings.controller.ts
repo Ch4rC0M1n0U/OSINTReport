@@ -6,6 +6,7 @@ import { Request, Response, NextFunction } from "express";
 import { z } from "zod";
 import { SettingsService } from "./settings.service";
 import { ApiKeyEncryption } from "./api-key-encryption";
+import { TeamsNotificationService } from "@modules/notifications/teams.service";
 import { logger } from "@/config/logger";
 
 // Schéma de validation pour la mise à jour des paramètres
@@ -22,6 +23,15 @@ const updateSettingsSchema = z.object({
   websiteUrl: z.string().url().nullable().optional(),
   primaryColor: z.string().regex(/^#[0-9A-Fa-f]{6}$/).nullable().optional(),
   secondaryColor: z.string().regex(/^#[0-9A-Fa-f]{6}$/).nullable().optional(),
+  // Paramètres d'administration
+  maintenanceEnabled: z.boolean().optional(),
+  maintenanceMessage: z.string().max(500).or(z.literal('')).nullable().optional(),
+  maintenanceScheduledAt: z.string().datetime().or(z.literal('')).nullable().optional(),
+  lockUserCreation: z.boolean().optional(),
+  // Notifications
+  criticalAlertsEnabled: z.boolean().optional(),
+  teamsWebhookUrl: z.string().url().or(z.literal('')).nullable().optional(),
+  teamsNotificationsEnabled: z.boolean().optional(),
 });
 
 // Schéma de validation pour les paramètres IA
@@ -50,13 +60,50 @@ export class SettingsController {
   }
 
   /**
+   * GET /api/settings/maintenance-status
+   * Récupérer le statut du mode maintenance (public)
+   */
+  static async getMaintenanceStatus(req: Request, res: Response, next: NextFunction) {
+    try {
+      const settings = await SettingsService.getSettings();
+      res.json({
+        maintenanceEnabled: settings.maintenanceEnabled || false,
+        maintenanceMessage: settings.maintenanceMessage,
+        maintenanceScheduledAt: settings.maintenanceScheduledAt,
+        lockUserCreation: settings.lockUserCreation || false,
+      });
+    } catch (error) {
+      logger.error({ err: error }, "Erreur récupération statut maintenance");
+      next(error);
+    }
+  }
+
+  /**
    * PUT /api/settings
    * Mettre à jour les paramètres système
    */
   static async updateSettings(req: Request, res: Response, next: NextFunction) {
     try {
       // Valider les données
-      const data = updateSettingsSchema.parse(req.body);
+      const validatedData = updateSettingsSchema.parse(req.body);
+
+      // Nettoyer les chaînes vides et convertir les dates
+      const data: any = { ...validatedData };
+      
+      // Convertir maintenanceScheduledAt en Date si présent et non vide
+      if (validatedData.maintenanceScheduledAt && validatedData.maintenanceScheduledAt !== '') {
+        data.maintenanceScheduledAt = new Date(validatedData.maintenanceScheduledAt);
+      } else {
+        data.maintenanceScheduledAt = null;
+      }
+
+      // Convertir les chaînes vides en null pour les champs optionnels
+      if (validatedData.maintenanceMessage === '') {
+        data.maintenanceMessage = null;
+      }
+      if (validatedData.teamsWebhookUrl === '') {
+        data.teamsWebhookUrl = null;
+      }
 
       // Mettre à jour
       const updated = await SettingsService.updateSettings(data);
@@ -210,6 +257,51 @@ export class SettingsController {
       });
     } catch (error) {
       logger.error({ err: error }, "Erreur test connexion IA");
+      next(error);
+    }
+  }
+
+  /**
+   * POST /api/settings/teams/test
+   * Teste le webhook Microsoft Teams
+   */
+  static async testTeamsWebhook(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { webhookUrl } = req.body;
+
+      if (!webhookUrl) {
+        return res.status(400).json({
+          success: false,
+          message: "URL du webhook Teams requise",
+        });
+      }
+
+      // Valider que c'est une URL
+      try {
+        new URL(webhookUrl);
+      } catch {
+        return res.status(400).json({
+          success: false,
+          message: "URL invalide",
+        });
+      }
+
+      // Tester le webhook
+      const success = await TeamsNotificationService.testWebhook(webhookUrl);
+
+      if (success) {
+        res.status(200).json({
+          success: true,
+          message: "Notification de test envoyée avec succès à Microsoft Teams",
+        });
+      } else {
+        res.status(400).json({
+          success: false,
+          message: "Échec de l'envoi de la notification de test",
+        });
+      }
+    } catch (error) {
+      logger.error({ err: error }, "Erreur test webhook Teams");
       next(error);
     }
   }

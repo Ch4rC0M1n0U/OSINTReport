@@ -13,6 +13,9 @@ interface UserInfo {
   grade: string | null;
   avatarUrl: string | null;
   signatureUrl: string | null;
+  timezone: string | null;
+  dateFormat: string | null;
+  firstDayOfWeek: string | null;
   roleName: string;
   permissions: string[];
 }

@@ -19,6 +19,14 @@ export interface SystemSettings {
   logoUrl?: string | null;
   primaryColor?: string | null;
   secondaryColor?: string | null;
+  // Paramètres de maintenance
+  maintenanceEnabled?: boolean;
+  maintenanceMessage?: string | null;
+  maintenanceScheduledAt?: string | null;
+  lockUserCreation?: boolean;
+  criticalAlertsEnabled?: boolean;
+  teamsWebhookUrl?: string | null;
+  teamsNotificationsEnabled?: boolean;
   createdAt: string;
   updatedAt: string;
 }

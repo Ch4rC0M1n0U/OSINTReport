@@ -3,10 +3,15 @@ import { Router } from "express";
 import { requireAuth, requirePermissions } from "@middleware/authenticate";
 import { PermissionCode } from "@modules/auth/auth.constants";
 import { UserController } from "@modules/users/user.controller";
+import { checkMaintenanceMode } from "@middleware/maintenance";
 
 import multer from "multer";
 
 const userRouter = Router();
+
+// Appliquer l'authentification et le mode maintenance sur toutes les routes
+userRouter.use(requireAuth);
+userRouter.use(checkMaintenanceMode);
 
 // Configure multer for memory storage
 const upload = multer({

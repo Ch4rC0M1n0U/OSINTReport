@@ -16,6 +16,9 @@ export type AuthenticatedUser = {
   grade: string | null;
   avatarUrl: string | null;
   signatureUrl: string | null;
+  timezone: string | null;
+  dateFormat: string | null;
+  firstDayOfWeek: string | null;
   roleId: string;
   roleName: string;
   permissions: PermissionCode[];
@@ -38,6 +41,9 @@ async function getUserWithRoleByEmail(email: string) {
       grade: true,
       avatarUrl: true,
       signatureUrl: true,
+      timezone: true,
+      dateFormat: true,
+      firstDayOfWeek: true,
       passwordHash: true,
       roleId: true,
       status: true,
@@ -69,6 +75,9 @@ function buildAuthenticatedUser(user: UserWithRole): AuthenticatedUser {
     grade: user.grade,
     avatarUrl: user.avatarUrl,
     signatureUrl: user.signatureUrl,
+    timezone: user.timezone,
+    dateFormat: user.dateFormat,
+    firstDayOfWeek: user.firstDayOfWeek,
     roleId: user.roleId,
     roleName: user.role.name,
     permissions: mapPermissions(user.role.permissions),
