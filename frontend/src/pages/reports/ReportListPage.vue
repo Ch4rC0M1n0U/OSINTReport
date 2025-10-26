@@ -52,99 +52,164 @@ function handlePageChange(direction: 1 | -1) {
 
 <template>
   <section class="space-y-6">
-    <header class="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-      <div>
-        <h2 class="text-2xl font-semibold">Rapports</h2>
-        <p class="text-sm text-base-content/70">
-          Recherchez vos rapports OSINT par statut, mots-clés ou agent.
-        </p>
-      </div>
-      <div class="flex gap-3">
-        <router-link to="/reports/new" class="btn btn-primary">
-          + Créer un rapport
+    <!-- En-tête -->
+    <header class="bg-base-200 border-l-4 border-primary p-6">
+      <div class="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+        <div class="flex-1">
+          <h2 class="text-3xl font-bold mb-2">Rapports OSINT</h2>
+          <p class="text-sm text-base-content/60">
+            Recherchez et gérez vos rapports d'investigation
+          </p>
+        </div>
+        <router-link to="/reports/new" class="btn btn-primary gap-2">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+          </svg>
+          Créer un rapport
         </router-link>
       </div>
     </header>
 
-    <header class="flex gap-3">
-      <div class="flex flex-1 gap-3">
-        <input
-          v-model="searchModel"
-          class="input input-bordered w-full md:w-72"
-          placeholder="Recherche (titre, dossier, service)"
-          type="search"
-        />
-        <select v-model="statusModel" class="select select-bordered">
-          <option value="">Tous les statuts</option>
-          <option value="DRAFT">Brouillon</option>
-          <option value="PUBLISHED">Publié</option>
-          <option value="ARCHIVED">Archivé</option>
-        </select>
-      </div>
-    </header>
-
-    <div class="card bg-base-100 shadow">
-      <div class="card-body p-0">
-        <div class="overflow-x-auto">
-          <table class="table">
-            <thead>
-              <tr>
-                <th>Titre</th>
-                <th>Statut</th>
-                <th>Émetteur</th>
-                <th>Émis le</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-if="loading">
-                <td colspan="4" class="text-center py-10">
-                  <span class="loading loading-spinner"></span>
-                </td>
-              </tr>
-              <tr v-else-if="error">
-                <td colspan="4" class="text-center text-error py-6">{{ error }}</td>
-              </tr>
-              <tr v-else-if="items.length === 0">
-                <td colspan="4" class="text-center py-6 text-base-content/70">
-                  Aucun rapport trouvé pour ces critères.
-                </td>
-              </tr>
-              <tr 
-                v-for="report in items" 
-                :key="report.id"
-                class="hover:bg-base-200 cursor-pointer"
-                @click="$router.push({ name: 'reports.detail', params: { id: report.id } })"
-              >
-                <td class="font-medium">
-                  {{ report.title }}
-                </td>
-                <td>
-                  <span class="badge badge-outline uppercase">{{ report.status }}</span>
-                </td>
-                <td>{{ report.owner.firstName }} {{ report.owner.lastName }}</td>
-                <td>{{ formatDate(report.issuedAt) }}</td>
-              </tr>
-            </tbody>
-          </table>
+    <!-- Filtres -->
+    <div class="bg-base-100 border-l-4 border-info shadow-sm p-6">
+      <div class="flex flex-col md:flex-row gap-4">
+        <div class="flex-1">
+          <label class="text-xs uppercase tracking-wider text-base-content/60 mb-2 block">
+            Recherche
+          </label>
+          <div class="relative">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-base-content/40">
+              <path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
+            </svg>
+            <input
+              v-model="searchModel"
+              class="input input-bordered w-full pl-10"
+              placeholder="Titre, numéro de dossier, service..."
+              type="search"
+            />
+          </div>
         </div>
-        <footer class="flex items-center justify-between border-t px-6 py-4 text-sm">
-          <span>
-            {{ items.length }} / {{ total }} résultats
-          </span>
+        <div class="md:w-64">
+          <label class="text-xs uppercase tracking-wider text-base-content/60 mb-2 block">
+            Statut
+          </label>
+          <select v-model="statusModel" class="select select-bordered w-full">
+            <option value="">Tous les statuts</option>
+            <option value="DRAFT">📝 Brouillon</option>
+            <option value="PUBLISHED">✅ Publié</option>
+            <option value="ARCHIVED">📦 Archivé</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- Liste des rapports -->
+    <div class="bg-base-100 border-l-4 border-success shadow-sm">
+      <div class="p-0">
+        <!-- En-tête de la liste -->
+        <div class="px-6 py-4 border-b border-base-200 bg-base-50">
+          <div class="grid grid-cols-12 gap-4 text-xs uppercase tracking-wider text-base-content/60 font-semibold">
+            <div class="col-span-5">Rapport</div>
+            <div class="col-span-2">Statut</div>
+            <div class="col-span-3">Émetteur</div>
+            <div class="col-span-2">Date d'émission</div>
+          </div>
+        </div>
+
+        <!-- Contenu -->
+        <div v-if="loading" class="text-center py-16">
+          <span class="loading loading-spinner loading-lg"></span>
+          <p class="text-sm text-base-content/60 mt-4">Chargement des rapports...</p>
+        </div>
+        
+        <div v-else-if="error" class="text-center py-16">
+          <div class="text-error text-xl mb-2">⚠️</div>
+          <p class="text-error font-semibold">{{ error }}</p>
+        </div>
+        
+        <div v-else-if="items.length === 0" class="text-center py-16">
+          <div class="text-6xl mb-4 opacity-20">📄</div>
+          <p class="text-base-content/60">Aucun rapport trouvé pour ces critères.</p>
+        </div>
+
+        <div v-else class="divide-y divide-base-200">
+          <div
+            v-for="report in items" 
+            :key="report.id"
+            class="px-6 py-4 hover:bg-base-50 cursor-pointer transition-colors border-l-4 border-transparent hover:border-primary"
+            @click="$router.push({ name: 'reports.detail', params: { id: report.id } })"
+          >
+            <div class="grid grid-cols-12 gap-4 items-center">
+              <!-- Titre -->
+              <div class="col-span-5">
+                <div class="font-semibold text-base">{{ report.title }}</div>
+              </div>
+
+              <!-- Statut -->
+              <div class="col-span-2">
+                <div class="flex items-center gap-2">
+                  <div 
+                    class="w-1 h-8 rounded-sm"
+                    :class="{
+                      'bg-warning': report.status === 'DRAFT',
+                      'bg-success': report.status === 'PUBLISHED',
+                      'bg-base-300': report.status === 'ARCHIVED'
+                    }"
+                  ></div>
+                  <div>
+                    <div class="font-medium text-sm">{{ report.status }}</div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Émetteur -->
+              <div class="col-span-3">
+                <div class="flex items-center gap-2">
+                  <div class="avatar placeholder">
+                    <div class="bg-neutral text-neutral-content w-8 h-8 rounded-sm">
+                      <span class="text-xs">{{ report.owner.firstName[0] }}{{ report.owner.lastName[0] }}</span>
+                    </div>
+                  </div>
+                  <div>
+                    <div class="font-medium text-sm">{{ report.owner.firstName }} {{ report.owner.lastName }}</div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Date -->
+              <div class="col-span-2">
+                <div class="text-sm text-base-content/70">{{ formatDate(report.issuedAt) }}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Pagination -->
+        <footer class="flex items-center justify-between border-t border-base-200 px-6 py-4 bg-base-50">
+          <div class="text-sm text-base-content/60">
+            <span class="font-semibold text-base-content">{{ items.length }}</span> sur 
+            <span class="font-semibold text-base-content">{{ total }}</span> résultats
+          </div>
           <div class="join">
             <button
-              class="btn btn-outline btn-sm join-item"
+              class="btn btn-sm join-item"
               :disabled="!hasPrevious || loading"
               @click="handlePageChange(-1)"
             >
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
+              </svg>
               Précédent
             </button>
             <button
-              class="btn btn-outline btn-sm join-item"
+              class="btn btn-sm join-item"
               :disabled="!hasNext || loading"
               @click="handlePageChange(1)"
             >
               Suivant
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
+                <path stroke-linecap="round" stroke-linejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
+              </svg>
             </button>
           </div>
         </footer>
