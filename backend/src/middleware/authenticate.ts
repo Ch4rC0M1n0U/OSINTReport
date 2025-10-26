@@ -25,6 +25,7 @@ export async function requireAuth(req: Request, _res: Response, next: NextFuncti
       phone: user.phone,
       grade: user.grade,
       avatarUrl: user.avatarUrl,
+      signatureUrl: user.signatureUrl,
       roleId: user.roleId,
       roleName: user.roleName,
       permissions: user.permissions,

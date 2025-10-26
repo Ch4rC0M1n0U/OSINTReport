@@ -8,3 +8,11 @@ frontend/.env
 frontend/dist/
 postgres-data/
 *.log
+
+# Signatures manuscrites (données sensibles)
+frontend/public/images/signatures/
+!frontend/public/images/signatures/.gitkeep
+
+# Avatars utilisateurs (données personnelles)
+frontend/public/images/avatars/
+!frontend/public/images/avatars/.gitkeep

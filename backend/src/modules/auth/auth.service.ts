@@ -15,6 +15,7 @@ export type AuthenticatedUser = {
   phone: string | null;
   grade: string | null;
   avatarUrl: string | null;
+  signatureUrl: string | null;
   roleId: string;
   roleName: string;
   permissions: PermissionCode[];
@@ -36,6 +37,7 @@ async function getUserWithRoleByEmail(email: string) {
       phone: true,
       grade: true,
       avatarUrl: true,
+      signatureUrl: true,
       passwordHash: true,
       roleId: true,
       status: true,
@@ -66,6 +68,7 @@ function buildAuthenticatedUser(user: UserWithRole): AuthenticatedUser {
     phone: user.phone,
     grade: user.grade,
     avatarUrl: user.avatarUrl,
+    signatureUrl: user.signatureUrl,
     roleId: user.roleId,
     roleName: user.role.name,
     permissions: mapPermissions(user.role.permissions),

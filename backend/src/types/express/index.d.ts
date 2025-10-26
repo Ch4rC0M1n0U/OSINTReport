@@ -11,6 +11,7 @@ declare global {
       phone: string | null;
       grade: string | null;
       avatarUrl: string | null;
+      signatureUrl: string | null;
       roleId: string;
       roleName: string;
       permissions: PermissionCode[];

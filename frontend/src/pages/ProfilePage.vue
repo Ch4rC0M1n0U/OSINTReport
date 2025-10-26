@@ -231,6 +231,7 @@ async function handleSignatureSave(dataUrl: string) {
       message.value = null;
     }, 3000);
   } catch (err: any) {
+    console.error('Error saving signature:', err);
     message.value = {
       type: "error",
       text: err.response?.data?.message || "Erreur lors de l'enregistrement de la signature",
@@ -543,49 +544,76 @@ async function removeSignature() {
       </div>
 
       <div class="p-6">
-        <!-- Current signature display -->
-        <div v-if="profileForm.signatureUrl && !showSignaturePad" class="mb-6">
+        <!-- Signature display area - Always visible -->
+        <div class="mb-6">
           <label class="label">
-            <span class="label-text font-medium">Signature actuelle</span>
+            <span class="label-text font-medium">
+              {{ showSignaturePad ? 'Dessinez votre signature' : 'Ma signature' }}
+            </span>
           </label>
-          <div class="inline-block max-w-md">
-            <ProtectedSignature 
-              :src="profileForm.signatureUrl"
-              max-height="200px"
+          
+          <!-- Signature pad for drawing -->
+          <div v-if="showSignaturePad">
+            <SignaturePad 
+              @save="handleSignatureSave"
+              @cancel="handleSignatureCancel"
             />
+          </div>
+          
+          <!-- Current signature or placeholder -->
+          <div v-else>
+            <!-- Signature exists -->
+            <div v-if="profileForm.signatureUrl" class="inline-block max-w-md w-full">
+              <ProtectedSignature 
+                :src="profileForm.signatureUrl"
+                max-height="200px"
+              />
+            </div>
+            
+            <!-- No signature placeholder -->
+            <div v-else class="border-2 border-dashed border-base-300 rounded-lg p-8 bg-base-50 text-center">
+              <HugeiconsIcon :icon="PencilEdit01Icon" class="w-16 h-16 mx-auto text-base-300 mb-3" />
+              <p class="text-base-content/60 font-medium mb-2">Aucune signature enregistrée</p>
+              <p class="text-sm text-base-content/40">
+                Ajoutez votre signature manuscrite pour personnaliser vos rapports
+              </p>
+            </div>
           </div>
         </div>
 
-        <!-- Signature pad -->
-        <div v-if="showSignaturePad" class="mb-6">
-          <label class="label">
-            <span class="label-text font-medium">Dessinez votre signature</span>
-          </label>
-          <SignaturePad 
-            @save="handleSignatureSave"
-            @cancel="handleSignatureCancel"
-          />
-        </div>
-
         <!-- Action buttons -->
-        <div class="flex gap-2">
-          <button 
-            v-if="!showSignaturePad"
-            @click="showSignaturePad = true"
-            class="btn btn-primary btn-sm"
-          >
-            <HugeiconsIcon :icon="PencilEdit01Icon" class="w-4 h-4" />
-            {{ profileForm.signatureUrl ? 'Modifier la signature' : 'Ajouter une signature' }}
-          </button>
-          <button 
-            v-if="profileForm.signatureUrl && !showSignaturePad"
-            @click="removeSignature"
-            class="btn btn-outline btn-error btn-sm"
-            :disabled="saving"
-          >
-            <HugeiconsIcon :icon="Cancel01Icon" class="w-4 h-4" />
-            Supprimer la signature
-          </button>
+        <div class="flex gap-2 flex-wrap">
+          <!-- When signature pad is NOT showing -->
+          <template v-if="!showSignaturePad">
+            <!-- If signature exists: Show Modify and Delete buttons -->
+            <template v-if="profileForm.signatureUrl">
+              <button 
+                @click="showSignaturePad = true"
+                class="btn btn-primary btn-sm"
+              >
+                <HugeiconsIcon :icon="PencilEdit01Icon" class="w-4 h-4" />
+                Modifier la signature
+              </button>
+              <button 
+                @click="removeSignature"
+                class="btn btn-outline btn-error btn-sm"
+                :disabled="saving"
+              >
+                <HugeiconsIcon :icon="Cancel01Icon" class="w-4 h-4" />
+                Supprimer la signature
+              </button>
+            </template>
+            
+            <!-- If no signature: Show only Add button -->
+            <button 
+              v-else
+              @click="showSignaturePad = true"
+              class="btn btn-primary btn-sm"
+            >
+              <HugeiconsIcon :icon="PencilEdit01Icon" class="w-4 h-4" />
+              Ajouter une signature
+            </button>
+          </template>
         </div>
       </div>
     </div>

@@ -83,6 +83,7 @@ function draw(e: MouseEvent | TouchEvent) {
   
   lastX.value = coords.x;
   lastY.value = coords.y;
+  
   hasDrawn.value = true;
 }
 
@@ -97,7 +98,9 @@ function clearCanvas() {
 }
 
 function saveSignature() {
-  if (!canvas.value || !hasDrawn.value) return;
+  if (!canvas.value || !hasDrawn.value) {
+    return;
+  }
   
   // Convert canvas to data URL (PNG with transparent background)
   const dataUrl = canvas.value.toDataURL("image/png");

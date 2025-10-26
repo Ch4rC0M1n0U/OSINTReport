@@ -571,6 +571,18 @@
       margin: 5px 0;
     }
 
+    .signature-image-container {
+      margin-bottom: 10px;
+      display: inline-block;
+    }
+
+    .signature-image {
+      max-width: 200px;
+      max-height: 80px;
+      height: auto;
+      display: block;
+    }
+
     /* Utilitaires */
     .text-center {
       text-align: center;
@@ -806,6 +818,11 @@
     {{/if}}
 
     <div class="signature-block">
+      {{#if owner.signatureBase64}}
+      <div class="signature-image-container">
+        <img src="{{owner.signatureBase64}}" alt="Signature" class="signature-image" />
+      </div>
+      {{/if}}
       <p><strong>{{officer}}</strong></p>
       <p>{{officerRank}}</p>
       <p>{{reportingUnit}}</p>

@@ -111,6 +111,7 @@ export class PDFService {
             lastName: true,
             email: true,
             matricule: true,
+            signatureUrl: true,
           },
         },
         modules: {
@@ -255,6 +256,33 @@ export class PDFService {
       }
     }
 
+    // Préparer la signature de l'utilisateur en base64 (si elle existe)
+    let signatureBase64: string | null = null;
+    if (report.owner.signatureUrl) {
+      try {
+        // Le signatureUrl est relatif type "/images/signatures/xxx.png"
+        const relativePath = report.owner.signatureUrl.startsWith('/') 
+          ? report.owner.signatureUrl.substring(1) 
+          : report.owner.signatureUrl;
+        
+        // Chemin vers frontend/public
+        const signaturePath = resolve(join(__dirname, "../../../..", "frontend", "public", relativePath));
+        const fs = require('fs');
+        
+        if (fs.existsSync(signaturePath)) {
+          // Convertir l'image en base64
+          const imageBuffer = fs.readFileSync(signaturePath);
+          const base64Image = imageBuffer.toString('base64');
+          signatureBase64 = `data:image/png;base64,${base64Image}`;
+          logger.debug(`Signature convertie en base64 (${(base64Image.length / 1024).toFixed(2)} KB)`);
+        } else {
+          logger.warn(`Signature file not found: ${signaturePath}`);
+        }
+      } catch (error) {
+        logger.error(`Error loading signature: ${error}`);
+      }
+    }
+
     return {
       // Paramètres système
       serviceName: systemSettings.serviceName || "OSINT",
@@ -297,6 +325,7 @@ export class PDFService {
       owner: {
         name: `${report.owner.firstName} ${report.owner.lastName}`,
         matricule: report.owner.matricule || "N/A",
+        signatureBase64: signatureBase64,
       },
       officer: options.officerName || `${report.owner.firstName} ${report.owner.lastName}`,
       officerRank: options.officerRank || "Inspecteur",
