@@ -12,24 +12,6 @@ import { useAuthStore } from '@/stores/auth';
 
 const authStore = useAuthStore();
 
-const featureFlags = [
-  {
-    label: "Activer l'audit avancé",
-    description: "Journalise les actions sensibles dans le journal d'audit détaillé.",
-    enabled: true,
-  },
-  {
-    label: "Autoriser le relais d'alertes",
-    description: "Diffuse automatiquement les alertes critiques aux équipes abonnées.",
-    enabled: false,
-  },
-  {
-    label: "Verrouillage temporaire",
-    description: "Force la révocation des sessions inactives après 24h.",
-    enabled: true,
-  },
-];
-
 // Paramètres généraux
 const generalSettings = ref({
   maintenanceEnabled: false,
@@ -390,31 +372,6 @@ onMounted(() => {
             </button>
           </div>
         </div>
-      </div>
-    </div>
-
-    <div class="card bg-base-100 shadow">
-      <div class="card-body space-y-4">
-        <h3 class="card-title text-lg">Fonctionnalités bêta</h3>
-        <p class="text-sm text-base-content/70">
-          Activez temporairement des fonctionnalités en cours d'évaluation pour un sous-ensemble d'équipes.
-        </p>
-        <ul class="space-y-3">
-          <li
-            v-for="flag in featureFlags"
-            :key="flag.label"
-            class="flex flex-col gap-1 rounded border border-base-200 p-4 sm:flex-row sm:items-center sm:justify-between"
-          >
-            <div>
-              <p class="font-medium">{{ flag.label }}</p>
-              <p class="text-sm text-base-content/60">{{ flag.description }}</p>
-            </div>
-            <label class="label cursor-pointer justify-end gap-3">
-              <span class="label-text text-sm">{{ flag.enabled ? "Activé" : "Désactivé" }}</span>
-              <input type="checkbox" class="toggle toggle-accent" :checked="flag.enabled" />
-            </label>
-          </li>
-        </ul>
       </div>
     </div>
 
