@@ -38,8 +38,6 @@ export interface SystemSettings {
   lockUserCreation?: boolean;
   // Notifications
   criticalAlertsEnabled?: boolean;
-  teamsWebhookUrl?: string | null;
-  teamsNotificationsEnabled?: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -65,8 +63,6 @@ export interface UpdateSettingsData {
   lockUserCreation?: boolean;
   // Notifications
   criticalAlertsEnabled?: boolean;
-  teamsWebhookUrl?: string | null;
-  teamsNotificationsEnabled?: boolean;
 }
 
 export interface AISettings {

@@ -134,16 +134,4 @@ router.post(
   SettingsController.testAIConnection
 );
 
-/**
- * POST /api/settings/teams/test
- * Tester le webhook Microsoft Teams
- * Requiert : authentification + permission SYSTEM_SETTINGS
- */
-router.post(
-  "/teams/test",
-  requireAuth,
-  requirePermissions(PermissionCode.SYSTEM_SETTINGS),
-  SettingsController.testTeamsWebhook
-);
-
 export default router;

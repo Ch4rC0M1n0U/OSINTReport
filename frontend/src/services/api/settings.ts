@@ -25,8 +25,6 @@ export interface SystemSettings {
   maintenanceScheduledAt?: string | null;
   lockUserCreation?: boolean;
   criticalAlertsEnabled?: boolean;
-  teamsWebhookUrl?: string | null;
-  teamsNotificationsEnabled?: boolean;
   createdAt: string;
   updatedAt: string;
 }

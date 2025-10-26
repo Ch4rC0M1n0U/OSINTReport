@@ -398,8 +398,6 @@ model SystemSettings {
   
   // Notifications
   criticalAlertsEnabled Boolean   @default(true) // Alertes critiques par email
-  teamsWebhookUrl       String?   // URL du webhook Microsoft Teams
-  teamsNotificationsEnabled Boolean @default(false) // Notifications Teams activées
   
   // Métadonnées
   createdAt DateTime @default(now())

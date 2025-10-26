@@ -41,15 +41,12 @@ const generalSettings = ref({
 // Paramètres de notifications
 const notificationSettings = ref({
   criticalAlertsEnabled: true,
-  teamsWebhookUrl: '',
-  teamsNotificationsEnabled: false,
 });
 
 const savingGeneral = ref(false);
 const savingNotifications = ref(false);
 const generalMessage = ref<{ type: 'success' | 'error', text: string } | null>(null);
 const notificationMessage = ref<{ type: 'success' | 'error', text: string } | null>(null);
-const testingTeams = ref(false);
 
 // État des tâches CRON
 const cronStatus = ref<any>(null);
@@ -123,8 +120,6 @@ async function loadSettings() {
 
     notificationSettings.value = {
       criticalAlertsEnabled: settings.criticalAlertsEnabled !== false,
-      teamsWebhookUrl: settings.teamsWebhookUrl || '',
-      teamsNotificationsEnabled: settings.teamsNotificationsEnabled || false,
     };
   } catch (error) {
     console.error('Erreur chargement paramètres:', error);
@@ -194,8 +189,6 @@ async function saveNotificationSettings() {
     // Préparer les données en nettoyant les valeurs vides
     const payload = {
       criticalAlertsEnabled: notificationSettings.value.criticalAlertsEnabled,
-      teamsWebhookUrl: notificationSettings.value.teamsWebhookUrl || null,
-      teamsNotificationsEnabled: notificationSettings.value.teamsNotificationsEnabled,
     };
 
     console.log('Envoi des paramètres de notification:', payload);
@@ -230,38 +223,6 @@ async function saveNotificationSettings() {
     };
   } finally {
     savingNotifications.value = false;
-  }
-}
-
-// Tester le webhook Teams
-async function testTeamsWebhook() {
-  if (!notificationSettings.value.teamsWebhookUrl) {
-    notificationMessage.value = {
-      type: 'error',
-      text: 'Veuillez saisir une URL de webhook Teams',
-    };
-    return;
-  }
-
-  testingTeams.value = true;
-  notificationMessage.value = null;
-
-  try {
-    await api.post('/settings/teams/test', {
-      webhookUrl: notificationSettings.value.teamsWebhookUrl,
-    });
-
-    notificationMessage.value = {
-      type: 'success',
-      text: 'Notification de test envoyée ! Vérifiez votre canal Teams.',
-    };
-  } catch (error: any) {
-    notificationMessage.value = {
-      type: 'error',
-      text: error.response?.data?.message || 'Échec du test',
-    };
-  } finally {
-    testingTeams.value = false;
   }
 }
 
@@ -418,54 +379,7 @@ onMounted(() => {
             </span>
           </div>
 
-          <div class="form-control">
-            <label class="label cursor-pointer justify-between gap-4">
-              <span class="label-text">Notifications Microsoft Teams</span>
-              <input 
-                type="checkbox" 
-                class="toggle toggle-secondary"
-                v-model="notificationSettings.teamsNotificationsEnabled"
-              />
-            </label>
-            <span class="label-text-alt text-base-content/60">
-              Nécessite un webhook Teams valide.
-            </span>
-          </div>
-
-          <!-- Webhook URL -->
-          <div v-if="notificationSettings.teamsNotificationsEnabled" class="form-control">
-            <label class="label">
-              <span class="label-text">URL du webhook Teams</span>
-            </label>
-            <input 
-              type="url" 
-              class="input input-bordered w-full"
-              placeholder="https://outlook.office.com/webhook/..."
-              v-model="notificationSettings.teamsWebhookUrl"
-            />
-            <label class="label">
-              <span class="label-text-alt">
-                <a 
-                  href="https://learn.microsoft.com/en-us/microsoftteams/platform/webhooks-and-connectors/how-to/add-incoming-webhook" 
-                  target="_blank"
-                  class="link link-primary"
-                >
-                  Comment créer un webhook Teams ?
-                </a>
-              </span>
-            </label>
-          </div>
-
           <div class="flex gap-2 justify-end">
-            <button 
-              v-if="notificationSettings.teamsNotificationsEnabled && notificationSettings.teamsWebhookUrl"
-              class="btn btn-ghost btn-sm"
-              @click="testTeamsWebhook"
-              :disabled="testingTeams"
-            >
-              <span v-if="testingTeams" class="loading loading-spinner loading-xs"></span>
-              {{ testingTeams ? 'Test...' : 'Tester' }}
-            </button>
             <button 
               class="btn btn-secondary btn-sm"
               @click="saveNotificationSettings"
