@@ -938,16 +938,16 @@ export class SearchService {
    * Extraire toutes les données des rapports pour affichage
    */
   static async getExtractedData(): Promise<{
-    phones: Array<{ value: string; reports: string[]; count: number }>;
-    emails: Array<{ value: string; reports: string[]; count: number }>;
-    names: Array<{ value: string; reports: string[]; count: number }>;
-    addresses: Array<{ value: string; reports: string[]; count: number }>;
-    urls: Array<{ value: string; reports: string[]; count: number }>;
-    accounts: Array<{ value: string; reports: string[]; count: number }>;
-    platforms: Array<{ value: string; reports: string[]; count: number }>;
-    companies: Array<{ value: string; reports: string[]; count: number }>;
-    aliases: Array<{ value: string; reports: string[]; count: number }>;
-    identifierTypes: Array<{ value: string; reports: string[]; count: number }>;
+    phones: Array<{ value: string; reports: Array<{ id: string; title: string; caseNumber: string | null }>; count: number }>;
+    emails: Array<{ value: string; reports: Array<{ id: string; title: string; caseNumber: string | null }>; count: number }>;
+    names: Array<{ value: string; reports: Array<{ id: string; title: string; caseNumber: string | null }>; count: number }>;
+    addresses: Array<{ value: string; reports: Array<{ id: string; title: string; caseNumber: string | null }>; count: number }>;
+    urls: Array<{ value: string; reports: Array<{ id: string; title: string; caseNumber: string | null }>; count: number }>;
+    accounts: Array<{ value: string; reports: Array<{ id: string; title: string; caseNumber: string | null }>; count: number }>;
+    platforms: Array<{ value: string; reports: Array<{ id: string; title: string; caseNumber: string | null }>; count: number }>;
+    companies: Array<{ value: string; reports: Array<{ id: string; title: string; caseNumber: string | null }>; count: number }>;
+    aliases: Array<{ value: string; reports: Array<{ id: string; title: string; caseNumber: string | null }>; count: number }>;
+    identifierTypes: Array<{ value: string; reports: Array<{ id: string; title: string; caseNumber: string | null }>; count: number }>;
     stats: {
       totalPhones: number;
       totalEmails: number;
@@ -990,9 +990,14 @@ export class SearchService {
       const aliasesMap = new Map<string, Set<string>>();
       const identifierTypesMap = new Map<string, Set<string>>();
 
+      // Créer un map des rapports pour accès rapide
+      const reportsMap = new Map(
+        reports.map((r) => [r.id, { id: r.id, title: r.title, caseNumber: r.caseNumber }])
+      );
+
       // Extraire les données de chaque rapport
       reports.forEach((report) => {
-        const reportId = `${report.caseNumber || report.id}`;
+        const reportId = report.id; // Utiliser l'ID réel du rapport (UUID)
         const extractedData = this.extractEntities(report.modules);
 
         // Agréger les données
@@ -1052,7 +1057,7 @@ export class SearchService {
         Array.from(map.entries())
           .map(([value, reportIds]) => ({
             value,
-            reports: Array.from(reportIds),
+            reports: Array.from(reportIds).map(id => reportsMap.get(id)!),
             count: reportIds.size,
           }))
           .sort((a, b) => b.count - a.count);

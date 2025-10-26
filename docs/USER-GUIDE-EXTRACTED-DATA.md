@@ -36,6 +36,7 @@ Barre de recherche pour **trouver rapidement** une donnée spécifique (email, t
 ### 3. Tableau détaillé
 
 Chaque ligne affiche :
+
 - **Type** (badge coloré)
 - **Valeur** (la donnée elle-même)
 - **Rapports** (combien de rapports la contiennent)
@@ -54,6 +55,7 @@ Cliquez sur "🔍 Rechercher" pour une donnée → vous êtes **redirigé vers l
 **Problème** : Vous avez 30 rapports et cherchez tous ceux qui mentionnent `contact@suspect.com`
 
 **Solution rapide** :
+
 1. Allez dans "Données extraites"
 2. Tapez "contact@suspect.com" dans la recherche
 3. Voyez combien de rapports le mentionnent
@@ -65,10 +67,10 @@ Les données ne se mettent **pas à jour automatiquement**. Cliquez sur le bouto
 
 ## 🆚 Différence avec "Entités"
 
-| Onglet | Source | Modification |
-|--------|--------|--------------|
-| **Entités** | Création manuelle | ✅ Créer, modifier, supprimer |
-| **Données extraites** | Extraction automatique des rapports | ❌ Lecture seule |
+| Onglet                | Source                              | Modification                  |
+| --------------------- | ----------------------------------- | ----------------------------- |
+| **Entités**           | Création manuelle                   | ✅ Créer, modifier, supprimer |
+| **Données extraites** | Extraction automatique des rapports | ❌ Lecture seule              |
 
 ## 📊 Limite
 
@@ -98,7 +100,7 @@ Pour des raisons de performance, seuls les **100 premiers résultats** s'affiche
 ✅ **Recherche cross-rapports** en 2 clics  
 ✅ **Statistiques instantanées** de votre base de données  
 ✅ **Traçabilité** : voir quels rapports contiennent chaque information  
-✅ **Gain de temps** : plus besoin de chercher manuellement dans tous les rapports  
+✅ **Gain de temps** : plus besoin de chercher manuellement dans tous les rapports
 
 ---
 

@@ -24,7 +24,7 @@ L'indexation MeiliSearch initiale ne capturait que les éléments principaux des
 ```typescript
 interface SearchableReport {
   // ... champs existants ...
-  
+
   entities: {
     phones: string[];
     emails: string[];
@@ -33,12 +33,12 @@ interface SearchableReport {
     urls: string[];
     accounts: string[];
   };
-  
+
   // NOUVEAU : Métadonnées supplémentaires
   metadata: {
-    platforms: string[];      // Noms de plateformes (Facebook, Instagram, etc.)
-    companies: string[];      // Noms d'entreprises (raison sociale, nom commercial)
-    aliases: string[];        // Pseudos, usernames, handles
+    platforms: string[]; // Noms de plateformes (Facebook, Instagram, etc.)
+    companies: string[]; // Noms d'entreprises (raison sociale, nom commercial)
+    aliases: string[]; // Pseudos, usernames, handles
     identifierTypes: string[]; // Types d'identifiants recherchés (phone, email, rrn, etc.)
   };
 }
@@ -47,10 +47,12 @@ interface SearchableReport {
 ### 2. Extraction complète par type de module
 
 #### **Module `entities`**
+
 - ✅ Extraction des findings avec métadonnées
 - ✅ Label de l'entité liée
 
 #### **Module `entity_overview`**
+
 - ✅ Extraction complète des métadonnées
 - ✅ PersonDetails : nom complet, téléphones, email, adresse, nationalité
 - ✅ CompanyDetails : raison sociale, nom commercial, téléphones, adresses (siège + opérationnelles), site web, numéro SIRET/TVA
@@ -58,11 +60,13 @@ interface SearchableReport {
 - ✅ Context avec extraction par regex
 
 #### **Module `identifier_lookup`**
+
 - ✅ Valeur de l'identifiant cherché
 - ✅ Type d'identifiant (phone, email, username, rrn, alias)
 - ✅ Extraction des findings
 
 #### **Module `platform_analysis`**
+
 - ✅ Nom de plateforme (indexé dans `metadata.platforms`)
 - ✅ URL de plateforme
 - ✅ Username, handle (indexés dans `metadata.aliases`)
@@ -70,27 +74,34 @@ interface SearchableReport {
 - ✅ Extraction complète des findings
 
 #### **Module `research_summary`**
+
 - ✅ Extraction depuis le résumé (regex pour téléphones, emails, URLs)
 - ✅ Éléments non trouvés (identifiants cherchés)
 
 #### **Module `media_gallery`**
+
 - ✅ Captions des médias (extraction par regex)
 - ✅ Sources des médias
 
 #### **Module `data_retention`**
+
 - ✅ Labels et locations des datasets
 
 #### **Module `investigation_leads`**
+
 - ✅ Plateformes visées
 - ✅ Bases légales (extraction d'URLs)
 
 #### **Module `sign_off`**
+
 - ✅ Informations de l'officier (nom, grade, unité, matricule)
 
 #### **Modules textuels** (`summary`, `objectives`, `conclusions`)
+
 - ✅ Extraction générique par regex
 
 #### **RichTextBlocks** (nouveauté v2.1)
+
 - ✅ Extraction depuis tous les blocs de texte enrichi
 - ✅ Support des entités embarquées
 
@@ -135,36 +146,53 @@ Pour **tous les findings** de tous les modules :
 ### 4. Configuration MeiliSearch mise à jour
 
 **Attributs recherchables** (`searchableAttributes`) :
+
 ```javascript
 [
-  "title", "caseNumber", "reportNumber",
-  "purpose", "summary", "investigationContext",
-  "keywords", "modulesContent", "ownerName",
-  "entities.phones", "entities.emails", "entities.names",
-  "entities.addresses", "entities.urls", "entities.accounts",
-  "metadata.platforms",      // NOUVEAU
-  "metadata.companies",      // NOUVEAU
-  "metadata.aliases",        // NOUVEAU
-  "metadata.identifierTypes" // NOUVEAU
-]
+  "title",
+  "caseNumber",
+  "reportNumber",
+  "purpose",
+  "summary",
+  "investigationContext",
+  "keywords",
+  "modulesContent",
+  "ownerName",
+  "entities.phones",
+  "entities.emails",
+  "entities.names",
+  "entities.addresses",
+  "entities.urls",
+  "entities.accounts",
+  "metadata.platforms", // NOUVEAU
+  "metadata.companies", // NOUVEAU
+  "metadata.aliases", // NOUVEAU
+  "metadata.identifierTypes", // NOUVEAU
+];
 ```
 
 **Attributs filtrables** (`filterableAttributes`) :
+
 ```javascript
 [
-  "status", "urgencyLevel", "classification",
-  "ownerId", "createdAt", "issuedAt",
+  "status",
+  "urgencyLevel",
+  "classification",
+  "ownerId",
+  "createdAt",
+  "issuedAt",
   "entities.*",
-  "metadata.platforms",      // NOUVEAU
-  "metadata.companies",      // NOUVEAU
-  "metadata.aliases",        // NOUVEAU
-  "metadata.identifierTypes" // NOUVEAU
-]
+  "metadata.platforms", // NOUVEAU
+  "metadata.companies", // NOUVEAU
+  "metadata.aliases", // NOUVEAU
+  "metadata.identifierTypes", // NOUVEAU
+];
 ```
 
 ## 📊 Exemples de recherche améliorée
 
 ### Recherche par nom d'entreprise
+
 ```
 Query: "Acme Corporation"
 → Trouve les rapports mentionnant cette entreprise dans :
@@ -174,6 +202,7 @@ Query: "Acme Corporation"
 ```
 
 ### Recherche par plateforme
+
 ```
 Query: "Instagram"
 → Trouve les rapports avec analyse Instagram dans :
@@ -182,6 +211,7 @@ Query: "Instagram"
 ```
 
 ### Recherche par pseudo
+
 ```
 Query: "dark_knight_92"
 → Trouve les rapports mentionnant ce pseudo dans :
@@ -191,6 +221,7 @@ Query: "dark_knight_92"
 ```
 
 ### Recherche par type d'identifiant
+
 ```
 Filter: metadata.identifierTypes = "rrn"
 → Trouve tous les rapports ayant effectué une recherche par numéro de registre national
@@ -199,6 +230,7 @@ Filter: metadata.identifierTypes = "rrn"
 ## 🔄 Déduplication et normalisation
 
 Toutes les entités extraites sont :
+
 - ✅ **Dédupliquées** : `[...new Set()]`
 - ✅ **Nettoyées** : `.trim()` sur tous les éléments
 - ✅ **Normalisées** : `.toLowerCase()` pour les emails
@@ -206,12 +238,14 @@ Toutes les entités extraites sont :
 ## 🚀 Migration et réindexation
 
 ### Commande de réindexation complète
+
 ```bash
 # Via l'interface Admin > Gestion de la recherche
 # Bouton "Réindexer"
 ```
 
 ### Réindexation automatique
+
 - ✅ Nouveau rapport créé → indexé automatiquement
 - ✅ Rapport modifié → réindexé automatiquement
 - ✅ Rapport supprimé → retiré de l'index automatiquement
@@ -219,15 +253,18 @@ Toutes les entités extraites sont :
 ## 📈 Impact attendu
 
 ### Détection de corrélations
+
 - **Avant** : Seulement les noms, emails, téléphones de premier niveau
 - **Après** : Tous les sous-éléments (entreprises, plateformes, pseudos, identifiants)
 
 ### Qualité de recherche
+
 - **+400%** de données indexées
 - **Granularité** : Recherche par type d'entité spécifique
 - **Filtrage avancé** : Par plateforme, entreprise, type d'identifiant
 
 ### Performance
+
 - ✅ Pas d'impact sur les performances (extraction lors de l'indexation uniquement)
 - ✅ Recherche ultra-rapide grâce à MeiliSearch
 
@@ -242,6 +279,7 @@ Toutes les entités extraites sont :
 ## 📝 Notes techniques
 
 ### Fichiers modifiés
+
 - `/backend/src/modules/search/search.service.ts`
   - Interface `SearchableReport` étendue
   - Méthode `extractEntities()` complètement refactorisée
@@ -249,11 +287,13 @@ Toutes les entités extraites sont :
   - Construction des `SearchableReport` adaptée
 
 ### Rétrocompatibilité
+
 - ✅ **100% compatible** avec les rapports existants
 - ✅ Pas de migration de base de données nécessaire
 - ✅ Réindexation suffit pour activer les nouvelles fonctionnalités
 
 ### Performance
+
 - Temps d'indexation : **~50ms par rapport** (inchangé)
 - Temps de recherche : **<5ms** (inchangé, optimisé par MeiliSearch)
 - Taille de l'index : **+15%** environ
@@ -280,6 +320,7 @@ L'indexation MeiliSearch est maintenant **exhaustive** et capture **tous les él
 ---
 
 **Prochaines étapes suggérées :**
+
 - [ ] Ajouter des facettes dans l'interface de recherche (filtrer par plateforme, entreprise)
 - [ ] Dashboard de statistiques sur les entités indexées
 - [ ] Export des corrélations détectées

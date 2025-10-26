@@ -20,6 +20,7 @@ docker-compose ps
 ```
 
 Vous devriez voir :
+
 - `osintreport-backend` (port 3000)
 - `osintreport-frontend` (port 5173)
 - `postgres` (port 5432)
@@ -40,6 +41,7 @@ docker-compose exec backend npx prisma db seed
 Ouvrez votre navigateur : **http://localhost:5173**
 
 Identifiants par défaut :
+
 - Email : `admin@osintreport.local`
 - Mot de passe : `admin`
 
@@ -88,6 +90,7 @@ curl -H "Authorization: Bearer $TOKEN" \
 ```
 
 Réponse attendue :
+
 ```json
 {
   "phones": [
@@ -119,6 +122,7 @@ Réponse attendue :
 ```
 
 Le script va :
+
 1. Vérifier que le serveur est accessible
 2. Tester l'authentification
 3. Appeler l'endpoint `/api/search/extracted`
@@ -206,6 +210,7 @@ Le script va :
 **Cause** : Aucun rapport créé ou aucune donnée dans les modules
 
 **Solution** :
+
 1. Vérifier qu'il existe des rapports dans l'application
 2. Vérifier que les rapports contiennent des modules avec données
 3. Aller dans Administration > Gestion de la recherche > Actualiser les statistiques
@@ -215,6 +220,7 @@ Le script va :
 **Cause** : Token invalide ou expiré
 
 **Solution** :
+
 ```bash
 # Obtenir un nouveau token
 TOKEN=$(curl -s -X POST http://localhost:3000/api/auth/login \
@@ -230,6 +236,7 @@ echo $TOKEN
 **Cause** : Trop de rapports dans la base
 
 **Solution** :
+
 1. C'est normal avec beaucoup de rapports (pas de cache)
 2. Optimisation future possible avec Redis
 3. En attendant, utiliser les filtres pour réduire les résultats
@@ -239,6 +246,7 @@ echo $TOKEN
 **Cause** : Pas de normalisation de la casse
 
 **Solution** :
+
 - C'est un comportement normal pour l'instant
 - Optimisation future : normalisation côté backend
 - En attendant, faire attention à la casse lors de la saisie
@@ -248,6 +256,7 @@ echo $TOKEN
 Pour tester efficacement, créez des rapports avec :
 
 ### Rapport 1 : "John Doe - Profil LinkedIn"
+
 - Module **Vue d'ensemble** :
   - Détails personne : John Doe, john.doe@gmail.com, +33 6 12 34 56 78
 - Module **Analyse de plateforme** :
@@ -256,6 +265,7 @@ Pour tester efficacement, créez des rapports avec :
   - Username : johndoe
 
 ### Rapport 2 : "Acme Corp - Entreprise"
+
 - Module **Vue d'ensemble** :
   - Détails entreprise : Acme Corp, contact@acme.com, +33 1 23 45 67 89
   - Adresse : 123 Rue de Paris, 75001 Paris, France
@@ -264,6 +274,7 @@ Pour tester efficacement, créez des rapports avec :
   - URL : https://linkedin.com/company/acme-corp
 
 ### Rapport 3 : "Jane Smith - Multi-plateformes"
+
 - Module **Vue d'ensemble** :
   - Détails personne : Jane Smith, jane.smith@example.com
 - Module **Analyse de plateforme** (×3) :
@@ -272,6 +283,7 @@ Pour tester efficacement, créez des rapports avec :
   - Instagram (@janesmith)
 
 **Résultat attendu dans "Données extraites"** :
+
 - 📱 Téléphones : 2 (John Doe, Acme Corp)
 - 📧 Emails : 3 (John, Acme, Jane)
 - 🏢 Entreprises : 1 (Acme Corp)
@@ -285,6 +297,7 @@ Pour tester efficacement, créez des rapports avec :
 **Problème** : Vous avez 50 rapports et cherchez tous ceux mentionnant `contact@suspect.com`
 
 **Solution** :
+
 1. Aller dans "Données extraites"
 2. Chercher "contact@suspect.com" dans la barre de recherche
 3. Voir combien de rapports contiennent cet email
@@ -295,6 +308,7 @@ Pour tester efficacement, créez des rapports avec :
 **Problème** : Vous voulez savoir quelles plateformes vous avez le plus documentées
 
 **Solution** :
+
 1. Aller dans "Données extraites"
 2. Cliquer sur la carte "🌐 Plateformes"
 3. Voir la liste triée par fréquence
@@ -305,6 +319,7 @@ Pour tester efficacement, créez des rapports avec :
 **Problème** : Vous avez besoin de la liste de tous les téléphones trouvés
 
 **Solution** :
+
 1. Aller dans "Données extraites"
 2. Cliquer sur "📱 Téléphones"
 3. (À venir) Bouton "Exporter CSV"

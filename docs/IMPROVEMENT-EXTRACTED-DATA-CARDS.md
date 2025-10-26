@@ -11,12 +11,14 @@ Amélioration de l'interface "Données extraites" pour afficher les données sou
 ## 🎯 Problème résolu
 
 **Avant** :
+
 - Affichage en tableau simple
 - Tooltip limitée pour voir les IDs de rapports
 - Pas de vue détaillée
 - Navigation indirecte via "Rechercher"
 
 **Après** :
+
 - Affichage en **grille de cartes** responsive
 - **Modal de détails** avec liste complète des rapports
 - **Navigation directe** vers chaque rapport (clic sur le rapport)
@@ -27,11 +29,13 @@ Amélioration de l'interface "Données extraites" pour afficher les données sou
 ### 1. Affichage en grille de cartes
 
 **Layout responsive** :
+
 - **Mobile** (< 768px) : 1 colonne
-- **Tablet** (768-1023px) : 2 colonnes  
+- **Tablet** (768-1023px) : 2 colonnes
 - **Desktop** (≥ 1024px) : 3 colonnes
 
 **Chaque carte affiche** :
+
 - Badge de type (avec icône et couleur)
 - Badge du nombre de rapports
 - Valeur de la donnée (texte gros et en gras)
@@ -40,6 +44,7 @@ Amélioration de l'interface "Données extraites" pour afficher les données sou
 - 2 boutons d'action : "Voir détails" et "Rechercher"
 
 **Design** :
+
 - `border-l-4` avec couleur selon le type
 - Hover : `shadow-lg` pour effet de survol
 - Couleurs cohérentes avec le reste de l'application
@@ -49,6 +54,7 @@ Amélioration de l'interface "Données extraites" pour afficher les données sou
 **Déclenchement** : Clic sur une carte ou sur "Voir détails"
 
 **Contenu de la modal** :
+
 - **Header** : Icône + titre "Détails de la donnée"
 - **Section info** :
   - Badge type + badge nombre de rapports
@@ -66,11 +72,13 @@ Amélioration de l'interface "Données extraites" pour afficher les données sou
 ### 3. Navigation directe vers rapports
 
 **Dans les cartes** :
+
 - Les 3 premiers IDs de rapports sont des `router-link`
 - Clic sur un ID → navigation vers `/reports/{id}`
 - `@click.stop` pour éviter de déclencher la modal
 
 **Dans la modal** :
+
 - Chaque rapport est un lien cliquable
 - Affichage visuel clair (icône + texte + flèche)
 - Effet hover pour indiquer la cliquabilité
@@ -86,6 +94,7 @@ Amélioration de l'interface "Données extraites" pour afficher les données sou
 #### Remplacement du tableau
 
 **Avant** :
+
 ```vue
 <div class="overflow-x-auto">
   <table class="table table-zebra">
@@ -95,9 +104,10 @@ Amélioration de l'interface "Données extraites" pour afficher les données sou
 ```
 
 **Après** :
+
 ```vue
 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-  <div v-for="item in filteredExtractedData" 
+  <div v-for="item in filteredExtractedData"
        :key="`${item.type}-${item.value}`"
        class="bg-base-100 border-l-4 p-4 hover:shadow-lg transition-shadow cursor-pointer"
        :class="getTypeBorderClass(item.type)"
@@ -133,11 +143,11 @@ Amélioration de l'interface "Données extraites" pour afficher les données sou
 #### Variables ajoutées
 
 ```typescript
-const selectedExtractedItem = ref<{ 
-  type: string; 
-  value: string; 
-  reports: string[]; 
-  count: number 
+const selectedExtractedItem = ref<{
+  type: string;
+  value: string;
+  reports: string[];
+  count: number;
 } | null>(null);
 
 const extractedDetailsModal = ref<HTMLDialogElement>();
@@ -149,25 +159,25 @@ const extractedDetailsModal = ref<HTMLDialogElement>();
 // Classe de bordure pour les cartes
 const getTypeBorderClass = (type: string): string => {
   const classes: Record<string, string> = {
-    'Entreprise': 'border-primary',
-    'Plateforme': 'border-secondary',
-    'Pseudo': 'border-accent',
-    'Nom': 'border-info',
-    'Téléphone': 'border-success',
-    'Email': 'border-warning',
-    'Adresse': 'border-error',
-    'URL': 'border-neutral',
-    'Compte': 'border-ghost',
+    Entreprise: "border-primary",
+    Plateforme: "border-secondary",
+    Pseudo: "border-accent",
+    Nom: "border-info",
+    Téléphone: "border-success",
+    Email: "border-warning",
+    Adresse: "border-error",
+    URL: "border-neutral",
+    Compte: "border-ghost",
   };
-  return classes[type] || 'border-ghost';
+  return classes[type] || "border-ghost";
 };
 
 // Ouvrir la modal de détails
-const viewExtractedItem = (item: { 
-  type: string; 
-  value: string; 
-  reports: string[]; 
-  count: number 
+const viewExtractedItem = (item: {
+  type: string;
+  value: string;
+  reports: string[];
+  count: number;
 }) => {
   selectedExtractedItem.value = item;
   extractedDetailsModal.value?.showModal();
@@ -178,17 +188,17 @@ const viewExtractedItem = (item: {
 
 ### Couleurs par type (cohérence)
 
-| Type | Badge | Bordure |
-|------|-------|---------|
-| Entreprise | `badge-primary` | `border-primary` |
+| Type       | Badge             | Bordure            |
+| ---------- | ----------------- | ------------------ |
+| Entreprise | `badge-primary`   | `border-primary`   |
 | Plateforme | `badge-secondary` | `border-secondary` |
-| Pseudo | `badge-accent` | `border-accent` |
-| Nom | `badge-info` | `border-info` |
-| Téléphone | `badge-success` | `border-success` |
-| Email | `badge-warning` | `border-warning` |
-| Adresse | `badge-error` | `border-error` |
-| URL | `badge-neutral` | `border-neutral` |
-| Compte | `badge-ghost` | `border-ghost` |
+| Pseudo     | `badge-accent`    | `border-accent`    |
+| Nom        | `badge-info`      | `border-info`      |
+| Téléphone  | `badge-success`   | `border-success`   |
+| Email      | `badge-warning`   | `border-warning`   |
+| Adresse    | `badge-error`     | `border-error`     |
+| URL        | `badge-neutral`   | `border-neutral`   |
+| Compte     | `badge-ghost`     | `border-ghost`     |
 
 ### Pattern appliqué
 
@@ -224,6 +234,7 @@ lg:grid-cols-3
 ```
 
 **Problèmes** :
+
 - Tooltip limitée pour voir les IDs
 - Pas de vue détaillée
 - Pas de navigation directe
@@ -272,6 +283,7 @@ lg:grid-cols-3
 ```
 
 **Avantages** :
+
 - ✅ Vue complète de tous les rapports
 - ✅ Clic sur un rapport → navigation directe
 - ✅ Interface plus visuelle et intuitive
@@ -306,12 +318,14 @@ lg:grid-cols-3
 ## ⚡ Performance
 
 **Optimisations** :
+
 - Grille CSS native (pas de librairie tierce)
 - Limite toujours à 100 résultats affichés
 - Modal ne charge que quand ouverte
 - Liste des rapports scrollable (pas de pagination)
 
 **Métriques attendues** :
+
 - Render initial : <500ms (identique)
 - Ouverture modal : <100ms
 - Navigation vers rapport : instantanée (router-link)
@@ -384,9 +398,11 @@ lg:grid-cols-3
 ### Comment naviguer vers un rapport ?
 
 **Option 1** : Depuis la carte
+
 - Cliquez sur un des IDs affichés (ex: `abc123...`)
 
 **Option 2** : Depuis la modal
+
 - Cliquez sur "Voir détails"
 - Dans la liste, cliquez sur le rapport souhaité
 
@@ -406,6 +422,7 @@ lg:grid-cols-3
 ## 🎉 Résultat
 
 L'affichage des données extraites est maintenant :
+
 - ✅ **Plus visuel** (cartes au lieu de tableau)
 - ✅ **Plus informatif** (3 premiers rapports visibles)
 - ✅ **Plus interactif** (clic sur carte → modal)

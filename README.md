@@ -3,11 +3,13 @@
 Plateforme complète de génération et de gestion de rapports OSINT pour services d'enquête. Système intégré de détection ## 📚 Documentation complète
 
 ### Guides utilisateur
+
 - 🚀 **[Démarrage rapide](docs/QUICKSTART.md)** - Installation et premiers pas
 - � **[Guide Données extraites](docs/QUICKSTART-EXTRACTED-DATA.md)** - Visualisation des données indexées
 - �📖 **[Guide d'implémentation des corrélations](docs/correlation-implementation-guide.md)**
 
 ### Documentation technique
+
 - 🏗️ **[Architecture](docs/architecture.md)** - Vue d'ensemble du système
 - 🔌 **[API complète](docs/api-complete.md)** - 50+ endpoints documentés
 - 🎨 **[Frontend Vue.js](docs/frontend-implementation-complete.md)** - Composants et stores
@@ -18,6 +20,7 @@ Plateforme complète de génération et de gestion de rapports OSINT pour servic
 - ✅ **[Task 7 Complète](docs/TASK-7-COMPLETE.md)** - Guide complet Meilisearch
 
 ### Résumés techniques
+
 - ✅ **[Phase 1 - Corrélations](docs/correlation-system-phase1-summary.md)**
 - 🔍 **[Solution Avatar](docs/avatar-solution.md)**
 - � **[Données extraites](docs/FEATURE-EXTRACTED-DATA-DISPLAY.md)** - Extraction et affichage complet
@@ -89,6 +92,7 @@ Actions → Détecter corrélations → Backend analyse → Alertes créées
 ```
 
 Le système compare :
+
 - 📞 Numéros de téléphone
 - 📧 Adresses email
 - 👤 Noms de personnes
@@ -114,6 +118,7 @@ DRAFT → Actions → Publier → PUBLISHED → Actions → Archiver → ARCHIVE
 ## 🚧 Roadmap
 
 ### ✅ Phase 1-6 (Complétées)
+
 - ✅ Architecture et base de données
 - ✅ Authentification et RBAC
 - ✅ API complète (50+ endpoints)
@@ -122,6 +127,7 @@ DRAFT → Actions → Publier → PUBLISHED → Actions → Archiver → ARCHIVE
 - ✅ Gestion d'entités et modules
 
 ### ✅ Phase 7 (Complétée)
+
 - ✅ Intégration Meilisearch (recherche full-text)
 - ✅ Interface de recherche avancée
 - ✅ Filtres facettés et highlighting
@@ -131,12 +137,14 @@ DRAFT → Actions → Publier → PUBLISHED → Actions → Archiver → ARCHIVE
 - ✅ **Filtrage et recherche** dans les données indexées
 
 ### 📋 Phase 8 (À venir)
+
 - 📋 Export PDF avec template police belge
 - 📋 Graphe de corrélations visuel
 - 📋 Signatures numériques
 - 📋 Queue de jobs asynchrones
 
 ### 🎯 Futures améliorations
+
 - 🎯 Tests E2E (Playwright)
 - 🎯 CI/CD avec GitHub Actions
 - 🎯 Monitoring (Prometheus + Grafana)
@@ -148,6 +156,7 @@ DRAFT → Actions → Publier → PUBLISHED → Actions → Archiver → ARCHIVE
 Le projet suit les standards TypeScript strict et les conventions Vue 3 Composition API.
 
 ### Commits
+
 - `feat:` Nouvelle fonctionnalité
 - `fix:` Correction de bug
 - `docs:` Documentation
@@ -271,13 +280,13 @@ L’API écoute par défaut sur `http://localhost:4000` et expose `/health` pour
 
 ### Scripts npm utiles
 
-| Script | Description |
-| --- | --- |
-| `npm run dev` | Démarrage du serveur Express avec rechargement à chaud (ts-node-dev). |
-| `npm run build` | Compilation TypeScript vers `dist/`. |
-| `npm run start` | Exécution de la version compilée. |
-| `npm run prisma:generate` | Génération du client Prisma. |
-| `npm run prisma:migrate` | Application des migrations en base. |
+| Script                    | Description                                                           |
+| ------------------------- | --------------------------------------------------------------------- |
+| `npm run dev`             | Démarrage du serveur Express avec rechargement à chaud (ts-node-dev). |
+| `npm run build`           | Compilation TypeScript vers `dist/`.                                  |
+| `npm run start`           | Exécution de la version compilée.                                     |
+| `npm run prisma:generate` | Génération du client Prisma.                                          |
+| `npm run prisma:migrate`  | Application des migrations en base.                                   |
 
 ### Bootstrap Auth & RBAC
 
@@ -308,39 +317,39 @@ Un schéma détaillé de la structure des rapports est disponible dans `docs/rep
 
 Les routes sont montées sous `/reports` (voir `backend/src/routes/index.ts`) et protégées par les permissions `REPORTS_READ` / `REPORTS_WRITE`.
 
-| Méthode | Route | Permission requise | Description |
-| --- | --- | --- | --- |
-| `GET` | `/reports` | `REPORTS_READ` | Liste paginée des rapports avec filtrage par statut ou texte. |
-| `GET` | `/reports/dashboard` | `REPORTS_READ` | Résumé analytique (totaux, distribution des statuts, timeline 30 jours, rapports récents). |
-| `POST` | `/reports` | `REPORTS_WRITE` | Création d’un rapport (métadonnées, objectifs, dates). |
-| `GET` | `/reports/:reportId` | `REPORTS_READ` | Détail complet d’un rapport (modules, pièces jointes, entités liées). |
-| `PATCH` | `/reports/:reportId` | `REPORTS_WRITE` | Mise à jour partielle d’un rapport. |
-| `POST` | `/reports/:reportId/modules` | `REPORTS_WRITE` | Ajout d’un module structuré au rapport. |
-| `PATCH` | `/reports/:reportId/modules/:moduleId` | `REPORTS_WRITE` | Mise à jour partielle d’un module (payload JSON, position, slug...). |
-| `DELETE` | `/reports/:reportId/modules/:moduleId` | `REPORTS_WRITE` | Suppression d’un module et de ses ressources associées. |
-| `POST` | `/reports/:reportId/attachments` | `REPORTS_WRITE` | Enregistrement d’une pièce jointe (clé de stockage, métadonnées, expiration). La clé est chiffrée côté serveur et stockée sous forme de pointeur vault. |
+| Méthode  | Route                                  | Permission requise | Description                                                                                                                                             |
+| -------- | -------------------------------------- | ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `GET`    | `/reports`                             | `REPORTS_READ`     | Liste paginée des rapports avec filtrage par statut ou texte.                                                                                           |
+| `GET`    | `/reports/dashboard`                   | `REPORTS_READ`     | Résumé analytique (totaux, distribution des statuts, timeline 30 jours, rapports récents).                                                              |
+| `POST`   | `/reports`                             | `REPORTS_WRITE`    | Création d’un rapport (métadonnées, objectifs, dates).                                                                                                  |
+| `GET`    | `/reports/:reportId`                   | `REPORTS_READ`     | Détail complet d’un rapport (modules, pièces jointes, entités liées).                                                                                   |
+| `PATCH`  | `/reports/:reportId`                   | `REPORTS_WRITE`    | Mise à jour partielle d’un rapport.                                                                                                                     |
+| `POST`   | `/reports/:reportId/modules`           | `REPORTS_WRITE`    | Ajout d’un module structuré au rapport.                                                                                                                 |
+| `PATCH`  | `/reports/:reportId/modules/:moduleId` | `REPORTS_WRITE`    | Mise à jour partielle d’un module (payload JSON, position, slug...).                                                                                    |
+| `DELETE` | `/reports/:reportId/modules/:moduleId` | `REPORTS_WRITE`    | Suppression d’un module et de ses ressources associées.                                                                                                 |
+| `POST`   | `/reports/:reportId/attachments`       | `REPORTS_WRITE`    | Enregistrement d’une pièce jointe (clé de stockage, métadonnées, expiration). La clé est chiffrée côté serveur et stockée sous forme de pointeur vault. |
 
 Les schémas Zod correspondants (`createReportSchema`, `updateReportSchema`, `createModuleSchema`, etc.) se trouvent dans `backend/src/modules/reports/report.validation.ts`. Une description détaillée des champs d’entrée/sortie est fournie dans `docs/api-reports.md`.
 
 ## PostgreSQL avec Docker Compose
 
 1. Démarrage :
-	```bash
-	docker compose up -d postgres
-	```
+   ```bash
+   docker compose up -d postgres
+   ```
 2. Vérification :
-	```bash
-	docker compose ps
-	```
+   ```bash
+   docker compose ps
+   ```
 3. Scripts init : placez vos SQL dans `postgres/init/` (exécutés au premier lancement).
 4. Arrêt :
-	```bash
-	docker compose down
-	```
+   ```bash
+   docker compose down
+   ```
 5. Purge des volumes :
-	```bash
-	docker compose down -v
-	```
+   ```bash
+   docker compose down -v
+   ```
 
 La base est exposée sur `localhost:${POSTGRES_PORT:-5432}` (par défaut 5432) avec l’utilisateur `osint_admin` et la base `osint_db`.
 

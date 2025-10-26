@@ -7,6 +7,7 @@
 ## 🎯 Contexte initial
 
 L'utilisateur a constaté que :
+
 > "Tu n'indexes que les éléments principaux, mais tu as oublié d'indexer les sous-éléments"
 
 Il voulait voir **toutes les données extraites** des rapports (entreprises, plateformes, pseudos, etc.) dans l'interface, comme avec MeiliSearch.
@@ -32,6 +33,7 @@ Il voulait voir **toutes les données extraites** des rapports (entreprises, pla
 **Ajouté** : Méthode `getExtractedData()` (180 lignes)
 
 **Fonctionnalité** :
+
 - Récupère tous les rapports avec modules via Prisma
 - Appelle `extractEntities()` pour chaque rapport
 - Agrège les données dans des `Map<string, Set<reportId>>` pour :
@@ -41,6 +43,7 @@ Il voulait voir **toutes les données extraites** des rapports (entreprises, pla
 - Retourne 9 types de données + statistiques
 
 **Structure de réponse** :
+
 ```typescript
 {
   phones: Array<{ value: string, reports: string[], count: number }>,
@@ -62,6 +65,7 @@ Il voulait voir **toutes les données extraites** des rapports (entreprises, pla
 ```
 
 **Sources d'extraction** :
+
 - `phones` : personDetails.phone, companyDetails.phone, metadata.phones
 - `emails` : personDetails.email, companyDetails.email, metadata.emails
 - `companies` : companyDetails.legalName, companyDetails.tradeName
@@ -88,7 +92,8 @@ static async getExtractedData(req: Request, res: Response): Promise<void> {
 **Ajouté** : Route GET `/extracted` (5 lignes)
 
 ```typescript
-router.get("/extracted", 
+router.get(
+  "/extracted",
   requirePermissions("reports:read"),
   SearchController.getExtractedData
 );
@@ -150,32 +155,37 @@ async getExtractedData(): Promise<ExtractedData> {
 **Nouveau titre de page** : "Gestion des données OSINT" (au lieu de "Entités")
 
 **Système d'onglets** :
+
 - "Entités" (existant) : Gestion manuelle
 - "Données extraites" (nouveau) : Visualisation automatique
 
 **Composants ajoutés dans l'onglet "Données extraites"** :
 
 1. **Section statistiques** (6 cartes interactives) :
+
    ```vue
-   📱 Téléphones    📧 Emails        🏢 Entreprises
-   🌐 Plateformes   👤 Pseudos       📍 Adresses
+   📱 Téléphones 📧 Emails 🏢 Entreprises 🌐 Plateformes 👤 Pseudos 📍 Adresses
    ```
+
    - Affichage des totaux depuis `extractedData.stats`
    - Cartes cliquables → définissent `extractedFilter`
    - Skeleton loading pendant chargement
    - Design : `bg-base-100 border-l-4 border-{color}`
 
 2. **Barre de recherche** :
+
    - Input bindé à `extractedSearch`
    - Bouton clear (X)
    - Bouton "Actualiser" avec icône qui tourne
 
 3. **Tableau de données** :
+
    ```
    | Type (badge) | Valeur | Rapports (badge) | Actions |
    | ------------ | ------ | ---------------- | ------- |
    | 🏢 Entreprise | Acme Corp | 3 rapport(s) | 🔍 Rechercher |
    ```
+
    - Affiche `filteredExtractedData` (100 max)
    - Badges colorés par type (getTypeBadgeClass)
    - Tooltip sur badge rapports → affiche IDs
@@ -188,36 +198,54 @@ async getExtractedData(): Promise<ExtractedData> {
    - **Data** : Tableau complet
 
 **Variables d'état ajoutées** :
+
 ```typescript
-const currentView = ref<'entities' | 'extracted'>('entities');
+const currentView = ref<"entities" | "extracted">("entities");
 const extractedData = ref<ExtractedData | null>(null);
 const loadingExtracted = ref(false);
 const errorExtracted = ref<string | null>(null);
-const extractedFilter = ref<string>('all');
-const extractedSearch = ref<string>('');
+const extractedFilter = ref<string>("all");
+const extractedSearch = ref<string>("");
 ```
 
 **Fonctions ajoutées** :
+
 ```typescript
-const loadExtractedData = async () => { /* ... */ }
-const filteredExtractedData = computed(() => { /* ... */ })
-const getTypeLabel = (type: string) => { /* ... */ }
-const getTypeIcon = (type: string) => { /* ... */ }
-const getTypeBadgeClass = (type: string) => { /* ... */ }
-const getFilterLabel = (filter: string) => { /* ... */ }
-const searchInReports = (value: string) => { /* ... */ }
+const loadExtractedData = async () => {
+  /* ... */
+};
+const filteredExtractedData = computed(() => {
+  /* ... */
+});
+const getTypeLabel = (type: string) => {
+  /* ... */
+};
+const getTypeIcon = (type: string) => {
+  /* ... */
+};
+const getTypeBadgeClass = (type: string) => {
+  /* ... */
+};
+const getFilterLabel = (filter: string) => {
+  /* ... */
+};
+const searchInReports = (value: string) => {
+  /* ... */
+};
 ```
 
 **Watch ajouté** :
+
 ```typescript
 watch(currentView, (newView) => {
-  if (newView === 'extracted' && !extractedData.value) {
+  if (newView === "extracted" && !extractedData.value) {
     loadExtractedData();
   }
 });
 ```
 
 **Icône ajoutée** :
+
 ```typescript
 import { Link01Icon } from "@hugeicons/core-free-icons";
 ```
@@ -227,6 +255,7 @@ import { Link01Icon } from "@hugeicons/core-free-icons";
 #### 1. `/docs/FEATURE-EXTRACTED-DATA-DISPLAY.md`
 
 **Contenu** : Documentation technique complète (400+ lignes)
+
 - Résumé de la fonctionnalité
 - Architecture backend/frontend détaillée
 - Code samples
@@ -241,6 +270,7 @@ import { Link01Icon } from "@hugeicons/core-free-icons";
 #### 2. `/docs/QUICKSTART-EXTRACTED-DATA.md`
 
 **Contenu** : Guide de démarrage rapide (350+ lignes)
+
 - Instructions de démarrage
 - 3 options de test (UI, API, Script)
 - 4 scénarios de test détaillés
@@ -252,6 +282,7 @@ import { Link01Icon } from "@hugeicons/core-free-icons";
 #### 3. `/docs/DELIVERY-EXTRACTED-DATA.md`
 
 **Contenu** : Document de livraison officiel (400+ lignes)
+
 - Résumé exécutif
 - Problème résolu (avant/après)
 - Fonctionnalités livrées
@@ -268,6 +299,7 @@ import { Link01Icon } from "@hugeicons/core-free-icons";
 #### 4. `/docs/USER-GUIDE-EXTRACTED-DATA.md`
 
 **Contenu** : Guide utilisateur simple (150 lignes)
+
 - En bref (1 paragraphe)
 - Comment y accéder
 - Liste des types de données
@@ -285,6 +317,7 @@ import { Link01Icon } from "@hugeicons/core-free-icons";
 **Contenu** : Script Bash de test automatisé (200 lignes)
 
 **Fonctionnalités** :
+
 1. Vérifie accessibilité du serveur (`/api/health`)
 2. Obtient un token JWT (login admin/admin ou variable `TEST_TOKEN`)
 3. Test 1 : Appel sans auth → vérifie 401
@@ -295,6 +328,7 @@ import { Link01Icon } from "@hugeicons/core-free-icons";
 8. Résumé et suggestions d'utilisation
 
 **Utilisation** :
+
 ```bash
 chmod +x scripts/test-extracted-data.sh
 ./scripts/test-extracted-data.sh
@@ -305,18 +339,22 @@ chmod +x scripts/test-extracted-data.sh
 #### `/README.md`
 
 **Ajouts** :
+
 1. Dans "Fonctionnalités principales" :
+
    ```
-   - 🔍 Visualisation des données extraites : Vue d'ensemble de toutes les données 
+   - 🔍 Visualisation des données extraites : Vue d'ensemble de toutes les données
      indexées (téléphones, emails, entreprises, plateformes) avec recherche et filtrage
    ```
 
 2. Dans "Documentation complète > Guides utilisateur" :
+
    ```
    - 🔍 Guide Données extraites - Visualisation des données indexées
    ```
 
 3. Dans "Résumés techniques" :
+
    ```
    - 📊 Données extraites - Extraction et affichage complet
    ```
@@ -330,6 +368,7 @@ chmod +x scripts/test-extracted-data.sh
 ## 📊 Statistiques de la session
 
 ### Code ajouté
+
 - **Backend** : ~195 lignes (TypeScript)
 - **Frontend** : ~285 lignes (Vue 3 + TypeScript)
 - **Documentation** : ~1500 lignes (Markdown)
@@ -337,6 +376,7 @@ chmod +x scripts/test-extracted-data.sh
 - **Total** : ~2180 lignes
 
 ### Fichiers créés
+
 - **Backend** : 0 (modifications uniquement)
 - **Frontend** : 0 (modifications uniquement)
 - **Documentation** : 5 fichiers
@@ -344,6 +384,7 @@ chmod +x scripts/test-extracted-data.sh
 - **Total** : 6 nouveaux fichiers
 
 ### Fichiers modifiés
+
 - **Backend** : 3 fichiers
 - **Frontend** : 2 fichiers
 - **Documentation** : 1 fichier (README.md)
@@ -406,15 +447,15 @@ Template affiche:
 ## 🎨 Design pattern
 
 ### Border-left pattern
+
 Appliqué partout dans l'application :
 
 ```html
-<div class="bg-base-100 border-l-4 border-primary">
-  Contenu
-</div>
+<div class="bg-base-100 border-l-4 border-primary">Contenu</div>
 ```
 
 ### Couleurs par type
+
 ```typescript
 Entreprise  → badge-primary   (bleu)
 Plateforme  → badge-secondary (violet)
@@ -428,6 +469,7 @@ Compte      → badge-ghost     (transparent)
 ```
 
 ### Icônes HugeIcons
+
 ```typescript
 Building03Icon     → 🏢 Entreprise
 GridViewIcon       → 🌐 Plateforme
@@ -445,46 +487,57 @@ Tag01Icon          → 🏷️ Default
 ### Modules sources (12 types)
 
 1. **entity_overview** :
+
    - personDetails.{phone, email, firstName, lastName, birthName}
    - companyDetails.{phone, email, legalName, tradeName}
    - addresses[].{address, city, postalCode, country}
 
 2. **platform_analysis** :
+
    - name, category, url
    - metadata.{aliases, phones, emails}
 
 3. **phone_analysis** :
+
    - phoneNumber, metadata.phones
 
 4. **email_analysis** :
+
    - emailAddress, metadata.emails
 
 5. **social_network_analysis** :
+
    - platforms[].{name, url, username}
    - usernames, metadata.aliases
 
 6. **financial_analysis** :
+
    - accounts[].{accountNumber, holder}
    - entities
 
 7. **address_analysis** :
+
    - addresses[].{address, city, postalCode, country}
 
 8. **vehicle_analysis** :
+
    - owner.{name, addresses}
 
 9. **document_analysis** :
+
    - author, signatories
    - metadata.{entities, locations}
 
 10. **relationship_analysis** :
+
     - entities[].name
 
 11. **timeline_analysis** :
+
     - events[].{location, participants}
 
 12. **custom_content** :
-    - metadata.*
+    - metadata.\*
 
 ### Algorithme d'agrégation
 
@@ -497,7 +550,7 @@ const emailsMap = new Map<string, Set<string>>();
 // Pour chaque rapport
 for (const report of reports) {
   const entities = extractEntities(report); // Retourne 10 types
-  
+
   // Pour chaque téléphone extrait
   for (const phone of entities.phones) {
     if (!phonesMap.has(phone)) {
@@ -505,31 +558,36 @@ for (const report of reports) {
     }
     phonesMap.get(phone)!.add(report.id);
   }
-  
+
   // Idem pour emails, companies, platforms...
 }
 
 // Conversion Maps → Arrays
-const phones = Array.from(phonesMap.entries()).map(([value, reportIds]) => ({
-  value,
-  reports: Array.from(reportIds),
-  count: reportIds.size
-})).sort((a, b) => b.count - a.count); // Tri par fréquence décroissante
+const phones = Array.from(phonesMap.entries())
+  .map(([value, reportIds]) => ({
+    value,
+    reports: Array.from(reportIds),
+    count: reportIds.size,
+  }))
+  .sort((a, b) => b.count - a.count); // Tri par fréquence décroissante
 ```
 
 ## 🧪 Tests de validation
 
 ### ✅ Compilation
+
 ```bash
 cd backend && npm run build  # ✅ Succès
 cd frontend && npm run build # ✅ Succès (warnings normaux)
 ```
 
 ### ✅ Tests unitaires
+
 - Backend : Pas d'erreur TypeScript
 - Frontend : Pas d'erreur Vue/TypeScript (warnings path aliases OK)
 
 ### ✅ Tests d'intégration (à faire)
+
 - Démarrer les services : `docker-compose up -d`
 - Créer des rapports de test
 - Lancer le script : `./scripts/test-extracted-data.sh`
@@ -569,11 +627,13 @@ curl -H "Authorization: Bearer $TOKEN" \
 ## 📈 Métriques attendues
 
 ### Performance
+
 - **API response time** : <2s avec 50 rapports
 - **Frontend render** : <500ms
 - **Search debounce** : 300ms
 
 ### Volumétrie
+
 - **Rapports testés** : 0-50
 - **Données extraites** : 0-500 items
 - **Limite affichage** : 100 items
@@ -596,16 +656,19 @@ curl -H "Authorization: Bearer $TOKEN" \
 ## 🔮 Évolutions futures
 
 ### Court terme
+
 - [ ] Pagination backend
 - [ ] Cache Redis (TTL 5min)
 - [ ] Normalisation casse
 
 ### Moyen terme
+
 - [ ] Export CSV/Excel
 - [ ] Graphiques de répartition
 - [ ] Filtres avancés
 
 ### Long terme
+
 - [ ] WebSocket temps réel
 - [ ] ML déduplication
 - [ ] Timeline évolutions
@@ -614,12 +677,14 @@ curl -H "Authorization: Bearer $TOKEN" \
 ## ✅ Validation finale
 
 ### Code
+
 - [x] Backend compilé sans erreur
 - [x] Frontend compilé sans erreur
 - [x] Types TypeScript corrects
 - [x] Lint/Format OK
 
 ### Fonctionnel
+
 - [x] Route API créée
 - [x] Extraction complète (9 types)
 - [x] Agrégation sans doublons
@@ -630,6 +695,7 @@ curl -H "Authorization: Bearer $TOKEN" \
 - [x] Redirection vers search
 
 ### Documentation
+
 - [x] Feature doc complète
 - [x] QuickStart guide
 - [x] Delivery doc
@@ -638,6 +704,7 @@ curl -H "Authorization: Bearer $TOKEN" \
 - [x] Script de test
 
 ### Design
+
 - [x] Border-l-4 pattern
 - [x] HugeIcons
 - [x] DaisyUI components
@@ -664,9 +731,10 @@ L'utilisateur dispose maintenant de :
 ✅ **Recherche ultra-rapide** dans toutes les données  
 ✅ **Traçabilité** (quels rapports contiennent quoi)  
 ✅ **Navigation fluide** (clic → recherche → rapport)  
-✅ **Transparence** sur l'indexation MeiliSearch  
+✅ **Transparence** sur l'indexation MeiliSearch
 
 **Impact** :
+
 - Gain de temps énorme pour retrouver une info
 - Confiance accrue dans les données indexées
 - Meilleure compréhension de la couverture OSINT

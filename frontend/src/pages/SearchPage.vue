@@ -78,6 +78,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from "vue";
+import { useRoute } from "vue-router";
 import { useSearchStore } from "@/stores/search";
 import SearchFilters from "@/components/search/SearchFilters.vue";
 import SearchResults from "@/components/search/SearchResults.vue";
@@ -91,6 +92,7 @@ import {
 } from "@hugeicons/core-free-icons";
 
 const searchStore = useSearchStore();
+const route = useRoute();
 const localQuery = ref("");
 
 const quickSuggestions = [
@@ -112,12 +114,22 @@ function applySuggestion(suggestion: string) {
 }
 
 onMounted(() => {
-  // Synchroniser la query locale avec le store
-  localQuery.value = searchStore.query;
-
-  // Si on arrive sur la page avec une query existante, lancer la recherche
-  if (searchStore.hasQuery) {
+  // Lire la query de l'URL si présente
+  const urlQuery = route.query.q as string | undefined;
+  
+  if (urlQuery) {
+    // Query depuis l'URL (prioritaire)
+    localQuery.value = urlQuery;
+    searchStore.updateQuery(urlQuery);
     searchStore.search();
+  } else {
+    // Sinon, synchroniser avec le store
+    localQuery.value = searchStore.query;
+    
+    // Si on arrive sur la page avec une query existante dans le store, lancer la recherche
+    if (searchStore.hasQuery) {
+      searchStore.search();
+    }
   }
 });
 </script>

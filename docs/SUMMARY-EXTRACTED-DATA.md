@@ -32,15 +32,18 @@
 ## 📁 Fichiers créés/modifiés
 
 ### Backend (3 fichiers)
+
 - `search.service.ts` → Méthode `getExtractedData()` (+180 lignes)
 - `search.controller.ts` → Controller endpoint (+10 lignes)
 - `search.router.ts` → Route GET /extracted (+5 lignes)
 
 ### Frontend (2 fichiers)
+
 - `services/api/search.ts` → Interfaces + service (+35 lignes)
 - `pages/EntitiesPage.vue` → UI complète (+250 lignes)
 
 ### Documentation (7 fichiers)
+
 - `FEATURE-EXTRACTED-DATA-DISPLAY.md` → Doc technique
 - `QUICKSTART-EXTRACTED-DATA.md` → Guide rapide
 - `DELIVERY-EXTRACTED-DATA.md` → Document de livraison
@@ -50,6 +53,7 @@
 - `CHANGELOG.md` → Historique versions
 
 ### Scripts (1 fichier)
+
 - `test-extracted-data.sh` → Test automatisé
 
 ## 🧪 Tests
@@ -80,13 +84,13 @@ cd frontend && npm run build  # ✅ Succès
 
 ## 📚 Documentation complète
 
-| Document | Usage |
-|----------|-------|
-| **USER-GUIDE** | Pour utilisateurs finaux |
-| **QUICKSTART** | Démarrage rapide avec tests |
-| **FEATURE** | Documentation technique |
-| **DELIVERY** | Document de livraison officiel |
-| **SESSION** | Résumé complet de la session |
+| Document       | Usage                          |
+| -------------- | ------------------------------ |
+| **USER-GUIDE** | Pour utilisateurs finaux       |
+| **QUICKSTART** | Démarrage rapide avec tests    |
+| **FEATURE**    | Documentation technique        |
+| **DELIVERY**   | Document de livraison officiel |
+| **SESSION**    | Résumé complet de la session   |
 
 ## 🎉 Impact
 

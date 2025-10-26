@@ -15,6 +15,7 @@ Menu → Gestion des données OSINT → Onglet "Données extraites"
 ### 2. Voir les informations d'une donnée
 
 Chaque carte affiche :
+
 - 🏷️ **Type de donnée** (Entreprise, Plateforme, Email, etc.)
 - 📊 **Nombre de rapports** qui contiennent cette donnée
 - 📝 **La valeur** (nom d'entreprise, email, téléphone, etc.)
@@ -114,17 +115,17 @@ Si vous voulez **rechercher** cette donnée dans l'application :
 
 Chaque type de donnée a sa couleur :
 
-| Type | Couleur | Exemple |
-|------|---------|---------|
-| 🏢 Entreprise | Bleu | Acme Corporation |
-| 🌐 Plateforme | Violet | LinkedIn |
-| 👤 Pseudo | Rose | @johndoe |
-| 👥 Nom | Cyan | John Doe |
-| 📱 Téléphone | Vert | +33 6 12 34 56 78 |
-| 📧 Email | Jaune | contact@acme.com |
-| 📍 Adresse | Rouge | 123 Rue de Paris |
-| 🔗 URL | Gris | https://example.com |
-| 💳 Compte | Transparent | johndoe123 |
+| Type          | Couleur     | Exemple             |
+| ------------- | ----------- | ------------------- |
+| 🏢 Entreprise | Bleu        | Acme Corporation    |
+| 🌐 Plateforme | Violet      | LinkedIn            |
+| 👤 Pseudo     | Rose        | @johndoe            |
+| 👥 Nom        | Cyan        | John Doe            |
+| 📱 Téléphone  | Vert        | +33 6 12 34 56 78   |
+| 📧 Email      | Jaune       | contact@acme.com    |
+| 📍 Adresse    | Rouge       | 123 Rue de Paris    |
+| 🔗 URL        | Gris        | https://example.com |
+| 💳 Compte     | Transparent | johndoe123          |
 
 **→ La barre colorée à gauche de chaque carte indique le type !**
 
@@ -145,6 +146,7 @@ Chaque type de donnée a sa couleur :
 ### Comment fermer la fenêtre de détails ?
 
 **Réponse** : 3 façons :
+
 1. Cliquez sur le bouton "Fermer"
 2. Cliquez sur le X en haut à droite
 3. Cliquez en dehors de la fenêtre
@@ -155,13 +157,13 @@ Chaque type de donnée a sa couleur :
 
 ## 🆕 Différences avec l'ancien affichage
 
-| Ancien (Tableau) | Nouveau (Cartes) |
-|------------------|------------------|
-| Tableau simple | Cartes visuelles colorées |
-| Tooltip pour voir IDs | 3 premiers IDs directement visibles |
-| Pas de navigation directe | Clic sur ID → navigation directe |
-| Bouton "Rechercher" uniquement | "Voir détails" + "Rechercher" |
-| Vue limitée | Modal avec liste complète |
+| Ancien (Tableau)               | Nouveau (Cartes)                    |
+| ------------------------------ | ----------------------------------- |
+| Tableau simple                 | Cartes visuelles colorées           |
+| Tooltip pour voir IDs          | 3 premiers IDs directement visibles |
+| Pas de navigation directe      | Clic sur ID → navigation directe    |
+| Bouton "Rechercher" uniquement | "Voir détails" + "Rechercher"       |
+| Vue limitée                    | Modal avec liste complète           |
 
 ## ✅ Avantages
 

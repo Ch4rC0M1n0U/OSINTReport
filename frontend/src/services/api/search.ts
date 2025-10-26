@@ -98,7 +98,11 @@ export interface IndexStats {
  */
 export interface ExtractedItem {
   value: string;
-  reports: string[];
+  reports: Array<{
+    id: string;
+    title: string;
+    caseNumber: string | null;
+  }>;
   count: number;
 }
 

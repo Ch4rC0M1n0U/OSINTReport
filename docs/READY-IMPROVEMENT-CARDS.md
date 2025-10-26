@@ -10,17 +10,20 @@ Transformation de l'affichage des données extraites :
 ## ✨ Nouvelles fonctionnalités
 
 ### 1. Grille de cartes responsive
+
 - 1 colonne (mobile) / 2 colonnes (tablet) / 3 colonnes (desktop)
 - Cartes colorées avec `border-l-4` selon le type
 - 3 premiers rapports visibles sur chaque carte
 - Hover effect + transition
 
 ### 2. Navigation directe (1 clic)
+
 - **Clic sur un ID de rapport** → Navigation vers `/reports/{id}`
 - Utilisation de `router-link` pour navigation instantanée
 - Fonctionne depuis la carte ET depuis la modal
 
 ### 3. Modal de détails
+
 - **Clic sur une carte** → Modal s'ouvre
 - Liste scrollable de TOUS les rapports (pas de limite)
 - Chaque rapport cliquable avec effet hover
@@ -29,6 +32,7 @@ Transformation de l'affichage des données extraites :
 ## 📁 Fichier modifié
 
 **`/frontend/src/pages/EntitiesPage.vue`**
+
 - +100 lignes
 - Template : Grille + Modal
 - Script : 2 variables, 2 fonctions
@@ -36,12 +40,14 @@ Transformation de l'affichage des données extraites :
 ## 🎨 Design
 
 **Pattern cohérent** :
+
 - `border-l-4` avec couleur par type
 - `hover:shadow-lg` sur cartes
 - `max-h-96 overflow-y-auto` pour liste rapports
 - Transitions CSS fluides
 
 **Couleurs** :
+
 - Entreprise → Bleu (primary)
 - Plateforme → Violet (secondary)
 - Pseudo → Rose (accent)
@@ -62,6 +68,7 @@ http://localhost:5173/entities → Onglet "Données extraites"
 ```
 
 **Tests** :
+
 1. Vérifier la grille (responsive)
 2. Cliquer sur un ID de rapport → Vérifier navigation
 3. Cliquer sur "Voir détails" → Vérifier modal

@@ -11,6 +11,7 @@ Implémentation de l'onglet "Données extraites" dans la page **Gestion des donn
 ## 🎯 Objectif
 
 Donner une visibilité complète sur les données indexées par MeiliSearch, en permettant aux utilisateurs de :
+
 - Consulter en temps réel les statistiques d'extraction
 - Filtrer les données par type (entreprise, plateforme, etc.)
 - Rechercher dans les données extraites
@@ -47,6 +48,7 @@ static async getExtractedData(): Promise<{
 ```
 
 **Logique d'extraction** :
+
 1. Récupère tous les rapports avec leurs modules
 2. Pour chaque rapport, appelle `extractEntities()` (déjà amélioré précédemment)
 3. Agrège les données dans des `Map<string, Set<string>>` pour :
@@ -56,6 +58,7 @@ static async getExtractedData(): Promise<{
 4. Retourne des tableaux triés par fréquence (count décroissant)
 
 **Sources de données extraites** :
+
 - `phones` : personDetails.phone, companyDetails.phone, metadata.phones
 - `emails` : personDetails.email, companyDetails.email, metadata.emails
 - `companies` : companyDetails.legalName, companyDetails.tradeName
@@ -69,6 +72,7 @@ static async getExtractedData(): Promise<{
 #### Fichiers modifiés :
 
 **`search.controller.ts`** :
+
 ```typescript
 static async getExtractedData(req: Request, res: Response): Promise<void> {
   const data = await SearchService.getExtractedData();
@@ -77,8 +81,10 @@ static async getExtractedData(req: Request, res: Response): Promise<void> {
 ```
 
 **`search.router.ts`** :
+
 ```typescript
-router.get("/extracted", 
+router.get(
+  "/extracted",
   requirePermissions("reports:read"),
   SearchController.getExtractedData
 );
@@ -89,6 +95,7 @@ router.get("/extracted",
 #### Fichier : `/frontend/src/services/api/search.ts`
 
 **Interfaces TypeScript** :
+
 ```typescript
 export interface ExtractedItem {
   value: string;
@@ -122,6 +129,7 @@ export interface ExtractedData {
 ```
 
 **Service** :
+
 ```typescript
 async getExtractedData(): Promise<ExtractedData> {
   const response = await api.get("/search/extracted");
@@ -134,31 +142,35 @@ async getExtractedData(): Promise<ExtractedData> {
 **Nouveaux composants** :
 
 1. **Système d'onglets** :
+
    - "Entités" : gestion manuelle des entités
    - "Données extraites" : visualisation des données des rapports
 
 2. **Section statistiques** (6 cartes interactives) :
+
    ```
    📱 Téléphones    | 📧 Emails        | 🏢 Entreprises
    🌐 Plateformes   | 👤 Pseudos       | 📍 Adresses
    ```
+
    - Affichage des totaux en temps réel
    - Cartes cliquables pour filtrer par type
    - Skeleton loading pendant le chargement
 
 3. **Barre de recherche** :
+
    - Recherche en temps réel dans les valeurs
    - Recherche dans les IDs de rapports
    - Bouton d'effacement rapide
    - Bouton "Actualiser"
 
 4. **Tableau de données** :
-   
-   | Type | Valeur | Rapports | Actions |
-   |------|--------|----------|---------|
+
+   | Type          | Valeur    | Rapports     | Actions       |
+   | ------------- | --------- | ------------ | ------------- |
    | 🏢 Entreprise | Acme Corp | 3 rapport(s) | 🔍 Rechercher |
-   | 🌐 Plateforme | LinkedIn | 5 rapport(s) | 🔍 Rechercher |
-   
+   | 🌐 Plateforme | LinkedIn  | 5 rapport(s) | 🔍 Rechercher |
+
    - Badges colorés par type
    - Tooltip sur le nombre de rapports (affiche les IDs)
    - Bouton "Rechercher" redirige vers `/search?q=valeur`
@@ -174,10 +186,10 @@ async getExtractedData(): Promise<ExtractedData> {
 
 ```typescript
 // Filtrage par type (cliquable depuis les stats)
-const extractedFilter = ref<string>('all'); // all | phones | emails | companies...
+const extractedFilter = ref<string>("all"); // all | phones | emails | companies...
 
 // Recherche textuelle
-const extractedSearch = ref<string>('');
+const extractedSearch = ref<string>("");
 
 // Computed property pour filtrage
 const filteredExtractedData = computed(() => {
@@ -200,7 +212,7 @@ const loadExtractedData = async () => {
 
 // Auto-chargement au changement d'onglet
 watch(currentView, (newView) => {
-  if (newView === 'extracted' && !extractedData.value) {
+  if (newView === "extracted" && !extractedData.value) {
     loadExtractedData();
   }
 });
@@ -231,28 +243,33 @@ Suivant le pattern `border-l-4` utilisé dans toute l'application :
 ## 🧪 Tests suggérés
 
 ### Test 1 : Affichage des statistiques
+
 1. Créer 3 rapports avec module `platform_analysis` (LinkedIn, Facebook)
 2. Aller dans "Gestion des données OSINT" > "Données extraites"
 3. Vérifier que la carte "Plateformes" affiche "2"
 4. Cliquer sur la carte → tableau filtré sur plateformes uniquement
 
 ### Test 2 : Recherche
+
 1. Dans l'onglet "Données extraites", chercher "LinkedIn"
 2. Vérifier que seule la ligne LinkedIn apparaît
 3. Voir le nombre de rapports (tooltip sur hover)
 4. Cliquer sur "Rechercher" → redirection vers `/search?q=LinkedIn`
 
 ### Test 3 : Filtrage par type
+
 1. Cliquer sur la carte "📧 Emails"
 2. Vérifier que seuls les emails s'affichent
 3. Cliquer sur "Voir tout" pour réinitialiser le filtre
 
 ### Test 4 : États vides
+
 1. Sur une instance vierge (aucun rapport)
 2. Vérifier l'affichage du message "Aucune donnée extraite"
 3. Vérifier les boutons CTA ("Créer un rapport", "Rechercher")
 
 ### Test 5 : Performance avec gros volume
+
 1. Créer 50 rapports avec multiples modules
 2. Vérifier le temps de chargement des stats (<2s)
 3. Vérifier que seuls 100 résultats max s'affichent
@@ -262,23 +279,24 @@ Suivant le pattern `border-l-4` utilisé dans toute l'application :
 
 ### Différence avec l'onglet "Entités"
 
-| Aspect | Entités | Données extraites |
-|--------|---------|-------------------|
-| Source | Table `Entity` (création manuelle) | Extraction automatique des rapports |
-| CRUD | Créer, modifier, supprimer | Lecture seule (auto-généré) |
-| Utilité | Marquage manuel, suivi | Visualisation de l'indexation |
-| Backend | `/entities` API | `/search/extracted` API |
+| Aspect  | Entités                            | Données extraites                   |
+| ------- | ---------------------------------- | ----------------------------------- |
+| Source  | Table `Entity` (création manuelle) | Extraction automatique des rapports |
+| CRUD    | Créer, modifier, supprimer         | Lecture seule (auto-généré)         |
+| Utilité | Marquage manuel, suivi             | Visualisation de l'indexation       |
+| Backend | `/entities` API                    | `/search/extracted` API             |
 
 ### Points d'attention
 
 1. **Cache** : Pas de cache implémenté, chaque appel refait l'agrégation complète
    - → Optimisation future possible avec Redis
-   
 2. **Temps réel** : Les données ne se mettent pas à jour automatiquement
+
    - → Nécessite un clic sur "Actualiser"
    - → Optimisation future : WebSocket ou polling
 
 3. **Doublons** : Utilisation de `Map` + `Set` pour éviter les doublons
+
    - Exemple : "LinkedIn" apparaît dans 5 rapports → 1 seule ligne avec count=5
 
 4. **Casse** : Pas de normalisation de la casse
@@ -294,6 +312,7 @@ Cette fonctionnalité complète l'indexation MeiliSearch :
 3. **Search Page** : Utilise l'index pour rechercher
 
 **Workflow complet** :
+
 ```
 Rapport créé
     ↓
@@ -348,6 +367,7 @@ MeiliSearch retourne les résultats
 ## 🎉 Résultat
 
 L'utilisateur peut maintenant :
+
 1. Voir en temps réel ce qui est indexé par MeiliSearch
 2. Filtrer par type de donnée (entreprise, plateforme, email...)
 3. Rechercher dans les données extraites
@@ -355,6 +375,7 @@ L'utilisateur peut maintenant :
 5. Lancer une recherche directement depuis une donnée
 
 **Exemple concret** :
+
 - L'utilisateur a 20 rapports mentionnant "LinkedIn"
 - Il va dans "Données extraites" > clique sur "Plateformes"
 - Il voit "LinkedIn" avec "20 rapport(s)"

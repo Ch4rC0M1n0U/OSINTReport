@@ -20,12 +20,14 @@ La page "Entités" ne montrait que les entités créées manuellement. Avec la n
 ### 1. Nouveau titre et navigation
 
 **Avant:**
+
 ```
 Entités
 Gérez et recherchez toutes les entités encodées dans vos rapports
 ```
 
 **Après:**
+
 ```
 Gestion des données OSINT
 Gérez et recherchez tous les éléments encodés dans vos rapports
@@ -36,6 +38,7 @@ Gérez et recherchez tous les éléments encodés dans vos rapports
 Deux onglets ajoutés :
 
 #### **Onglet "Entités"** (vue par défaut)
+
 - Conservation de toutes les fonctionnalités existantes
 - Liste/grille des entités
 - Recherche et filtres par type
@@ -44,6 +47,7 @@ Deux onglets ajoutés :
 - Badge avec le nombre total d'entités
 
 #### **Onglet "Données extraites"**
+
 - Nouvelle vue informative
 - Statistiques des données indexées
 - Explication détaillée de l'indexation automatique
@@ -52,15 +56,17 @@ Deux onglets ajoutés :
 ### 3. Vue "Données extraites" - Contenu
 
 #### Bloc informatif principal
+
 ```
 🔍 Données indexées par MeiliSearch
-Ces données sont automatiquement extraites de vos rapports 
+Ces données sont automatiquement extraites de vos rapports
 et indexées pour la recherche et la détection de corrélations.
 ```
 
 #### Statistiques globales (6 cartes)
 
 Affichage en grille responsive :
+
 - 📞 **Téléphones** indexés
 - 📧 **Emails** indexés
 - 🏢 **Entreprises** indexées (raison sociale, nom commercial)
@@ -73,6 +79,7 @@ Affichage en grille responsive :
 #### Section explicative détaillée
 
 Liste des types de données capturées :
+
 - ✅ Noms d'entreprises (raison sociale, nom commercial) depuis `companyDetails`
 - ✅ Plateformes sociales depuis `platform_analysis`
 - ✅ Pseudos/usernames depuis `metadata.aliases`
@@ -83,15 +90,17 @@ Liste des types de données capturées :
 #### Call-to-action
 
 Message informatif avec lien :
+
 ```
-💡 Pour afficher les statistiques réelles : 
-Allez dans Administration > Gestion de la recherche 
+💡 Pour afficher les statistiques réelles :
+Allez dans Administration > Gestion de la recherche
 et cliquez sur "Actualiser les statistiques"
 ```
 
 #### Guide utilisateur
 
 Section "Comment visualiser ces données ?" avec 4 étapes :
+
 1. Créez un rapport avec des modules contenant des données
 2. Les données sont automatiquement extraites et indexées
 3. Utilisez la recherche pour retrouver ces données
@@ -100,6 +109,7 @@ Section "Comment visualiser ces données ?" avec 4 étapes :
 #### Boutons d'action
 
 3 boutons pour navigation rapide :
+
 - 🆕 **Créer un rapport** → `/reports/create`
 - 🔍 **Rechercher** → `/search`
 - ⚙️ **Gestion de la recherche** → `/admin/search`
@@ -109,12 +119,14 @@ Section "Comment visualiser ces données ?" avec 4 étapes :
 #### État vide amélioré
 
 **Avant:**
+
 ```
 Aucune entité trouvée
 Créez votre première entité pour commencer
 ```
 
 **Après:**
+
 ```
 Aucune entité trouvée
 Créez votre première entité pour commencer
@@ -127,6 +139,7 @@ Ajout d'un gros bouton CTA pour faciliter la création de la première entité.
 ### 5. Design cohérent
 
 Tous les éléments suivent le pattern de design établi :
+
 - `border-l-4` avec couleurs thématiques
 - Icônes HugeIcons cohérentes
 - Cards avec stats colorées (primary, accent, secondary, info, success, warning)
@@ -138,16 +151,19 @@ Tous les éléments suivent le pattern de design établi :
 ### `/frontend/src/pages/EntitiesPage.vue`
 
 **Imports ajoutés:**
+
 ```typescript
 import { Database01Icon, Settings02Icon } from "@hugeicons/core-free-icons";
 ```
 
 **État ajouté:**
+
 ```typescript
-const currentView = ref<'entities' | 'extracted'>('entities');
+const currentView = ref<"entities" | "extracted">("entities");
 ```
 
 **Structure template:**
+
 ```vue
 <header> <!-- Titre modifié -->
 <div> <!-- Navigation par onglets -->
@@ -158,11 +174,13 @@ const currentView = ref<'entities' | 'extracted'>('entities');
 ## 📊 Impact utilisateur
 
 ### Avant
+
 - Page "Entités" limitée à la gestion manuelle
 - Pas de visibilité sur l'indexation automatique
 - Pas d'indication sur les données extraites des rapports
 
 ### Après
+
 - ✅ Page renommée "Gestion des données OSINT" (scope élargi)
 - ✅ Vue "Entités" : gestion manuelle (inchangée)
 - ✅ Vue "Données extraites" : information et pédagogie
@@ -173,6 +191,7 @@ const currentView = ref<'entities' | 'extracted'>('entities');
 ## 🔄 Évolutions futures possibles
 
 ### Phase 2 : Statistiques réelles
+
 ```typescript
 // Intégration avec l'API MeiliSearch pour obtenir les vraies valeurs
 const stats = await searchAdminApi.getIndexStats();
@@ -183,12 +202,14 @@ const stats = await searchAdminApi.getIndexStats();
 ```
 
 ### Phase 3 : Vue détaillée des données
+
 - Liste des téléphones indexés avec source (rapport + module)
 - Liste des entreprises avec liens vers les rapports
 - Filtres par type, date, rapport
 - Export CSV des données indexées
 
 ### Phase 4 : Gestion avancée
+
 - Fusion de doublons
 - Suppression de données indexées
 - Réindexation manuelle par entité
@@ -219,6 +240,7 @@ La page "Gestion des données OSINT" offre maintenant :
 ---
 
 **Notes techniques:**
+
 - Compatible avec l'indexation MeiliSearch améliorée (voir `FEATURE-ENHANCED-SEARCH-INDEXATION.md`)
 - Aucun changement sur l'API backend nécessaire
 - Préparation pour l'affichage de statistiques réelles (API à créer)

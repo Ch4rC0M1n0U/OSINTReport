@@ -434,18 +434,19 @@
     </dialog>
 
     <!-- Modal Détails Donnée Extraite -->
-    <dialog ref="extractedDetailsModal" class="modal">
-      <div class="modal-box max-w-3xl">
-        <form method="dialog">
-          <button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2">✕</button>
-        </form>
-        
-        <h3 class="font-bold text-2xl mb-4 flex items-center gap-2">
-          <HugeiconsIcon :icon="getTypeIcon(selectedExtractedItem?.type || '')" :size="28" />
-          Détails de la donnée
-        </h3>
+    <Teleport to="body">
+      <dialog ref="extractedDetailsModal" class="modal">
+        <div class="modal-box max-w-3xl">
+          <form method="dialog">
+            <button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2">✕</button>
+          </form>
+          
+          <h3 class="font-bold text-2xl mb-4 flex items-center gap-2">
+            <HugeiconsIcon :icon="getTypeIcon(selectedExtractedItem?.type || '')" :size="28" />
+            Détails de la donnée
+          </h3>
 
-        <div v-if="selectedExtractedItem" class="space-y-6">
+          <div v-if="selectedExtractedItem" class="space-y-6">
           <!-- Type et Valeur -->
           <div class="bg-base-200 border-l-4 p-4" :class="getTypeBorderClass(selectedExtractedItem.type)">
             <div class="flex items-center gap-2 mb-2">
@@ -469,19 +470,19 @@
             
             <div class="space-y-2 max-h-96 overflow-y-auto">
               <router-link
-                v-for="reportId in selectedExtractedItem.reports"
-                :key="reportId"
-                :to="`/reports/${reportId}`"
+                v-for="report in selectedExtractedItem.reports"
+                :key="report.id"
+                :to="`/reports/${report.id}`"
                 class="bg-base-100 border-l-4 border-primary p-4 hover:bg-base-200 transition-colors flex items-center justify-between group"
               >
                 <div class="flex items-center gap-3">
                   <HugeiconsIcon :icon="FileAttachmentIcon" :size="20" class="text-primary" />
                   <div>
                     <p class="font-semibold group-hover:text-primary transition-colors">
-                      Rapport {{ reportId.substring(0, 8) }}...
+                      {{ report.title || report.caseNumber || 'Sans titre' }}
                     </p>
                     <p class="text-xs text-base-content/60">
-                      ID complet : {{ reportId }}
+                      {{ report.caseNumber || `ID: ${report.id.substring(0, 8)}...` }}
                     </p>
                   </div>
                 </div>
@@ -509,6 +510,7 @@
         <button>close</button>
       </form>
     </dialog>
+    </Teleport>
     </div>
 
     <!-- Vue Données extraites -->
@@ -770,13 +772,14 @@
                 <p class="text-xs text-base-content/60 font-semibold mb-1">Rapports sources :</p>
                 <div class="flex flex-wrap gap-1">
                   <router-link
-                    v-for="reportId in item.reports.slice(0, 3)"
-                    :key="reportId"
-                    :to="`/reports/${reportId}`"
+                    v-for="report in item.reports.slice(0, 3)"
+                    :key="report.id"
+                    :to="`/reports/${report.id}`"
                     class="badge badge-ghost badge-xs hover:badge-primary"
                     @click.stop
+                    :title="`${report.title} (${report.caseNumber || report.id.substring(0, 8)}...)`"
                   >
-                    {{ reportId.substring(0, 8) }}...
+                    {{ report.title || report.caseNumber || report.id.substring(0, 8) + '...' }}
                   </router-link>
                   <span v-if="item.count > 3" class="badge badge-ghost badge-xs">
                     +{{ item.count - 3 }} autre(s)
@@ -818,7 +821,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from "vue";
+import { ref, computed, onMounted, watch, nextTick } from "vue";
+import { useRouter } from "vue-router";
 import { entitiesApi, type Entity, type EntityType } from "@/services/api/entities";
 import { searchService, type ExtractedData } from "@/services/api/search";
 import { useAuthStore } from "@/stores/auth";
@@ -853,6 +857,7 @@ import {
 } from "@hugeicons/core-free-icons";
 
 const authStore = useAuthStore();
+const router = useRouter();
 
 const canWrite = computed(() => authStore.hasPermission("reports:write"));
 
@@ -875,7 +880,12 @@ const loadingExtracted = ref(false);
 const errorExtracted = ref<string | null>(null);
 const extractedFilter = ref<'all' | 'phones' | 'emails' | 'names' | 'addresses' | 'urls' | 'accounts' | 'platforms' | 'companies' | 'aliases'>('all');
 const extractedSearch = ref('');
-const selectedExtractedItem = ref<{ type: string; value: string; reports: string[]; count: number } | null>(null);
+const selectedExtractedItem = ref<{ 
+  type: string; 
+  value: string; 
+  reports: Array<{ id: string; title: string; caseNumber: string | null }>; 
+  count: number 
+} | null>(null);
 const extractedDetailsModal = ref<HTMLDialogElement>();
 
 // Modals
@@ -1097,7 +1107,12 @@ const loadExtractedData = async () => {
 const filteredExtractedData = computed(() => {
   if (!extractedData.value) return [];
   
-  let items: Array<{ value: string; reports: string[]; count: number; type: string }> = [];
+  let items: Array<{ 
+    value: string; 
+    reports: Array<{ id: string; title: string; caseNumber: string | null }>; 
+    count: number; 
+    type: string 
+  }> = [];
   
   if (extractedFilter.value === 'all') {
     items = [
@@ -1137,7 +1152,11 @@ const filteredExtractedData = computed(() => {
     const search = extractedSearch.value.toLowerCase();
     items = items.filter(item => 
       item.value.toLowerCase().includes(search) ||
-      item.reports.some(r => r.toLowerCase().includes(search))
+      item.reports.some(r => 
+        r.title?.toLowerCase().includes(search) ||
+        r.caseNumber?.toLowerCase().includes(search) ||
+        r.id.toLowerCase().includes(search)
+      )
     );
   }
   
@@ -1220,14 +1239,40 @@ const getFilterLabel = (filter: string): string => {
   return labels[filter] || filter;
 };
 
-const viewExtractedItem = (item: { type: string; value: string; reports: string[]; count: number }) => {
-  selectedExtractedItem.value = item;
-  extractedDetailsModal.value?.showModal();
+const viewExtractedItem = (item: { 
+  type: string; 
+  value: string; 
+  reports: Array<{ id: string; title: string; caseNumber: string | null }>; 
+  count: number 
+}) => {
+  console.log('[viewExtractedItem] Opening modal with item:', item);
+  try {
+    selectedExtractedItem.value = item;
+    console.log('[viewExtractedItem] selectedExtractedItem set:', selectedExtractedItem.value);
+    console.log('[viewExtractedItem] Modal element:', extractedDetailsModal.value);
+    
+    nextTick(() => {
+      if (extractedDetailsModal.value) {
+        console.log('[viewExtractedItem] Calling showModal()');
+        // Fermer d'abord si déjà ouvert
+        if (extractedDetailsModal.value.open) {
+          extractedDetailsModal.value.close();
+        }
+        // Ouvrir le modal
+        extractedDetailsModal.value.showModal();
+        console.log('[viewExtractedItem] Modal should be open now');
+      } else {
+        console.error('[viewExtractedItem] Modal ref is null!');
+      }
+    });
+  } catch (error) {
+    console.error('[viewExtractedItem] Error:', error);
+  }
 };
 
 const searchInReports = (value: string) => {
   // Navigation vers la page de recherche avec le terme pré-rempli
-  window.location.href = `/search?q=${encodeURIComponent(value)}`;
+  router.push({ name: 'search', query: { q: value } });
 };
 
 // Init

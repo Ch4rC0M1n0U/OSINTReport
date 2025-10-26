@@ -8,6 +8,7 @@ et ce projet adhère au [Semantic Versioning](https://semver.org/lang/fr/).
 ## [Non publié]
 
 ### En développement
+
 - Interface de génération de rapports PDF avec template Police Belge
 - Graphe de corrélations visuel interactif
 - Signatures numériques pour rapports
@@ -15,6 +16,7 @@ et ce projet adhère au [Semantic Versioning](https://semver.org/lang/fr/).
 ## [1.1.1] - 2025-10-26
 
 ### Amélioré
+
 - **Affichage en cartes des données extraites** : Interface remaniée avec grille de cartes au lieu de tableau
   - Affichage responsive (1/2/3 colonnes selon la taille d'écran)
   - Cartes colorées avec `border-l-4` selon le type de donnée
@@ -25,6 +27,7 @@ et ce projet adhère au [Semantic Versioning](https://semver.org/lang/fr/).
   - Meilleure expérience utilisateur et cohérence avec l'affichage des entités
 
 ### Ajouté
+
 - Variable `selectedExtractedItem` pour stocker l'item sélectionné
 - Variable `extractedDetailsModal` pour la référence à la modal
 - Fonction `getTypeBorderClass()` pour les classes de bordure par type
@@ -32,6 +35,7 @@ et ce projet adhère au [Semantic Versioning](https://semver.org/lang/fr/).
 - Modal complète avec navigation directe vers tous les rapports sources
 
 ### Modifié
+
 - Template : Remplacement du tableau par une grille CSS responsive
 - Template : Ajout de la modal de détails avec liste de rapports
 - Design : Cartes avec hover effect et transitions
@@ -39,6 +43,7 @@ et ce projet adhère au [Semantic Versioning](https://semver.org/lang/fr/).
 ## [1.1.0] - 2025-01-XX
 
 ### Ajouté
+
 - **Visualisation des données extraites** : Nouvelle interface complète pour voir toutes les données extraites automatiquement des rapports
   - Onglet "Données extraites" dans la page "Gestion des données OSINT"
   - 6 cartes statistiques interactives (Téléphones, Emails, Entreprises, Plateformes, Pseudos, Adresses)
@@ -54,16 +59,19 @@ et ce projet adhère au [Semantic Versioning](https://semver.org/lang/fr/).
 - **Scripts** : Script de test automatisé `test-extracted-data.sh`
 
 ### Modifié
+
 - Page "Entités" renommée en "Gestion des données OSINT"
 - Système d'onglets ajouté : "Entités" (manuel) et "Données extraites" (automatique)
 - README.md mis à jour avec la nouvelle fonctionnalité
 
 ### Performances
+
 - Limite d'affichage à 100 résultats pour maintenir la réactivité
 - Utilisation de Maps et Sets pour agrégation efficace côté backend
 - Debouncing sur la recherche (300ms)
 
 ### Sécurité
+
 - Permission `reports:read` requise pour l'endpoint `/api/search/extracted`
 - Validation via token JWT
 - Protection XSS via templating Vue.js
@@ -72,6 +80,7 @@ et ce projet adhère au [Semantic Versioning](https://semver.org/lang/fr/).
 ## [1.0.0] - 2025-01-XX
 
 ### Ajouté
+
 - **Architecture complète** : Backend Express + Frontend Vue 3
 - **Authentification** : Système JWT avec cookies httpOnly
 - **RBAC** : Permissions granulaires (reports:read, reports:write, users:read, users:write, system:admin)
@@ -89,6 +98,7 @@ et ce projet adhère au [Semantic Versioning](https://semver.org/lang/fr/).
 - **Documentation** : 15+ documents techniques et guides utilisateur
 
 ### Technologies
+
 - **Backend** : Node.js 20, Express 5, TypeScript 5, Prisma
 - **Frontend** : Vue 3, Vite, Pinia, Vue Router, TypeScript
 - **UI** : Tailwind CSS, DaisyUI, HugeIcons
@@ -98,6 +108,7 @@ et ce projet adhère au [Semantic Versioning](https://semver.org/lang/fr/).
 - **Validation** : Zod schemas
 
 ### Sécurité
+
 - Authentification JWT avec refresh tokens
 - Permissions RBAC granulaires
 - Chiffrement AES-256-GCM (KeyStore + VaultItem)
@@ -108,6 +119,7 @@ et ce projet adhère au [Semantic Versioning](https://semver.org/lang/fr/).
 - Hash Argon2 pour mots de passe
 
 ### Performance
+
 - Pagination sur toutes les listes
 - Lazy loading des modules de rapports
 - Debouncing sur recherche et autocomplétion
@@ -115,6 +127,7 @@ et ce projet adhère au [Semantic Versioning](https://semver.org/lang/fr/).
 - Cache client via Pinia stores
 
 ### Documentation
+
 - Guide de démarrage rapide
 - Documentation API complète (50+ endpoints)
 - Architecture détaillée

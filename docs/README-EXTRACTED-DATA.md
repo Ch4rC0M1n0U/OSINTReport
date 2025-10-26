@@ -52,8 +52,9 @@ Menu → Gestion des données OSINT → Onglet "Données extraites"
 ### 1. 📊 Statistiques en temps réel
 
 6 cartes interactives affichant les totaux :
+
 - 📱 Téléphones
-- 📧 Emails  
+- 📧 Emails
 - 🏢 Entreprises
 - 🌐 Plateformes
 - 👤 Pseudos
@@ -64,6 +65,7 @@ Menu → Gestion des données OSINT → Onglet "Données extraites"
 ### 2. 🔍 Recherche intelligente
 
 Barre de recherche avec :
+
 - Recherche dans les valeurs
 - Recherche dans les IDs de rapports
 - Debouncing (300ms)
@@ -72,6 +74,7 @@ Barre de recherche avec :
 ### 3. 📋 Tableau détaillé
 
 Colonnes :
+
 - **Type** : Badge coloré par catégorie
 - **Valeur** : La donnée elle-même
 - **Rapports** : Nombre + tooltip avec IDs
@@ -92,17 +95,17 @@ Clic sur "🔍 Rechercher" → Redirection vers `/search?q=valeur`
 
 ## 📊 Types de données extraites
 
-| Type | Source | Exemple |
-|------|--------|---------|
-| 📱 **Téléphones** | `personDetails.phone`, `companyDetails.phone` | +33 6 12 34 56 78 |
-| 📧 **Emails** | `personDetails.email`, `companyDetails.email` | contact@example.com |
-| 🏢 **Entreprises** | `companyDetails.legalName`, `companyDetails.tradeName` | Acme Corp |
-| 🌐 **Plateformes** | `platform_analysis` (name, category, url) | LinkedIn |
-| 👤 **Pseudos** | `metadata.aliases`, usernames | @johndoe |
-| 👥 **Noms** | `personDetails` (firstName, lastName) | John Doe |
-| 📍 **Adresses** | Tous modules avec address/city/postalCode | 123 Rue de Paris, 75001 Paris |
-| 🔗 **URLs** | `websites`, platform urls | https://example.com |
-| 💳 **Comptes** | usernames, handles | johndoe123 |
+| Type               | Source                                                 | Exemple                       |
+| ------------------ | ------------------------------------------------------ | ----------------------------- |
+| 📱 **Téléphones**  | `personDetails.phone`, `companyDetails.phone`          | +33 6 12 34 56 78             |
+| 📧 **Emails**      | `personDetails.email`, `companyDetails.email`          | contact@example.com           |
+| 🏢 **Entreprises** | `companyDetails.legalName`, `companyDetails.tradeName` | Acme Corp                     |
+| 🌐 **Plateformes** | `platform_analysis` (name, category, url)              | LinkedIn                      |
+| 👤 **Pseudos**     | `metadata.aliases`, usernames                          | @johndoe                      |
+| 👥 **Noms**        | `personDetails` (firstName, lastName)                  | John Doe                      |
+| 📍 **Adresses**    | Tous modules avec address/city/postalCode              | 123 Rue de Paris, 75001 Paris |
+| 🔗 **URLs**        | `websites`, platform urls                              | https://example.com           |
+| 💳 **Comptes**     | usernames, handles                                     | johndoe123                    |
 
 **Total** : 9 types de données extraites automatiquement
 
@@ -177,19 +180,19 @@ chmod +x scripts/test-extracted-data.sh
 
 ### Pour utilisateurs
 
-| Document | Description | Durée |
-|----------|-------------|-------|
-| [USER-GUIDE-EXTRACTED-DATA.md](docs/USER-GUIDE-EXTRACTED-DATA.md) | Guide utilisateur simple | 5 min |
+| Document                                                          | Description               | Durée  |
+| ----------------------------------------------------------------- | ------------------------- | ------ |
+| [USER-GUIDE-EXTRACTED-DATA.md](docs/USER-GUIDE-EXTRACTED-DATA.md) | Guide utilisateur simple  | 5 min  |
 | [QUICKSTART-EXTRACTED-DATA.md](docs/QUICKSTART-EXTRACTED-DATA.md) | Guide de démarrage rapide | 10 min |
-| [READY-TO-TEST.md](docs/READY-TO-TEST.md) | Instructions de test | 2 min |
+| [READY-TO-TEST.md](docs/READY-TO-TEST.md)                         | Instructions de test      | 2 min  |
 
 ### Pour développeurs
 
-| Document | Description | Durée |
-|----------|-------------|-------|
-| [FEATURE-EXTRACTED-DATA-DISPLAY.md](docs/FEATURE-EXTRACTED-DATA-DISPLAY.md) | Documentation technique complète | 30 min |
-| [SESSION-EXTRACTED-DATA-COMPLETE.md](docs/SESSION-EXTRACTED-DATA-COMPLETE.md) | Résumé de session | 25 min |
-| [DELIVERY-EXTRACTED-DATA.md](docs/DELIVERY-EXTRACTED-DATA.md) | Document de livraison | 20 min |
+| Document                                                                      | Description                      | Durée  |
+| ----------------------------------------------------------------------------- | -------------------------------- | ------ |
+| [FEATURE-EXTRACTED-DATA-DISPLAY.md](docs/FEATURE-EXTRACTED-DATA-DISPLAY.md)   | Documentation technique complète | 30 min |
+| [SESSION-EXTRACTED-DATA-COMPLETE.md](docs/SESSION-EXTRACTED-DATA-COMPLETE.md) | Résumé de session                | 25 min |
+| [DELIVERY-EXTRACTED-DATA.md](docs/DELIVERY-EXTRACTED-DATA.md)                 | Document de livraison            | 20 min |
 
 ### Index complet
 
@@ -220,41 +223,33 @@ Retour JSON avec stats
 ### Frontend
 
 ```vue
-EntitiesPage.vue
-  ↓
-Onglet "Données extraites"
-  ↓
-loadExtractedData()
-  ↓
-searchService.getExtractedData()
-  ↓
-filteredExtractedData (computed)
-  ↓
-Template : Stats + Recherche + Tableau
+EntitiesPage.vue ↓ Onglet "Données extraites" ↓ loadExtractedData() ↓
+searchService.getExtractedData() ↓ filteredExtractedData (computed) ↓ Template :
+Stats + Recherche + Tableau
 ```
 
 ---
 
 ## 🔐 Sécurité
 
-| Aspect | Implémentation |
-|--------|----------------|
-| **Authentification** | JWT requis |
-| **Autorisation** | Permission `reports:read` |
-| **Validation** | Prisma ORM (SQL injection) |
-| **XSS** | Vue.js templating |
+| Aspect                | Implémentation             |
+| --------------------- | -------------------------- |
+| **Authentification**  | JWT requis                 |
+| **Autorisation**      | Permission `reports:read`  |
+| **Validation**        | Prisma ORM (SQL injection) |
+| **XSS**               | Vue.js templating          |
 | **Données sensibles** | Pas d'exposition sans auth |
 
 ---
 
 ## ⚡ Performances
 
-| Métrique | Valeur | Status |
-|----------|--------|--------|
-| **API Response** | <2s (50 rapports) | ✅ Acceptable |
-| **Frontend Render** | <500ms | ✅ Instantané |
-| **Agrégation** | Map + Set | ✅ Optimisé |
-| **Affichage** | 100 résultats max | ✅ Rapide |
+| Métrique            | Valeur            | Status        |
+| ------------------- | ----------------- | ------------- |
+| **API Response**    | <2s (50 rapports) | ✅ Acceptable |
+| **Frontend Render** | <500ms            | ✅ Instantané |
+| **Agrégation**      | Map + Set         | ✅ Optimisé   |
+| **Affichage**       | 100 résultats max | ✅ Rapide     |
 
 ### Optimisations futures
 
@@ -272,6 +267,7 @@ Template : Stats + Recherche + Tableau
 **Problème** : Retrouver tous les rapports mentionnant `contact@suspect.com`
 
 **Solution** :
+
 1. Données extraites → Rechercher "contact@suspect.com"
 2. Voir combien de rapports (ex: 5)
 3. Cliquer "Rechercher" → Voir tous les rapports
@@ -281,6 +277,7 @@ Template : Stats + Recherche + Tableau
 **Problème** : Savoir quelles plateformes sont les plus documentées
 
 **Solution** :
+
 1. Données extraites → Clic carte "Plateformes"
 2. Liste triée par fréquence : LinkedIn (45), Facebook (32), Instagram (12)
 
@@ -289,6 +286,7 @@ Template : Stats + Recherche + Tableau
 **Problème** : Combien de téléphones/emails collectés au total ?
 
 **Solution** :
+
 1. Données extraites → Voir les cartes stats
 2. Vue instantanée : 📱 45 téléphones, 📧 67 emails
 
@@ -329,12 +327,12 @@ Backend          Frontend         Documentation     Scripts
 
 ## 🎉 Impact
 
-| Avant | Après |
-|-------|-------|
-| ❌ Données invisibles | ✅ Interface complète |
+| Avant                          | Après                              |
+| ------------------------------ | ---------------------------------- |
+| ❌ Données invisibles          | ✅ Interface complète              |
 | ❌ Recherche manuelle (10 min) | ✅ Recherche automatique (2 clics) |
-| ❌ Pas de statistiques | ✅ Stats en temps réel |
-| ❌ Pas de traçabilité | ✅ Traçabilité complète |
+| ❌ Pas de statistiques         | ✅ Stats en temps réel             |
+| ❌ Pas de traçabilité          | ✅ Traçabilité complète            |
 
 ### Bénéfices
 

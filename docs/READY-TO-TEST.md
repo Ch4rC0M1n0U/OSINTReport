@@ -52,6 +52,7 @@ chmod +x scripts/test-extracted-data.sh
 ## 📊 Qu'est-ce qui a été livré ?
 
 ### Backend
+
 - ✅ Endpoint `GET /api/search/extracted`
 - ✅ Méthode `SearchService.getExtractedData()`
 - ✅ Extraction de 9 types de données
@@ -59,6 +60,7 @@ chmod +x scripts/test-extracted-data.sh
 - ✅ Statistiques complètes
 
 ### Frontend
+
 - ✅ Onglet "Données extraites"
 - ✅ 6 cartes statistiques interactives
 - ✅ Tableau avec filtrage et recherche
@@ -68,6 +70,7 @@ chmod +x scripts/test-extracted-data.sh
 - ✅ HugeIcons + DaisyUI
 
 ### Documentation
+
 - ✅ 5 documents Markdown (1500+ lignes)
 - ✅ Script de test Bash
 - ✅ CHANGELOG mis à jour
@@ -79,7 +82,7 @@ chmod +x scripts/test-extracted-data.sh
 ✅ **Filtrer** par type (téléphones, emails, entreprises...)  
 ✅ **Rechercher** dans toutes les données collectées  
 ✅ Voir **combien de rapports** contiennent chaque donnée  
-✅ **Naviguer** rapidement vers la recherche depuis une donnée  
+✅ **Naviguer** rapidement vers la recherche depuis une donnée
 
 ## 📞 En cas de problème
 
@@ -96,6 +99,7 @@ chmod +x scripts/test-extracted-data.sh
 **Problème** : "Je veux voir tous les rapports qui mentionnent LinkedIn"
 
 **Solution** :
+
 1. Menu → Gestion des données OSINT → Données extraites
 2. Cliquer sur la carte "🌐 Plateformes"
 3. Chercher "LinkedIn" dans la barre de recherche
