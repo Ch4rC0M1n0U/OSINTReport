@@ -249,6 +249,12 @@ export class ReportService {
       },
       dateRangeStart: input.dateRangeStart ?? null,
       dateRangeEnd: input.dateRangeEnd ?? null,
+      // Champs OSINT
+      investigationContext: input.investigationContext ?? null,
+      legalBasis: input.legalBasis ?? null,
+      urgencyLevel: input.urgencyLevel ?? null,
+      classification: input.classification ?? null,
+      keywords: input.keywords ?? [],
     };
 
     const report = await prisma.report.create({ data });
@@ -355,6 +361,20 @@ export class ReportService {
     });
     
     return updatedReport;
+  }
+
+  static async deleteReport(reportId: string) {
+    await ReportService.ensureReportExists(reportId);
+
+    // Supprimer le rapport (les modules, attachments, etc. seront supprimés en cascade)
+    await prisma.report.delete({ where: { id: reportId } });
+    
+    // Supprimer de l'index Meilisearch (async, sans bloquer)
+    SearchService.deleteReport(reportId).catch((error) => {
+      logger.warn({ err: error, reportId }, "⚠️  Échec de suppression du rapport de l'index");
+    });
+    
+    logger.info({ reportId }, "✅ Rapport supprimé");
   }
 
   static async listModules(reportId: string) {

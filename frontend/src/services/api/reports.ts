@@ -5,10 +5,10 @@ export interface Report {
   title: string;
   caseNumber?: string;
   requestingService?: string;
-  investigationContext: string;
-  urgencyLevel: "ROUTINE" | "URGENT" | "CRITICAL";
-  classification: "PUBLIC" | "RESTRICTED" | "CONFIDENTIAL" | "SECRET";
-  legalBasis?: string;
+  investigationContext?: string | null;
+  urgencyLevel?: "ROUTINE" | "URGENT" | "CRITICAL" | null;
+  classification?: "PUBLIC" | "RESTRICTED" | "CONFIDENTIAL" | "SECRET" | null;
+  legalBasis?: string | null;
   keywords: string[];
   status: "DRAFT" | "PUBLISHED" | "ARCHIVED";
   issuedAt?: string;
@@ -53,7 +53,7 @@ export interface CreateReportData {
   title: string;
   caseNumber?: string;
   requestingService?: string;
-  investigationContext: string;
+  investigationContext?: string;
   urgencyLevel: "ROUTINE" | "URGENT" | "CRITICAL";
   classification: "PUBLIC" | "RESTRICTED" | "CONFIDENTIAL" | "SECRET";
   legalBasis?: string;

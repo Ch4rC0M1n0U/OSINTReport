@@ -46,7 +46,7 @@ export class PDFController {
         officerName: req.user
           ? `${req.user.firstName} ${req.user.lastName}`
           : "Anonyme",
-        officerRank: "Inspecteur", // À améliorer : ajouter le grade dans le modèle User
+        officerRank: req.user?.grade || "Agent",
       });
       logger.info({ reportId, size: pdfBuffer.length }, "✅ PDF généré avec succès");
 

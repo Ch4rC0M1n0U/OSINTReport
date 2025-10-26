@@ -43,6 +43,12 @@ reportRouter.patch(
   (req, res, next) => ReportController.update(req, res, next)
 );
 
+reportRouter.delete(
+  "/:reportId",
+  requirePermissions(PermissionCode.ADMIN),
+  (req, res, next) => ReportController.delete(req, res, next)
+);
+
 reportRouter.get(
   "/:reportId/modules",
   requirePermissions(PermissionCode.REPORTS_READ),

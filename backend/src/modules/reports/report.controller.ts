@@ -71,6 +71,15 @@ export class ReportController {
     }
   }
 
+  static async delete(req: Request, res: Response, next: NextFunction) {
+    try {
+      await ReportService.deleteReport(req.params.reportId);
+      res.status(204).send();
+    } catch (error) {
+      next(error);
+    }
+  }
+
   static async listModules(req: Request, res: Response, next: NextFunction) {
     try {
       const modules = await ReportService.listModules(req.params.reportId);

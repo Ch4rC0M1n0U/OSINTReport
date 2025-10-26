@@ -10,6 +10,7 @@ import {
   MODULE_TYPE_METADATA,
 } from "@/services/api/reports";
 import { correlationsApi, type Correlation } from "@/services/api/correlations";
+import { useAuthStore } from "@/stores/auth";
 import EntitySelector from "@/components/reports/EntitySelector.vue";
 import EntityDialog from "@/components/reports/EntityDialog.vue";
 import CorrelationAlert from "@/components/reports/CorrelationAlert.vue";
@@ -37,8 +38,10 @@ import ResearchSummaryModule from "@/components/modules/ResearchSummaryModule.vu
 const route = useRoute();
 const router = useRouter();
 const modal = useModal();
+const authStore = useAuthStore();
 
 const reportId = computed(() => route.params.id as string);
+const isAdmin = computed(() => authStore.user?.roleName === 'admin');
 
 const report = ref<Report | null>(null);
 const modules = ref<ReportModule[]>([]);
@@ -265,16 +268,25 @@ async function handleChangeStatus(newStatus: "DRAFT" | "PUBLISHED" | "ARCHIVED")
 function openEditInfoDialog() {
   if (!report.value) return;
   
+  console.log('📋 Rapport chargé:', report.value);
+  console.log('🔍 urgencyLevel:', report.value.urgencyLevel);
+  console.log('🔒 classification:', report.value.classification);
+  console.log('📝 investigationContext:', report.value.investigationContext);
+  console.log('⚖️ legalBasis:', report.value.legalBasis);
+  
   editInfoForm.value = {
     title: report.value.title,
     caseNumber: report.value.caseNumber || "",
     requestingService: report.value.requestingService || "",
-    investigationContext: report.value.investigationContext,
-    urgencyLevel: report.value.urgencyLevel,
-    classification: report.value.classification,
+    investigationContext: report.value.investigationContext || "",
+    urgencyLevel: (report.value.urgencyLevel as "ROUTINE" | "URGENT" | "CRITICAL") || "ROUTINE",
+    classification: (report.value.classification as "PUBLIC" | "RESTRICTED" | "CONFIDENTIAL" | "SECRET") || "CONFIDENTIAL",
     legalBasis: report.value.legalBasis || "",
     keywords: report.value.keywords ? [...report.value.keywords] : [],
   };
+  
+  console.log('✅ Formulaire initialisé:', editInfoForm.value);
+  
   keywordInput.value = "";
   showEditInfoDialog.value = true;
 }
@@ -300,7 +312,7 @@ async function handleSaveEditInfo() {
     return;
   }
 
-  if (!editInfoForm.value.investigationContext.trim()) {
+  if (!editInfoForm.value.investigationContext || !editInfoForm.value.investigationContext.trim()) {
     await modal.showWarning(
       "Le contexte de l'enquête est obligatoire.",
       "Champ requis"
@@ -361,6 +373,28 @@ async function handleDuplicate() {
     await modal.showError(
       "Une erreur est survenue lors de la duplication du rapport.",
       "Erreur de duplication"
+    );
+    console.error(err);
+  }
+}
+
+async function handleDeleteReport() {
+  const confirmed = await modal.showConfirm(
+    "⚠️ Cette action est irréversible. Le rapport et tous ses modules seront définitivement supprimés.",
+    "Supprimer le rapport",
+    "Supprimer",
+    "Annuler"
+  );
+  if (!confirmed) return;
+
+  try {
+    await reportsApi.delete(reportId.value);
+    // Rediriger immédiatement sans attendre la modal
+    router.push({ name: "reports.list" });
+  } catch (err) {
+    await modal.showError(
+      "Une erreur est survenue lors de la suppression du rapport.",
+      "Erreur de suppression"
     );
     console.error(err);
   }
@@ -513,68 +547,154 @@ function getClassificationInfo(classif: string) {
 <template>
   <div class="space-y-6">
     <!-- En-tête -->
-    <div class="flex items-start justify-between">
-      <div class="flex-1">
-        <button
-          class="btn btn-ghost btn-sm mb-2"
-          @click="router.push({ name: 'reports.list' })"
-        >
-          ← Retour
-        </button>
-        <h2 v-if="report" class="text-2xl font-semibold">
-          {{ report.title }}
-        </h2>
-        <div v-if="report" class="flex gap-2 mt-2">
-          <span class="badge" :class="statusColors[report.status]">
-            {{ report.status }}
-          </span>
-          <span v-if="report.caseNumber" class="badge badge-outline">
-            📁 {{ report.caseNumber }}
-          </span>
-          <span class="badge badge-outline" :class="getUrgencyInfo(report.urgencyLevel).color">
-            {{ getUrgencyInfo(report.urgencyLevel).icon }} {{ getUrgencyInfo(report.urgencyLevel).label }}
-          </span>
-          <span class="badge badge-outline">
-            {{ getClassificationInfo(report.classification).icon }} {{ getClassificationInfo(report.classification).label }}
-          </span>
-        </div>
-      </div>
+    <div class="bg-base-200 border-l-4 border-primary p-6">
+      <div class="flex items-start justify-between">
+        <div class="flex-1">
+          <button
+            class="btn btn-ghost btn-sm mb-3"
+            @click="router.push({ name: 'reports.list' })"
+          >
+            ← Retour
+          </button>
+          <h2 v-if="report" class="text-3xl font-bold mb-4">
+            {{ report.title }}
+          </h2>
+          
+          <!-- Métadonnées du rapport -->
+          <div v-if="report" class="grid grid-cols-1 md:grid-cols-4 gap-3">
+            <!-- Statut -->
+            <div class="flex items-center gap-2">
+              <div class="w-1 h-8 rounded-sm" :class="statusColors[report.status].replace('badge-', 'bg-')"></div>
+              <div>
+                <div class="text-xs text-base-content/60 uppercase tracking-wider">Statut</div>
+                <div class="font-semibold">{{ report.status }}</div>
+              </div>
+            </div>
 
-      <div class="dropdown dropdown-end" v-if="report">
-        <label tabindex="0" class="btn btn-sm">
-          Actions ▾
-        </label>
-        <ul tabindex="0" class="dropdown-content menu p-2 shadow bg-base-100 rounded-box w-52 z-10">
-          <li>
-            <a @click="openEditInfoDialog">✏️ Modifier les informations</a>
-          </li>
-          <li class="divider"></li>
-          <li>
-            <a @click="handleExportPDF" :class="{ 'loading': exportingPDF }">
-              📄 Exporter PDF
-            </a>
-          </li>
-          <li class="divider"></li>
-          <li>
-            <a @click="showStatsModal = true">📊 Statistiques</a>
-          </li>
-          <li>
-            <a @click="loadCorrelations">🔗 Voir corrélations</a>
-          </li>
-          <li>
-            <a @click="detectCorrelations">🔍 Détecter corrélations</a>
-          </li>
-          <li class="divider"></li>
-          <li v-if="report.status === 'DRAFT'">
-            <a @click="handleChangeStatus('PUBLISHED')">✓ Publier</a>
-          </li>
-          <li v-if="report.status === 'PUBLISHED'">
-            <a @click="handleChangeStatus('ARCHIVED')">📦 Archiver</a>
-          </li>
-          <li>
-            <a @click="handleDuplicate">📋 Dupliquer</a>
-          </li>
+            <!-- Numéro de dossier -->
+            <div v-if="report.caseNumber" class="flex items-center gap-2">
+              <div class="w-1 h-8 rounded-sm bg-base-content/20"></div>
+              <div>
+                <div class="text-xs text-base-content/60 uppercase tracking-wider">Dossier</div>
+                <div class="font-semibold">{{ report.caseNumber }}</div>
+              </div>
+            </div>
+
+            <!-- Niveau d'urgence -->
+            <div class="flex items-center gap-2">
+              <div class="w-1 h-8 rounded-sm" :class="getUrgencyInfo(report.urgencyLevel).color.replace('badge-', 'bg-')"></div>
+              <div>
+                <div class="text-xs text-base-content/60 uppercase tracking-wider">Urgence</div>
+                <div class="font-semibold">
+                  {{ getUrgencyInfo(report.urgencyLevel).icon }} {{ getUrgencyInfo(report.urgencyLevel).label }}
+                </div>
+              </div>
+            </div>
+
+            <!-- Classification -->
+            <div class="flex items-center gap-2">
+              <div class="w-1 h-8 rounded-sm bg-error"></div>
+              <div>
+                <div class="text-xs text-base-content/60 uppercase tracking-wider">Classification</div>
+                <div class="font-semibold">
+                  {{ getClassificationInfo(report.classification).icon }} {{ getClassificationInfo(report.classification).label }}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="dropdown dropdown-end ml-4" v-if="report">
+          <label tabindex="0" class="btn btn-primary btn-sm gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
+            </svg>
+            Actions
+          </label>
+          <ul tabindex="0" class="dropdown-content menu p-0 shadow-lg bg-base-100 w-64 z-10 border-l-4 border-primary">
+            <!-- Édition -->
+            <li class="border-b border-base-200">
+              <a @click="openEditInfoDialog" class="py-3 px-4 hover:bg-base-200 flex items-center gap-3 transition-colors">
+                <span class="text-xl">✏️</span>
+                <div>
+                  <div class="font-semibold">Modifier les informations</div>
+                  <div class="text-xs text-base-content/60">Éditer les métadonnées</div>
+                </div>
+              </a>
+            </li>
+
+            <!-- Export -->
+            <li class="border-b border-base-200">
+              <a @click="handleExportPDF" :class="{ 'loading': exportingPDF }" class="py-3 px-4 hover:bg-base-200 flex items-center gap-3 transition-colors">
+                <span class="text-xl">📄</span>
+                <div>
+                  <div class="font-semibold">Exporter en PDF</div>
+                  <div class="text-xs text-base-content/60">Générer le document</div>
+                </div>
+              </a>
+            </li>
+
+            <!-- Analyse -->
+            <li class="bg-base-50 px-3 py-1">
+              <span class="text-xs uppercase tracking-wider text-base-content/60 font-semibold">Analyse</span>
+            </li>
+            <li class="border-b border-base-200">
+              <a @click="showStatsModal = true" class="py-2 px-4 hover:bg-base-200 flex items-center gap-3 transition-colors">
+                <span class="text-lg">📊</span>
+                <span class="font-medium">Statistiques</span>
+              </a>
+            </li>
+            <li class="border-b border-base-200">
+              <a @click="loadCorrelations" class="py-2 px-4 hover:bg-base-200 flex items-center gap-3 transition-colors">
+                <span class="text-lg">🔗</span>
+                <span class="font-medium">Voir corrélations</span>
+              </a>
+            </li>
+            <li class="border-b border-base-200">
+              <a @click="detectCorrelations" class="py-2 px-4 hover:bg-base-200 flex items-center gap-3 transition-colors">
+                <span class="text-lg">🔍</span>
+                <span class="font-medium">Détecter corrélations</span>
+              </a>
+            </li>
+
+            <!-- Gestion -->
+            <li class="bg-base-50 px-3 py-1">
+              <span class="text-xs uppercase tracking-wider text-base-content/60 font-semibold">Gestion</span>
+            </li>
+            <li v-if="report.status === 'DRAFT'" class="border-b border-base-200">
+              <a @click="handleChangeStatus('PUBLISHED')" class="py-2 px-4 hover:bg-success/10 flex items-center gap-3 transition-colors">
+                <span class="text-lg">✓</span>
+                <span class="font-medium text-success">Publier</span>
+              </a>
+            </li>
+            <li v-if="report.status === 'PUBLISHED'" class="border-b border-base-200">
+              <a @click="handleChangeStatus('ARCHIVED')" class="py-2 px-4 hover:bg-base-200 flex items-center gap-3 transition-colors">
+                <span class="text-lg">📦</span>
+                <span class="font-medium">Archiver</span>
+              </a>
+            </li>
+            <li class="border-b border-base-200">
+              <a @click="handleDuplicate" class="py-2 px-4 hover:bg-base-200 flex items-center gap-3 transition-colors">
+                <span class="text-lg">📋</span>
+                <span class="font-medium">Dupliquer</span>
+              </a>
+            </li>
+
+            <!-- Danger zone (admin only) -->
+            <li v-if="isAdmin" class="bg-error/5 px-3 py-1 border-t-2 border-error">
+              <span class="text-xs uppercase tracking-wider text-error font-semibold">Zone dangereuse</span>
+            </li>
+            <li v-if="isAdmin">
+              <a @click="handleDeleteReport" class="py-3 px-4 hover:bg-error/10 flex items-center gap-3 transition-colors">
+                <span class="text-xl">🗑️</span>
+                <div>
+                  <div class="font-semibold text-error">Supprimer le rapport</div>
+                  <div class="text-xs text-error/60">Action irréversible</div>
+                </div>
+              </a>
+            </li>
         </ul>
+      </div>
       </div>
     </div>
 
@@ -591,13 +711,16 @@ function getClassificationInfo(classif: string) {
     <!-- Contenu -->
     <template v-else-if="report">
       <!-- Informations -->
-      <div class="card bg-base-100 shadow">
-        <div class="card-body">
-          <h3 class="card-title">ℹ️ Informations</h3>
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div class="bg-base-100 border-l-4 border-info shadow-sm">
+        <div class="p-6">
+          <h3 class="text-xl font-bold mb-6 flex items-center gap-2">
+            <span class="text-2xl">ℹ️</span>
+            <span>Informations</span>
+          </h3>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <div class="text-sm opacity-70">Service enquêteur</div>
-              <div class="font-medium">
+              <div class="text-xs uppercase tracking-wider text-base-content/60 mb-2">Service enquêteur</div>
+              <div class="font-semibold text-base">
                 {{ report.requestingService || "—" }}
               </div>
             </div>
@@ -609,13 +732,14 @@ function getClassificationInfo(classif: string) {
               />
             </div>
             <div class="md:col-span-2">
-              <div class="text-sm opacity-70 mb-1">Contexte</div>
-              <p class="text-sm">{{ report.investigationContext }}</p>
+              <div class="text-xs uppercase tracking-wider text-base-content/60 mb-2">Contexte</div>
+              <p class="text-sm leading-relaxed">{{ report.investigationContext || 'Non renseigné' }}</p>
             </div>
             <div v-if="report.keywords && report.keywords.length > 0" class="md:col-span-2">
-              <div class="text-sm opacity-70 mb-2">Mots-clés</div>
+              <div class="text-xs uppercase tracking-wider text-base-content/60 mb-3">Mots-clés</div>
               <div class="flex flex-wrap gap-2">
-                <span v-for="keyword in report.keywords" :key="keyword" class="badge">
+                <span v-for="keyword in report.keywords" :key="keyword" 
+                      class="px-3 py-1 bg-base-200 text-sm font-medium border-l-2 border-primary">
                   {{ keyword }}
                 </span>
               </div>
@@ -625,16 +749,20 @@ function getClassificationInfo(classif: string) {
       </div>
 
       <!-- Modules -->
-      <div class="card bg-base-100 shadow">
-        <div class="card-body">
-          <div class="flex items-center justify-between mb-4">
-            <h3 class="card-title">📦 Modules ({{ modules.length }})</h3>
+      <div class="bg-base-100 border-l-4 border-success shadow-sm">
+        <div class="p-6">
+          <div class="flex items-center justify-between mb-6">
+            <h3 class="text-xl font-bold flex items-center gap-2">
+              <span class="text-2xl">📦</span>
+              <span>Modules</span>
+              <span class="text-base font-normal text-base-content/60">({{ modules.length }})</span>
+            </h3>
             <button class="btn btn-primary btn-sm" @click="openModuleDialog">
               + Ajouter un module
             </button>
           </div>
 
-          <div v-if="modules.length === 0" class="text-center py-8 opacity-60">
+          <div v-if="modules.length === 0" class="text-center py-12 text-base-content/60">
             Aucun module. Commencez par en ajouter un.
           </div>
 
@@ -642,26 +770,26 @@ function getClassificationInfo(classif: string) {
             v-else
             v-model="modules"
             item-key="id"
-            class="space-y-6"
+            class="space-y-4"
             handle=".drag-handle"
             @end="handleReorderModules"
           >
             <template #item="{ element: module }">
               <div
-                class="border border-base-300 rounded-lg p-6 bg-base-100 hover:shadow-md transition-shadow"
+                class="border-l-4 border-base-300 bg-base-50 hover:border-primary transition-all duration-200 shadow-sm hover:shadow-md"
               >
                 <!-- En-tête du module -->
-                <div class="flex items-start justify-between mb-4 pb-4 border-b border-base-300">
+                <div class="flex items-start justify-between p-4 bg-base-100">
                   <div class="flex items-center gap-3 flex-1">
                     <!-- Poignée de drag -->
-                    <div class="drag-handle cursor-move p-2 hover:bg-base-200 rounded" title="Glisser pour réordonner">
+                    <div class="drag-handle cursor-move p-2 hover:bg-base-200 transition-colors" title="Glisser pour réordonner">
                       <svg
                         xmlns="http://www.w3.org/2000/svg"
                         fill="none"
                         viewBox="0 0 24 24"
                         stroke-width="1.5"
                         stroke="currentColor"
-                        class="w-5 h-5 opacity-50"
+                        class="w-5 h-5 text-base-content/40"
                       >
                         <path
                           stroke-linecap="round"
@@ -675,16 +803,16 @@ function getClassificationInfo(classif: string) {
                         <span class="text-2xl">{{ getModuleIcon(module.type) }}</span>
                         <h4 class="font-bold text-lg">{{ module.title }}</h4>
                       </div>
-                      <div class="text-sm opacity-70">
+                      <div class="text-xs uppercase tracking-wider text-base-content/60">
                         {{ MODULE_TYPE_METADATA[module.type as ReportModuleType]?.label || module.type }}
                       </div>
-                      <div v-if="module.entity" class="text-sm mt-1">
-                        Entité: <span class="badge badge-sm">{{ module.entity.label }}</span>
+                      <div v-if="module.entity" class="text-sm mt-2">
+                        Entité: <span class="px-2 py-0.5 bg-base-200 text-xs font-medium border-l-2 border-accent">{{ module.entity.label }}</span>
                       </div>
                     </div>
                   </div>
                   <button
-                    class="btn btn-ghost btn-sm btn-circle"
+                    class="btn btn-ghost btn-sm btn-circle hover:bg-error/10 hover:text-error transition-colors"
                     @click="handleDeleteModule(module.id)"
                     title="Supprimer ce module"
                   >
@@ -693,7 +821,7 @@ function getClassificationInfo(classif: string) {
                 </div>
 
                 <!-- Contenu du module (composant dynamique) -->
-                <div class="mt-4">
+                <div class="p-6 pt-4 bg-base-100">
                   <component
                     v-if="getModuleComponent(module.type as ReportModuleType)"
                     :is="getModuleComponent(module.type as ReportModuleType)"
@@ -701,7 +829,7 @@ function getClassificationInfo(classif: string) {
                     :report-id="reportId"
                     @update:model-value="(payload: any) => handleUpdateModule(module.id, payload)"
                   />
-                  <div v-else class="text-sm opacity-60 italic">
+                  <div v-else class="text-sm text-base-content/60 italic">
                     Composant non disponible pour le type "{{ module.type }}"
                   </div>
                 </div>
@@ -715,7 +843,10 @@ function getClassificationInfo(classif: string) {
     <!-- Modal: Créer module -->
     <div v-if="showModuleDialog" class="modal modal-open">
       <div class="modal-box w-11/12 max-w-2xl">
-        <h3 class="text-lg font-bold mb-4">➕ Ajouter un module</h3>
+        <h3 class="text-xl font-bold mb-6 flex items-center gap-2 border-l-4 border-success pl-4">
+          <span class="text-2xl">➕</span>
+          <span>Ajouter un module</span>
+        </h3>
 
         <form @submit.prevent="handleCreateModule" class="space-y-4">
           <div class="form-control">
@@ -768,7 +899,10 @@ function getClassificationInfo(classif: string) {
     <!-- Modal: Modifier les informations du rapport -->
     <div v-if="showEditInfoDialog" class="modal modal-open">
       <div class="modal-box max-w-2xl">
-        <h3 class="text-lg font-bold mb-4">✏️ Modifier les informations du rapport</h3>
+        <h3 class="text-xl font-bold mb-6 flex items-center gap-2 border-l-4 border-warning pl-4">
+          <span class="text-2xl">✏️</span>
+          <span>Modifier les informations du rapport</span>
+        </h3>
         
         <form @submit.prevent="handleSaveEditInfo" class="space-y-4">
           <!-- Titre -->
@@ -814,14 +948,14 @@ function getClassificationInfo(classif: string) {
           <div class="form-control">
             <label class="label">
               <span class="label-text">Contexte de l'enquête <span class="text-error">*</span></span>
-              <span class="label-text-alt" :class="editInfoForm.investigationContext.length > 500 ? 'text-error' : 'text-base-content/60'">
-                {{ editInfoForm.investigationContext.length }} / 500
+              <span class="label-text-alt" :class="(editInfoForm.investigationContext || '').length > 500 ? 'text-error' : 'text-base-content/60'">
+                {{ (editInfoForm.investigationContext || '').length }} / 500
               </span>
             </label>
             <textarea
               v-model="editInfoForm.investigationContext"
               class="textarea textarea-bordered h-24"
-              :class="editInfoForm.investigationContext.length > 500 ? 'textarea-error' : ''"
+              :class="(editInfoForm.investigationContext || '').length > 500 ? 'textarea-error' : ''"
               maxlength="500"
               required
             ></textarea>
@@ -878,16 +1012,16 @@ function getClassificationInfo(classif: string) {
                 Ajouter
               </button>
             </div>
-            <div v-if="editInfoForm.keywords.length > 0" class="mt-2 flex flex-wrap gap-2">
+            <div v-if="editInfoForm.keywords.length > 0" class="mt-3 flex flex-wrap gap-2">
               <span
                 v-for="keyword in editInfoForm.keywords"
                 :key="keyword"
-                class="badge badge-lg gap-2"
+                class="px-3 py-2 bg-base-200 text-sm font-medium border-l-2 border-primary flex items-center gap-2"
               >
                 {{ keyword }}
                 <button
                   type="button"
-                  class="btn btn-ghost btn-xs btn-circle"
+                  class="hover:text-error transition-colors"
                   @click="removeKeyword(keyword)"
                 >
                   ✕
@@ -916,24 +1050,27 @@ function getClassificationInfo(classif: string) {
 
     <!-- Modal: Statistiques -->
     <div v-if="showStatsModal && stats" class="modal modal-open">
-      <div class="modal-box">
-        <h3 class="text-lg font-bold mb-4">📊 Statistiques du rapport</h3>
-        <div class="stats stats-vertical shadow w-full">
-          <div class="stat">
-            <div class="stat-title">Modules</div>
-            <div class="stat-value">{{ stats.modules }}</div>
+      <div class="modal-box max-w-2xl">
+        <h3 class="text-xl font-bold mb-6 flex items-center gap-2 border-l-4 border-primary pl-4">
+          <span class="text-2xl">📊</span>
+          <span>Statistiques du rapport</span>
+        </h3>
+        <div class="grid grid-cols-2 gap-4">
+          <div class="bg-base-200 p-4 border-l-4 border-info">
+            <div class="text-xs uppercase tracking-wider text-base-content/60 mb-1">Modules</div>
+            <div class="text-3xl font-bold">{{ stats.modules }}</div>
           </div>
-          <div class="stat">
-            <div class="stat-title">Entités</div>
-            <div class="stat-value">{{ stats.entities }}</div>
+          <div class="bg-base-200 p-4 border-l-4 border-success">
+            <div class="text-xs uppercase tracking-wider text-base-content/60 mb-1">Entités</div>
+            <div class="text-3xl font-bold">{{ stats.entities }}</div>
           </div>
-          <div class="stat">
-            <div class="stat-title">Enregistrements recherche</div>
-            <div class="stat-value">{{ stats.researchRecords }}</div>
+          <div class="bg-base-200 p-4 border-l-4 border-warning">
+            <div class="text-xs uppercase tracking-wider text-base-content/60 mb-1">Enregistrements recherche</div>
+            <div class="text-3xl font-bold">{{ stats.researchRecords }}</div>
           </div>
-          <div class="stat">
-            <div class="stat-title">Corrélations</div>
-            <div class="stat-value">{{ stats.correlations }}</div>
+          <div class="bg-base-200 p-4 border-l-4 border-accent">
+            <div class="text-xs uppercase tracking-wider text-base-content/60 mb-1">Corrélations</div>
+            <div class="text-3xl font-bold">{{ stats.correlations }}</div>
           </div>
         </div>
         <div class="modal-action">
@@ -946,11 +1083,13 @@ function getClassificationInfo(classif: string) {
     <!-- Modal: Corrélations -->
     <div v-if="showCorrelationsModal" class="modal modal-open">
       <div class="modal-box w-11/12 max-w-3xl">
-        <h3 class="text-lg font-bold mb-4">
-          🔗 Corrélations ({{ correlations?.length || 0 }})
+        <h3 class="text-xl font-bold mb-6 flex items-center gap-2 border-l-4 border-accent pl-4">
+          <span class="text-2xl">🔗</span>
+          <span>Corrélations</span>
+          <span class="text-base font-normal text-base-content/60">({{ correlations?.length || 0 }})</span>
         </h3>
 
-        <div v-if="!correlations || correlations.length === 0" class="text-center py-8 opacity-60">
+        <div v-if="!correlations || correlations.length === 0" class="text-center py-12 text-base-content/60">
           Aucune corrélation détectée
         </div>
 
@@ -958,7 +1097,7 @@ function getClassificationInfo(classif: string) {
           <div
             v-for="corr in correlations"
             :key="corr.id"
-            class="border border-base-300 rounded-lg p-4"
+            class="bg-base-100 border-l-4 border-base-300 hover:border-accent transition-colors p-4"
           >
             <div class="flex items-start justify-between">
               <div class="flex-1">

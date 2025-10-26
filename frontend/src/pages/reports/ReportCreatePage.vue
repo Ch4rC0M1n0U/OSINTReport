@@ -50,7 +50,7 @@ const canGoNext = computed(() => {
     return form.value.title.trim().length > 0;
   }
   if (currentStep.value === 2) {
-    return form.value.investigationContext.trim().length > 0;
+    return (form.value.investigationContext || '').trim().length > 0;
   }
   return true;
 });
@@ -99,6 +99,7 @@ async function handleSubmit() {
       keywords: form.value.keywords?.length ? form.value.keywords : undefined,
       caseNumber: form.value.caseNumber || undefined,
       requestingService: form.value.requestingService || undefined,
+      investigationContext: form.value.investigationContext || undefined,
       legalBasis: form.value.legalBasis || undefined,
     });
 
@@ -333,7 +334,7 @@ function handleCancel() {
 
             <div>
               <div class="text-sm opacity-70 mb-1">Contexte:</div>
-              <p class="text-sm">{{ form.investigationContext }}</p>
+              <p class="text-sm">{{ form.investigationContext || 'Non renseigné' }}</p>
             </div>
 
             <LegalBasisDisplay
