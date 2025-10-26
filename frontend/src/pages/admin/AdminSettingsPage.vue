@@ -5,7 +5,13 @@ import {
   Calendar03Icon, 
   Loading02Icon, 
   CheckmarkCircle02Icon, 
-  AlertCircleIcon 
+  AlertCircleIcon,
+  Settings02Icon,
+  Notification02Icon,
+  Time01Icon,
+  Alert01Icon,
+  LockIcon,
+  Message01Icon
 } from '@hugeicons/core-free-icons';
 import { api } from '@/services/http';
 import { useAuthStore } from '@/stores/auth';
@@ -257,41 +263,70 @@ onMounted(() => {
 
 <template>
   <section class="space-y-6">
-    <header class="flex flex-col gap-2">
-      <h2 class="text-2xl font-semibold">Réglages d'administration</h2>
-      <p class="text-sm text-base-content/70">
-        Paramétrez les options globales de la plateforme OSINT et ajustez les politiques de sécurité.
-      </p>
+    <!-- En-tête de la page -->
+    <header class="bg-base-200 border-l-4 border-primary p-6">
+      <div class="flex items-center gap-4">
+        <div class="p-2 rounded-lg bg-primary/10">
+          <HugeiconsIcon :icon="Settings02Icon" :size="32" class="text-primary" />
+        </div>
+        <div>
+          <h1 class="text-3xl font-bold">Réglages d'administration</h1>
+          <p class="text-base-content/70 mt-1">
+            Paramétrez les options globales de la plateforme OSINT et ajustez les politiques de sécurité
+          </p>
+        </div>
+      </div>
     </header>
 
-    <div class="grid gap-4 lg:grid-cols-2">
-      <div class="card bg-base-100 shadow">
-        <div class="card-body space-y-4">
-          <h3 class="card-title text-lg">Paramètres généraux</h3>
-          
+    <div class="grid gap-6 lg:grid-cols-2">
+      <!-- Paramètres généraux -->
+      <div class="bg-base-200 border-l-4 border-accent">
+        <div class="p-6 border-b border-base-300">
+          <div class="flex items-center gap-3">
+            <HugeiconsIcon :icon="Settings02Icon" :size="24" class="text-accent" />
+            <h2 class="text-xl font-semibold">Paramètres généraux</h2>
+          </div>
+        </div>
+
+        <div class="p-6 space-y-4">
           <!-- Message de succès/erreur -->
-          <div v-if="generalMessage" class="alert" :class="generalMessage.type === 'success' ? 'alert-success' : 'alert-error'">
-            <span>{{ generalMessage.text }}</span>
+          <div v-if="generalMessage" class="bg-base-100 border-l-4 p-4" :class="generalMessage.type === 'success' ? 'border-success' : 'border-error'">
+            <div class="flex items-center gap-3">
+              <HugeiconsIcon 
+                :icon="generalMessage.type === 'success' ? CheckmarkCircle02Icon : AlertCircleIcon"
+                :size="20"
+                :class="generalMessage.type === 'success' ? 'text-success' : 'text-error'"
+              />
+              <span class="text-sm font-medium">{{ generalMessage.text }}</span>
+            </div>
           </div>
 
-          <div class="form-control">
+          <div class="form-control bg-base-100 p-4 rounded-lg">
             <label class="label cursor-pointer justify-between gap-4">
-              <span class="label-text">Maintenance programmée</span>
+              <div class="flex items-center gap-3">
+                <HugeiconsIcon :icon="Alert01Icon" :size="20" class="text-warning" />
+                <div>
+                  <span class="label-text font-medium">Maintenance programmée</span>
+                  <p class="text-xs text-base-content/60 mt-0.5">
+                    Notifie les utilisateurs 24h avant la maintenance planifiée
+                  </p>
+                </div>
+              </div>
               <input 
                 type="checkbox" 
-                class="toggle toggle-primary" 
+                class="toggle toggle-warning" 
                 v-model="generalSettings.maintenanceEnabled"
               />
             </label>
-            <span class="label-text-alt text-base-content/60">
-              Notifie les utilisateurs 24h avant la maintenance planifiée.
-            </span>
           </div>
 
           <!-- Champ date/heure de maintenance -->
-          <div v-if="generalSettings.maintenanceEnabled" class="form-control">
+          <div v-if="generalSettings.maintenanceEnabled" class="form-control bg-base-100 p-4 rounded-lg">
             <label class="label">
-              <span class="label-text">Date et heure de la maintenance</span>
+              <span class="label-text font-medium flex items-center gap-2">
+                <HugeiconsIcon :icon="Time01Icon" :size="18" />
+                Date et heure de la maintenance
+              </span>
             </label>
             <input 
               type="datetime-local" 
@@ -301,9 +336,12 @@ onMounted(() => {
           </div>
 
           <!-- Message personnalisé de maintenance -->
-          <div v-if="generalSettings.maintenanceEnabled" class="form-control">
+          <div v-if="generalSettings.maintenanceEnabled" class="form-control bg-base-100 p-4 rounded-lg">
             <label class="label">
-              <span class="label-text">Message personnalisé</span>
+              <span class="label-text font-medium flex items-center gap-2">
+                <HugeiconsIcon :icon="Message01Icon" :size="18" />
+                Message personnalisé
+              </span>
             </label>
             <textarea 
               class="textarea textarea-bordered"
@@ -313,61 +351,88 @@ onMounted(() => {
             ></textarea>
           </div>
 
-          <div class="form-control">
+          <div class="form-control bg-base-100 p-4 rounded-lg">
             <label class="label cursor-pointer justify-between gap-4">
-              <span class="label-text">Verrouiller la création de comptes</span>
+              <div class="flex items-center gap-3">
+                <HugeiconsIcon :icon="LockIcon" :size="20" class="text-error" />
+                <div>
+                  <span class="label-text font-medium">Verrouiller la création de comptes</span>
+                  <p class="text-xs text-base-content/60 mt-0.5">
+                    Seuls les administrateurs peuvent inviter de nouveaux agents
+                  </p>
+                </div>
+              </div>
               <input 
                 type="checkbox" 
-                class="toggle toggle-primary"
+                class="toggle toggle-error"
                 v-model="generalSettings.lockUserCreation"
               />
             </label>
-            <span class="label-text-alt text-base-content/60">
-              Seuls les administrateurs peuvent inviter de nouveaux agents.
-            </span>
           </div>
           
-          <button 
-            class="btn btn-primary btn-sm self-end"
-            @click="saveGeneralSettings"
-            :disabled="savingGeneral"
-          >
-            <span v-if="savingGeneral" class="loading loading-spinner loading-xs"></span>
-            {{ savingGeneral ? 'Enregistrement...' : 'Enregistrer' }}
-          </button>
+          <div class="flex justify-end pt-4 border-t border-base-300">
+            <button 
+              class="btn btn-accent gap-2"
+              @click="saveGeneralSettings"
+              :disabled="savingGeneral"
+            >
+              <span v-if="savingGeneral" class="loading loading-spinner loading-sm"></span>
+              <HugeiconsIcon v-else :icon="CheckmarkCircle02Icon" :size="18" />
+              {{ savingGeneral ? 'Enregistrement...' : 'Enregistrer' }}
+            </button>
+          </div>
         </div>
       </div>
 
-      <div class="card bg-base-100 shadow">
-        <div class="card-body space-y-4">
-          <h3 class="card-title text-lg">Notifications</h3>
+      <!-- Notifications -->
+      <div class="bg-base-200 border-l-4 border-info">
+        <div class="p-6 border-b border-base-300">
+          <div class="flex items-center gap-3">
+            <HugeiconsIcon :icon="Notification02Icon" :size="24" class="text-info" />
+            <h2 class="text-xl font-semibold">Notifications</h2>
+          </div>
+        </div>
 
+        <div class="p-6 space-y-4">
           <!-- Message de succès/erreur -->
-          <div v-if="notificationMessage" class="alert" :class="notificationMessage.type === 'success' ? 'alert-success' : 'alert-error'">
-            <span>{{ notificationMessage.text }}</span>
+          <div v-if="notificationMessage" class="bg-base-100 border-l-4 p-4" :class="notificationMessage.type === 'success' ? 'border-success' : 'border-error'">
+            <div class="flex items-center gap-3">
+              <HugeiconsIcon 
+                :icon="notificationMessage.type === 'success' ? CheckmarkCircle02Icon : AlertCircleIcon"
+                :size="20"
+                :class="notificationMessage.type === 'success' ? 'text-success' : 'text-error'"
+              />
+              <span class="text-sm font-medium">{{ notificationMessage.text }}</span>
+            </div>
           </div>
 
-          <div class="form-control">
+          <div class="form-control bg-base-100 p-4 rounded-lg">
             <label class="label cursor-pointer justify-between gap-4">
-              <span class="label-text">Alertes critiques</span>
+              <div class="flex items-center gap-3">
+                <HugeiconsIcon :icon="AlertCircleIcon" :size="20" class="text-error" />
+                <div>
+                  <span class="label-text font-medium">Alertes critiques</span>
+                  <p class="text-xs text-base-content/60 mt-0.5">
+                    Envoie un courriel aux responsables lors d'un incident majeur
+                  </p>
+                </div>
+              </div>
               <input 
                 type="checkbox" 
-                class="toggle toggle-secondary" 
+                class="toggle toggle-info" 
                 v-model="notificationSettings.criticalAlertsEnabled"
               />
             </label>
-            <span class="label-text-alt text-base-content/60">
-              Envoie un courriel aux responsables lors d'un incident majeur.
-            </span>
           </div>
 
-          <div class="flex gap-2 justify-end">
+          <div class="flex justify-end pt-4 border-t border-base-300">
             <button 
-              class="btn btn-secondary btn-sm"
+              class="btn btn-info gap-2"
               @click="saveNotificationSettings"
               :disabled="savingNotifications"
             >
-              <span v-if="savingNotifications" class="loading loading-spinner loading-xs"></span>
+              <span v-if="savingNotifications" class="loading loading-spinner loading-sm"></span>
+              <HugeiconsIcon v-else :icon="CheckmarkCircle02Icon" :size="18" />
               {{ savingNotifications ? 'Mise à jour...' : 'Mettre à jour' }}
             </button>
           </div>
@@ -376,91 +441,103 @@ onMounted(() => {
     </div>
 
     <!-- Section Tâches CRON -->
-    <div class="card bg-base-100 shadow">
-      <div class="card-body space-y-4">
+    <div class="bg-base-200 border-l-4 border-warning">
+      <div class="p-6 border-b border-base-300">
         <div class="flex items-center justify-between">
-          <div>
-            <h3 class="card-title text-lg flex items-center gap-2">
-              <HugeiconsIcon :icon="Calendar03Icon" class="w-5 h-5" />
-              Tâches automatiques (CRON)
-            </h3>
-            <p class="text-sm text-base-content/70 mt-1">
-              Surveillance et gestion des tâches planifiées du système
-            </p>
+          <div class="flex items-center gap-3">
+            <HugeiconsIcon :icon="Calendar03Icon" :size="24" class="text-warning" />
+            <div>
+              <h2 class="text-xl font-semibold">Tâches automatiques (CRON)</h2>
+              <p class="text-sm text-base-content/60 mt-1">
+                Surveillance et gestion des tâches planifiées du système
+              </p>
+            </div>
           </div>
           <button 
             @click="loadCronStatus" 
-            class="btn btn-ghost btn-sm"
+            class="btn btn-ghost btn-sm gap-2"
             :disabled="loadingCronStatus"
           >
             <HugeiconsIcon 
               :icon="Loading02Icon" 
-              class="w-4 h-4"
+              :size="18"
               :class="{ 'animate-spin': loadingCronStatus }"
             />
             Actualiser
           </button>
         </div>
+      </div>
 
+      <div class="p-6">
         <!-- État de chargement -->
-        <div v-if="loadingCronStatus" class="flex items-center justify-center py-8">
-          <HugeiconsIcon :icon="Loading02Icon" class="w-8 h-8 animate-spin text-primary" />
+        <div v-if="loadingCronStatus" class="flex items-center justify-center py-12">
+          <HugeiconsIcon :icon="Loading02Icon" :size="32" class="animate-spin text-warning" />
         </div>
 
         <!-- Contenu -->
         <div v-else-if="cronStatus" class="space-y-4">
           <!-- Tâche: Régénération des URLs de screenshots -->
-          <div class="rounded-lg border border-base-200 p-4 space-y-3">
+          <div class="bg-base-100 p-6 rounded-lg space-y-4">
             <div class="flex items-start justify-between">
               <div class="flex-1">
-                <div class="flex items-center gap-2">
-                  <h4 class="font-semibold text-base">{{ cronStatus.service }}</h4>
-                  <span class="badge badge-success badge-sm">{{ cronStatus.status }}</span>
+                <div class="flex items-center gap-3">
+                  <h3 class="font-semibold text-lg">{{ cronStatus.service }}</h3>
+                  <span class="badge badge-success gap-1">
+                    <HugeiconsIcon :icon="CheckmarkCircle02Icon" :size="14" />
+                    {{ cronStatus.status }}
+                  </span>
                 </div>
-                <p class="text-sm text-base-content/60 mt-1">
+                <p class="text-sm text-base-content/60 mt-2">
                   Régénère automatiquement les URLs signées des screenshots avant leur expiration
                 </p>
               </div>
             </div>
 
             <!-- Détails de configuration -->
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm">
-              <div class="flex items-start gap-2">
-                <HugeiconsIcon :icon="Calendar03Icon" class="w-4 h-4 mt-0.5 text-primary flex-shrink-0" />
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div class="flex items-start gap-3 bg-base-200 p-4 rounded-lg">
+                <div class="p-2 rounded-lg bg-primary/10">
+                  <HugeiconsIcon :icon="Calendar03Icon" :size="20" class="text-primary" />
+                </div>
                 <div>
-                  <p class="font-medium text-xs text-base-content/70">Planification</p>
-                  <p class="text-base-content">{{ cronStatus.schedule }}</p>
+                  <p class="font-medium text-xs text-base-content/60">Planification</p>
+                  <p class="text-sm font-semibold mt-1">{{ cronStatus.schedule }}</p>
                 </div>
               </div>
 
-              <div class="flex items-start gap-2">
-                <HugeiconsIcon :icon="AlertCircleIcon" class="w-4 h-4 mt-0.5 text-warning flex-shrink-0" />
+              <div class="flex items-start gap-3 bg-base-200 p-4 rounded-lg">
+                <div class="p-2 rounded-lg bg-warning/10">
+                  <HugeiconsIcon :icon="AlertCircleIcon" :size="20" class="text-warning" />
+                </div>
                 <div>
-                  <p class="font-medium text-xs text-base-content/70">Seuil de régénération</p>
-                  <p class="text-base-content">{{ cronStatus.regenerationThreshold }}</p>
+                  <p class="font-medium text-xs text-base-content/60">Seuil de régénération</p>
+                  <p class="text-sm font-semibold mt-1">{{ cronStatus.regenerationThreshold }}</p>
                 </div>
               </div>
 
-              <div class="flex items-start gap-2">
-                <HugeiconsIcon :icon="CheckmarkCircle02Icon" class="w-4 h-4 mt-0.5 text-success flex-shrink-0" />
+              <div class="flex items-start gap-3 bg-base-200 p-4 rounded-lg">
+                <div class="p-2 rounded-lg bg-success/10">
+                  <HugeiconsIcon :icon="CheckmarkCircle02Icon" :size="20" class="text-success" />
+                </div>
                 <div>
-                  <p class="font-medium text-xs text-base-content/70">Durée d'expiration</p>
-                  <p class="text-base-content">{{ cronStatus.newExpirationDuration }}</p>
+                  <p class="font-medium text-xs text-base-content/60">Durée d'expiration</p>
+                  <p class="text-sm font-semibold mt-1">{{ cronStatus.newExpirationDuration }}</p>
                 </div>
               </div>
             </div>
 
             <!-- Actions -->
-            <div class="flex flex-col sm:flex-row gap-2 pt-2 border-t border-base-200">
+            <div class="flex flex-col sm:flex-row gap-3 pt-4 border-t border-base-200">
               <button 
                 @click="triggerManualRegeneration"
-                class="btn btn-primary btn-sm"
+                class="btn btn-warning gap-2"
                 :disabled="regeneratingUrls"
               >
                 <HugeiconsIcon 
                   :icon="Loading02Icon" 
                   v-if="regeneratingUrls"
-                  class="w-4 h-4 animate-spin"
+                  :size="18"
+                  class="animate-spin"
                 />
                 <span v-else>▶️</span>
                 {{ regeneratingUrls ? 'Exécution en cours...' : 'Exécuter maintenant' }}
@@ -469,45 +546,49 @@ onMounted(() => {
               <!-- Message de succès -->
               <div 
                 v-if="regenerationSuccess" 
-                class="flex items-center gap-2 text-sm text-success px-3"
+                class="flex items-center gap-2 text-sm font-medium bg-success/10 text-success px-4 py-2 rounded-lg"
               >
-                <HugeiconsIcon :icon="CheckmarkCircle02Icon" class="w-4 h-4" />
+                <HugeiconsIcon :icon="CheckmarkCircle02Icon" :size="18" />
                 <span>Régénération lancée avec succès</span>
               </div>
 
               <!-- Message d'erreur -->
               <div 
                 v-if="regenerationError" 
-                class="flex items-center gap-2 text-sm text-error px-3"
+                class="flex items-center gap-2 text-sm font-medium bg-error/10 text-error px-4 py-2 rounded-lg"
               >
-                <HugeiconsIcon :icon="AlertCircleIcon" class="w-4 h-4" />
+                <HugeiconsIcon :icon="AlertCircleIcon" :size="18" />
                 <span>{{ regenerationError }}</span>
               </div>
             </div>
           </div>
 
           <!-- Info supplémentaire -->
-          <div class="alert alert-info text-sm">
-            <HugeiconsIcon :icon="AlertCircleIcon" class="w-5 h-5" />
-            <div>
-              <p class="font-medium">À propos de la régénération automatique</p>
-              <p class="text-xs mt-1">
-                Le CRON s'exécute automatiquement tous les jours à 03:00 pour prolonger la validité des URLs 
-                de screenshots qui expirent dans moins de 30 jours. Vous pouvez déclencher une exécution 
-                manuelle à tout moment via le bouton ci-dessus.
-              </p>
+          <div class="bg-base-100 border-l-4 border-info p-5">
+            <div class="flex items-start gap-3">
+              <HugeiconsIcon :icon="AlertCircleIcon" :size="24" class="text-info flex-shrink-0" />
+              <div>
+                <p class="font-semibold text-sm">À propos de la régénération automatique</p>
+                <p class="text-xs text-base-content/70 mt-2">
+                  Le CRON s'exécute automatiquement tous les jours à 03:00 pour prolonger la validité des URLs 
+                  de screenshots qui expirent dans moins de 30 jours. Vous pouvez déclencher une exécution 
+                  manuelle à tout moment via le bouton ci-dessus.
+                </p>
+              </div>
             </div>
           </div>
         </div>
 
         <!-- Erreur de chargement -->
-        <div v-else class="alert alert-error">
-          <HugeiconsIcon :icon="AlertCircleIcon" class="w-5 h-5" />
-          <div>
-            <p class="font-medium">Impossible de charger le status des tâches CRON</p>
-            <p class="text-xs mt-1">
-              Veuillez vérifier que vous avez les permissions nécessaires (system:settings)
-            </p>
+        <div v-else class="bg-base-100 border-l-4 border-error p-6">
+          <div class="flex items-start gap-3">
+            <HugeiconsIcon :icon="AlertCircleIcon" :size="24" class="text-error flex-shrink-0" />
+            <div>
+              <p class="font-semibold">Impossible de charger le status des tâches CRON</p>
+              <p class="text-xs text-base-content/70 mt-2">
+                Veuillez vérifier que vous avez les permissions nécessaires (system:settings)
+              </p>
+            </div>
           </div>
         </div>
       </div>

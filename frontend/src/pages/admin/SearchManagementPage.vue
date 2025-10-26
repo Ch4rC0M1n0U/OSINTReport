@@ -1,162 +1,119 @@
 <template>
-  <div class="max-w-5xl mx-auto">
-    <!-- Header -->
-    <div class="mb-8">
-      <h1 class="text-3xl font-bold mb-2">🔍 Gestion de la recherche</h1>
-      <p class="text-base-content/70">
-        Administration de l'index MeiliSearch pour la recherche de rapports et la détection de corrélations
-      </p>
+  <section class="space-y-6">
+    <!-- En-tête de la page -->
+    <header class="bg-base-200 border-l-4 border-primary p-6">
+      <div class="flex items-center gap-4">
+        <div class="p-2 rounded-lg bg-primary/10">
+          <HugeiconsIcon :icon="SearchAreaIcon" :size="32" class="text-primary" />
+        </div>
+        <div>
+          <h1 class="text-3xl font-bold">Gestion de la recherche</h1>
+          <p class="text-base-content/70 mt-1">
+            Administration de l'index MeiliSearch pour la recherche de rapports et la détection de corrélations
+          </p>
+        </div>
+      </div>
+    </header>
+
+    <!-- Chargement -->
+    <div v-if="loading" class="bg-base-200 border-l-4 border-info p-12">
+      <div class="flex flex-col items-center gap-4">
+        <span class="loading loading-spinner loading-lg text-info"></span>
+        <p class="text-base-content/70">Chargement des statistiques...</p>
+      </div>
     </div>
 
-    <!-- Loading -->
-    <div v-if="loading" class="flex justify-center py-12">
-      <span class="loading loading-spinner loading-lg"></span>
+    <!-- Message d'erreur -->
+    <div v-else-if="error" class="bg-base-200 border-l-4 border-error p-5">
+      <div class="flex items-center gap-3">
+        <HugeiconsIcon :icon="AlertCircleIcon" :size="24" class="text-error" />
+        <span class="font-medium">{{ error }}</span>
+      </div>
     </div>
 
-    <!-- Error -->
-    <div v-else-if="error" class="alert alert-error mb-6">
-      <svg
-        xmlns="http://www.w3.org/2000/svg"
-        class="stroke-current shrink-0 h-6 w-6"
-        fill="none"
-        viewBox="0 0 24 24"
-      >
-        <path
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          stroke-width="2"
-          d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"
-        />
-      </svg>
-      <span>{{ error }}</span>
-    </div>
-
-    <!-- Content -->
+    <!-- Contenu -->
     <div v-else class="space-y-6">
       <!-- Statistiques de l'index -->
-      <div class="card bg-base-100 shadow-xl">
-        <div class="card-body">
-          <h2 class="card-title">📊 Statistiques de l'index</h2>
+      <div class="bg-base-200 border-l-4 border-accent">
+        <div class="p-6 border-b border-base-300">
+          <div class="flex items-center gap-3">
+            <HugeiconsIcon :icon="Analytics02Icon" :size="24" class="text-accent" />
+            <h2 class="text-xl font-semibold">Statistiques de l'index</h2>
+          </div>
+        </div>
 
-          <div v-if="searchStats" class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+        <div class="p-6">
+          <div v-if="searchStats" class="grid grid-cols-1 md:grid-cols-3 gap-4">
             <!-- Documents indexés -->
-            <div class="stat bg-base-200 rounded-lg">
-              <div class="stat-figure text-primary">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  class="inline-block w-8 h-8 stroke-current"
-                >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                  />
-                </svg>
+            <div class="bg-base-300/30 border-l-4 border-primary rounded p-5">
+              <div class="flex items-start justify-between">
+                <div class="flex-1">
+                  <div class="text-sm text-base-content/70 mb-1">Documents indexés</div>
+                  <div class="text-3xl font-bold text-primary">{{ searchStats.numberOfDocuments }}</div>
+                  <div class="text-xs text-base-content/60 mt-1">Rapports dans l'index</div>
+                </div>
+                <div class="p-2 rounded-lg bg-primary/10">
+                  <HugeiconsIcon :icon="Database01Icon" :size="24" class="text-primary" />
+                </div>
               </div>
-              <div class="stat-title">Documents indexés</div>
-              <div class="stat-value text-primary">{{ searchStats.numberOfDocuments }}</div>
-              <div class="stat-desc">Rapports dans l'index</div>
             </div>
 
             <!-- État de l'index -->
-            <div class="stat bg-base-200 rounded-lg">
-              <div class="stat-figure" :class="searchStats.isIndexing ? 'text-warning' : 'text-success'">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  class="inline-block w-8 h-8 stroke-current"
-                >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M13 10V3L4 14h7v7l9-11h-7z"
-                  />
-                </svg>
-              </div>
-              <div class="stat-title">État</div>
-              <div
-                class="stat-value text-2xl"
-                :class="searchStats.isIndexing ? 'text-warning' : 'text-success'"
-              >
-                {{ searchStats.isIndexing ? "Indexation..." : "Prêt" }}
-              </div>
-              <div class="stat-desc">
-                {{ searchStats.isIndexing ? "Opération en cours" : "Index disponible" }}
+            <div class="bg-base-300/30 border-l-4 rounded p-5" :class="searchStats.isIndexing ? 'border-warning' : 'border-success'">
+              <div class="flex items-start justify-between">
+                <div class="flex-1">
+                  <div class="text-sm text-base-content/70 mb-1">État</div>
+                  <div
+                    class="text-2xl font-bold"
+                    :class="searchStats.isIndexing ? 'text-warning' : 'text-success'"
+                  >
+                    {{ searchStats.isIndexing ? "Indexation..." : "Prêt" }}
+                  </div>
+                  <div class="text-xs text-base-content/60 mt-1">
+                    {{ searchStats.isIndexing ? "Opération en cours" : "Index disponible" }}
+                  </div>
+                </div>
+                <div class="p-2 rounded-lg" :class="searchStats.isIndexing ? 'bg-warning/10' : 'bg-success/10'">
+                  <span v-if="searchStats.isIndexing" class="loading loading-spinner loading-md text-warning"></span>
+                  <HugeiconsIcon v-else :icon="CheckmarkCircle01Icon" :size="24" class="text-success" />
+                </div>
               </div>
             </div>
 
             <!-- Distribution des champs -->
-            <div class="stat bg-base-200 rounded-lg">
-              <div class="stat-figure text-secondary">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  class="inline-block w-8 h-8 stroke-current"
-                >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4"
-                  />
-                </svg>
+            <div class="bg-base-300/30 border-l-4 border-info rounded p-5">
+              <div class="flex items-start justify-between">
+                <div class="flex-1">
+                  <div class="text-sm text-base-content/70 mb-1">Champs indexés</div>
+                  <div class="text-3xl font-bold text-info">
+                    {{ Object.keys(searchStats.fieldDistribution || {}).length }}
+                  </div>
+                  <div class="text-xs text-base-content/60 mt-1">Attributs disponibles</div>
+                </div>
+                <div class="p-2 rounded-lg bg-info/10">
+                  <HugeiconsIcon :icon="Settings02Icon" :size="24" class="text-info" />
+                </div>
               </div>
-              <div class="stat-title">Champs indexés</div>
-              <div class="stat-value text-secondary">
-                {{ Object.keys(searchStats.fieldDistribution || {}).length }}
-              </div>
-              <div class="stat-desc">Attributs disponibles</div>
             </div>
           </div>
 
-          <div v-else class="alert alert-warning">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              class="stroke-current shrink-0 h-6 w-6"
-              fill="none"
-              viewBox="0 0 24 24"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-              />
-            </svg>
-            <span>Impossible de charger les statistiques</span>
+          <div v-else class="bg-base-300/30 border-l-4 border-warning p-5 rounded">
+            <div class="flex items-center gap-3">
+              <HugeiconsIcon :icon="AlertCircleIcon" :size="24" class="text-warning" />
+              <span class="font-medium">Impossible de charger les statistiques</span>
+            </div>
           </div>
 
           <!-- Actions -->
-          <div class="flex flex-wrap gap-4 mt-6">
+          <div class="flex flex-wrap gap-3 mt-6">
             <button
               type="button"
               @click="loadSearchStats"
-              class="btn btn-outline btn-primary"
+              class="btn btn-outline btn-primary gap-2"
               :disabled="loadingSearchStats"
             >
               <span v-if="loadingSearchStats" class="loading loading-spinner loading-sm"></span>
-              <span v-else>
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  class="h-5 w-5"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-                  />
-                </svg>
-              </span>
+              <HugeiconsIcon v-else :icon="RefreshIcon" :size="18" />
               Actualiser les statistiques
             </button>
           </div>
@@ -164,57 +121,62 @@
       </div>
 
       <!-- Actions de maintenance -->
-      <div class="card bg-base-100 shadow-xl">
-        <div class="card-body">
-          <h2 class="card-title">⚙️ Maintenance de l'index</h2>
+      <div class="bg-base-200 border-l-4 border-warning">
+        <div class="p-6 border-b border-base-300">
+          <div class="flex items-center gap-3">
+            <HugeiconsIcon :icon="Settings02Icon" :size="24" class="text-warning" />
+            <h2 class="text-xl font-semibold">Maintenance de l'index</h2>
+          </div>
+        </div>
 
-          <div class="space-y-4">
-            <!-- Réindexation complète -->
-            <div class="border border-base-300 rounded-lg p-4">
-              <div class="flex items-start justify-between">
-                <div class="flex-1">
-                  <h3 class="font-semibold text-lg mb-2">⚡ Réindexation complète</h3>
-                  <p class="text-sm opacity-70 mb-3">
-                    Réindexe tous les rapports dans MeiliSearch. Cette opération supprime l'index
-                    existant et le reconstruit entièrement.
+        <div class="p-6 space-y-4">
+          <!-- Réindexation complète -->
+          <div class="bg-base-300/30 border border-base-300 rounded-lg p-5">
+            <div class="flex items-start justify-between gap-4 flex-wrap">
+              <div class="flex-1 min-w-[250px]">
+                <h3 class="font-semibold text-lg mb-2 flex items-center gap-2">
+                  <HugeiconsIcon :icon="RefreshIcon" :size="20" class="text-warning" />
+                  Réindexation complète
+                </h3>
+                <p class="text-sm text-base-content/70 mb-3">
+                  Réindexe tous les rapports dans MeiliSearch. Cette opération supprime l'index
+                  existant et le reconstruit entièrement.
+                </p>
+                <div class="text-xs text-base-content/60 space-y-1">
+                  <p class="flex items-center gap-1">
+                    <HugeiconsIcon :icon="CheckmarkCircle01Icon" :size="14" class="text-success" />
+                    Nécessaire après une mise à jour majeure du système
                   </p>
-                  <div class="text-xs opacity-60 space-y-1">
-                    <p>✓ Nécessaire après une mise à jour majeure du système</p>
-                    <p>✓ Corrige les incohérences dans l'index</p>
-                    <p>✓ Active la détection de corrélations pour les nouveaux rapports</p>
-                  </div>
+                  <p class="flex items-center gap-1">
+                    <HugeiconsIcon :icon="CheckmarkCircle01Icon" :size="14" class="text-success" />
+                    Corrige les incohérences dans l'index
+                  </p>
+                  <p class="flex items-center gap-1">
+                    <HugeiconsIcon :icon="CheckmarkCircle01Icon" :size="14" class="text-success" />
+                    Active la détection de corrélations pour les nouveaux rapports
+                  </p>
                 </div>
-                <button
-                  type="button"
-                  @click="handleReindex"
-                  class="btn btn-warning ml-4"
-                  :disabled="reindexing || (searchStats?.isIndexing || false)"
-                >
-                  <span v-if="reindexing" class="loading loading-spinner loading-sm"></span>
-                  <span v-else>⚡</span>
-                  Réindexer
-                </button>
               </div>
-            </div>
-
-            <!-- Info importante -->
-            <div class="alert alert-warning">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                class="stroke-current shrink-0 h-6 w-6"
-                fill="none"
-                viewBox="0 0 24 24"
+              <button
+                type="button"
+                @click="handleReindex"
+                class="btn btn-warning gap-2 shrink-0"
+                :disabled="reindexing || (searchStats?.isIndexing || false)"
               >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-                />
-              </svg>
+                <span v-if="reindexing" class="loading loading-spinner loading-sm"></span>
+                <HugeiconsIcon v-else :icon="RefreshIcon" :size="18" />
+                Réindexer
+              </button>
+            </div>
+          </div>
+
+          <!-- Info importante -->
+          <div class="bg-base-300/30 border-l-4 border-warning p-5 rounded">
+            <div class="flex items-start gap-3">
+              <HugeiconsIcon :icon="AlertCircleIcon" :size="24" class="text-warning mt-0.5" />
               <div>
                 <strong>Note importante :</strong>
-                <p class="text-sm mt-1">
+                <p class="text-sm mt-1 text-base-content/70">
                   La réindexation complète peut prendre plusieurs minutes si vous avez beaucoup de
                   rapports. L'interface restera bloquée pendant l'opération. Une fois terminée, un
                   message de confirmation s'affichera avec le nombre de rapports indexés.
@@ -226,10 +188,15 @@
       </div>
 
       <!-- Informations techniques -->
-      <div class="card bg-base-100 shadow-xl">
-        <div class="card-body">
-          <h2 class="card-title">🔧 Informations techniques</h2>
+      <div class="bg-base-200 border-l-4 border-info">
+        <div class="p-6 border-b border-base-300">
+          <div class="flex items-center gap-3">
+            <HugeiconsIcon :icon="InformationCircleIcon" :size="24" class="text-info" />
+            <h2 class="text-xl font-semibold">Informations techniques</h2>
+          </div>
+        </div>
 
+        <div class="p-6">
           <div class="overflow-x-auto">
             <table class="table table-zebra">
               <thead>
@@ -287,10 +254,10 @@
               <div
                 v-for="(count, field) in searchStats.fieldDistribution"
                 :key="field"
-                class="stat bg-base-200 rounded p-3"
+                class="bg-base-300/30 border-l-4 border-accent rounded p-3"
               >
-                <div class="stat-title text-xs">{{ field }}</div>
-                <div class="stat-value text-lg">{{ count }}</div>
+                <div class="text-xs text-base-content/70">{{ field }}</div>
+                <div class="text-lg font-bold text-accent">{{ count }}</div>
               </div>
             </div>
           </div>
@@ -312,7 +279,7 @@
       @confirm="modal.handleConfirm"
       @cancel="modal.handleCancel"
     />
-  </div>
+  </section>
 </template>
 
 <script setup lang="ts">
@@ -320,6 +287,17 @@ import { ref, onMounted } from "vue";
 import { searchAdminApi, type SearchStats } from "@/services/api/search-admin";
 import { useModal } from "@/composables/useModal";
 import ModalDialog from "@/components/shared/ModalDialog.vue";
+import { HugeiconsIcon } from "@hugeicons/vue";
+import {
+  SearchAreaIcon,
+  Analytics02Icon,
+  RefreshIcon,
+  AlertCircleIcon,
+  InformationCircleIcon,
+  Database01Icon,
+  Settings02Icon,
+  CheckmarkCircle01Icon,
+} from "@hugeicons/core-free-icons";
 
 const modal = useModal();
 

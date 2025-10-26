@@ -1,22 +1,9 @@
 <template>
-  <div class="bg-base-200 rounded-lg p-4 space-y-4">
+  <div class="bg-base-200 border-l-4 border-info p-5 space-y-5">
     <!-- En-tête des filtres -->
     <div class="flex items-center justify-between">
       <h3 class="text-lg font-semibold flex items-center gap-2">
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          class="h-5 w-5"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-        >
-          <path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            stroke-width="2"
-            d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"
-          />
-        </svg>
+        <HugeiconsIcon :icon="FilterIcon" :size="20" />
         Filtres
         <span v-if="searchStore.activeFiltersCount > 0" class="badge badge-primary">
           {{ searchStore.activeFiltersCount }}
@@ -25,8 +12,9 @@
       <button
         v-if="searchStore.activeFiltersCount > 0"
         @click="searchStore.resetFilters()"
-        class="btn btn-ghost btn-sm"
+        class="btn btn-ghost btn-sm gap-1"
       >
+        <HugeiconsIcon :icon="Cancel01Icon" :size="14" />
         Réinitialiser
       </button>
     </div>
@@ -34,7 +22,10 @@
     <!-- Tri -->
     <div class="form-control">
       <label class="label">
-        <span class="label-text font-medium">Trier par</span>
+        <span class="label-text font-medium flex items-center gap-2">
+          <HugeiconsIcon :icon="SortingIcon" :size="16" />
+          Trier par
+        </span>
       </label>
       <select
         v-model="searchStore.sortBy"
@@ -52,13 +43,16 @@
     <!-- Filtre statut -->
     <div class="form-control">
       <label class="label">
-        <span class="label-text font-medium">Statut</span>
+        <span class="label-text font-medium flex items-center gap-2">
+          <HugeiconsIcon :icon="CheckmarkCircle01Icon" :size="16" />
+          Statut
+        </span>
       </label>
       <div class="space-y-2">
         <label
           v-for="status in statusOptions"
           :key="status.value"
-          class="label cursor-pointer justify-start gap-3"
+          class="label cursor-pointer justify-start gap-3 hover:bg-base-300/50 rounded px-2 -mx-2"
         >
           <input
             type="radio"
@@ -76,7 +70,7 @@
             {{ searchStore.facets.status[status.value] }}
           </span>
         </label>
-        <label class="label cursor-pointer justify-start gap-3">
+        <label class="label cursor-pointer justify-start gap-3 hover:bg-base-300/50 rounded px-2 -mx-2">
           <input
             type="radio"
             name="status"
@@ -93,13 +87,16 @@
     <!-- Filtre urgence -->
     <div class="form-control">
       <label class="label">
-        <span class="label-text font-medium">Urgence</span>
+        <span class="label-text font-medium flex items-center gap-2">
+          <HugeiconsIcon :icon="AlertCircleIcon" :size="16" />
+          Urgence
+        </span>
       </label>
       <div class="space-y-2">
         <label
           v-for="urgency in urgencyOptions"
           :key="urgency.value"
-          class="label cursor-pointer justify-start gap-3"
+          class="label cursor-pointer justify-start gap-3 hover:bg-base-300/50 rounded px-2 -mx-2"
         >
           <input
             type="radio"
@@ -118,7 +115,7 @@
             {{ searchStore.facets.urgencyLevel[urgency.value] }}
           </span>
         </label>
-        <label class="label cursor-pointer justify-start gap-3">
+        <label class="label cursor-pointer justify-start gap-3 hover:bg-base-300/50 rounded px-2 -mx-2">
           <input
             type="radio"
             name="urgency"
@@ -135,13 +132,16 @@
     <!-- Filtre classification -->
     <div class="form-control">
       <label class="label">
-        <span class="label-text font-medium">Classification</span>
+        <span class="label-text font-medium flex items-center gap-2">
+          <HugeiconsIcon :icon="LockIcon" :size="16" />
+          Classification
+        </span>
       </label>
       <div class="space-y-2">
         <label
           v-for="classification in classificationOptions"
           :key="classification.value"
-          class="label cursor-pointer justify-start gap-3"
+          class="label cursor-pointer justify-start gap-3 hover:bg-base-300/50 rounded px-2 -mx-2"
         >
           <input
             type="radio"
@@ -160,7 +160,7 @@
             {{ searchStore.facets.classification[classification.value] }}
           </span>
         </label>
-        <label class="label cursor-pointer justify-start gap-3">
+        <label class="label cursor-pointer justify-start gap-3 hover:bg-base-300/50 rounded px-2 -mx-2">
           <input
             type="radio"
             name="classification"
@@ -176,28 +176,32 @@
 
     <!-- Statistiques (admin uniquement) -->
     <div v-if="authStore.hasPermission('system:admin')" class="divider"></div>
-    <div v-if="authStore.hasPermission('system:admin') && searchStore.stats" class="space-y-2">
-      <h4 class="text-sm font-semibold text-base-content/70">Statistiques de l'index</h4>
-      <div class="stats stats-vertical shadow-sm bg-base-100">
-        <div class="stat py-2 px-3">
-          <div class="stat-title text-xs">Documents indexés</div>
-          <div class="stat-value text-2xl">{{ searchStore.stats.numberOfDocuments }}</div>
+    <div v-if="authStore.hasPermission('system:admin') && searchStore.stats" class="space-y-3">
+      <h4 class="text-sm font-semibold text-base-content/70 flex items-center gap-2">
+        <HugeiconsIcon :icon="DashboardSpeed01Icon" :size="16" />
+        Statistiques de l'index
+      </h4>
+      <div class="bg-base-100 rounded-lg p-3 space-y-2">
+        <div class="flex items-center justify-between">
+          <span class="text-xs text-base-content/60">Documents indexés</span>
+          <span class="font-semibold">{{ searchStore.stats.numberOfDocuments }}</span>
         </div>
-        <div class="stat py-2 px-3">
-          <div class="stat-title text-xs">Statut d'indexation</div>
-          <div class="stat-value text-lg">
+        <div class="flex items-center justify-between">
+          <span class="text-xs text-base-content/60">Statut d'indexation</span>
+          <span class="font-semibold">
             <span v-if="searchStore.stats.isIndexing" class="loading loading-spinner loading-sm"></span>
-            <span v-else class="text-success">✓</span>
-          </div>
+            <span v-else class="text-success">✓ Terminé</span>
+          </span>
         </div>
       </div>
       <button
         @click="handleReindex"
         :disabled="searchStore.loading"
-        class="btn btn-outline btn-sm w-full"
+        class="btn btn-outline btn-sm w-full gap-2"
       >
         <span v-if="searchStore.loading" class="loading loading-spinner loading-xs"></span>
-        <span v-else>Réindexer tout</span>
+        <HugeiconsIcon v-else :icon="RefreshIcon" :size="14" />
+        Réindexer tout
       </button>
     </div>
   </div>
@@ -207,6 +211,19 @@
 import { onMounted } from "vue";
 import { useSearchStore } from "@/stores/search";
 import { useAuthStore } from "@/stores/auth";
+
+// Import HugeIcons
+import { HugeiconsIcon } from "@hugeicons/vue";
+import {
+  FilterIcon,
+  Cancel01Icon,
+  SortingIcon,
+  CheckmarkCircle01Icon,
+  AlertCircleIcon,
+  LockIcon,
+  DashboardSpeed01Icon,
+  RefreshIcon,
+} from "@hugeicons/core-free-icons";
 
 const searchStore = useSearchStore();
 const authStore = useAuthStore();

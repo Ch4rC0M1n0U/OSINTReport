@@ -3,7 +3,18 @@ import { onMounted, reactive, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useUsersStore } from "@/stores/users";
 import { HugeiconsIcon } from "@hugeicons/vue";
-import { ArrowLeft01Icon } from "@hugeicons/core-free-icons";
+import {
+  ArrowLeft01Icon,
+  User02Icon,
+  Mail01Icon,
+  Call02Icon,
+  IdIcon,
+  ShieldUserIcon,
+  AlertCircleIcon,
+  CheckmarkCircle01Icon,
+  Cancel01Icon,
+  UserEdit01Icon,
+} from "@hugeicons/core-free-icons";
 
 const route = useRoute();
 const router = useRouter();
@@ -18,6 +29,7 @@ const form = reactive({
   phone: "",
   grade: "",
   roleId: "",
+  matricule: "",
 });
 
 onMounted(async () => {
@@ -31,6 +43,7 @@ onMounted(async () => {
     form.phone = user.phone || "";
     form.grade = user.grade || "";
     form.roleId = user.role.id;
+    form.matricule = user.matricule || "";
   }
 });
 
@@ -53,87 +66,153 @@ function goBack() {
 
 <template>
   <section class="space-y-6">
-    <header class="flex items-center gap-4">
-      <button class="btn btn-ghost btn-sm" @click="goBack">
-        <HugeiconsIcon :icon="ArrowLeft01Icon" :size="20" />
-      </button>
-      <div>
-        <h2 class="text-2xl font-semibold">Modifier l'utilisateur</h2>
-        <p class="text-sm text-base-content/70">
-          Mettez à jour les informations de l'utilisateur
-        </p>
+    <!-- En-tête de la page -->
+    <header class="bg-base-200 border-l-4 border-primary p-6">
+      <div class="flex items-center gap-4">
+        <button class="btn btn-ghost btn-circle" @click="goBack">
+          <HugeiconsIcon :icon="ArrowLeft01Icon" :size="20" />
+        </button>
+        <div class="p-2 rounded-lg bg-primary/10">
+          <HugeiconsIcon :icon="UserEdit01Icon" :size="32" class="text-primary" />
+        </div>
+        <div>
+          <h1 class="text-3xl font-bold">Modifier l'utilisateur</h1>
+          <p class="text-base-content/70 mt-1">
+            Mettez à jour les informations de l'utilisateur
+          </p>
+        </div>
       </div>
     </header>
 
-    <div v-if="usersStore.loading && !submitting" class="flex justify-center py-12">
-      <span class="loading loading-spinner loading-lg"></span>
+    <!-- Chargement -->
+    <div v-if="usersStore.loading && !submitting" class="bg-base-200 border-l-4 border-info p-12">
+      <div class="flex flex-col items-center gap-4">
+        <span class="loading loading-spinner loading-lg text-info"></span>
+        <p class="text-base-content/70">Chargement des données...</p>
+      </div>
     </div>
 
-    <form v-else @submit.prevent="handleSubmit" class="card bg-base-100 shadow max-w-2xl">
-      <div class="card-body space-y-4">
-        <h3 class="card-title text-lg">Informations de l'utilisateur</h3>
+    <!-- Message d'erreur -->
+    <div v-else-if="usersStore.error" class="bg-base-200 border-l-4 border-error p-5">
+      <div class="flex items-center gap-3">
+        <HugeiconsIcon :icon="AlertCircleIcon" :size="24" class="text-error" />
+        <span class="font-medium">{{ usersStore.error }}</span>
+      </div>
+    </div>
 
-        <div v-if="usersStore.error" class="alert alert-error">
-          <span>{{ usersStore.error }}</span>
+    <!-- Formulaire -->
+    <form v-else @submit.prevent="handleSubmit" class="bg-base-200 border-l-4 border-accent">
+      <div class="p-6 border-b border-base-300">
+        <div class="flex items-center gap-3">
+          <HugeiconsIcon :icon="User02Icon" :size="24" class="text-accent" />
+          <h2 class="text-xl font-semibold">Informations de l'utilisateur</h2>
         </div>
+      </div>
 
+      <div class="p-6 space-y-6">
+        <!-- Nom et prénom -->
         <div class="grid gap-4 md:grid-cols-2">
           <label class="form-control">
             <div class="label">
-              <span class="label-text">Prénom *</span>
+              <span class="label-text font-medium">Prénom *</span>
             </div>
-            <input
-              v-model="form.firstName"
-              type="text"
-              class="input input-bordered"
-              required
-              placeholder="Jean"
-            />
+            <div class="relative">
+              <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <HugeiconsIcon :icon="User02Icon" :size="18" class="text-base-content/40" />
+              </div>
+              <input
+                v-model="form.firstName"
+                type="text"
+                class="input input-bordered w-full pl-10"
+                required
+                placeholder="Jean"
+              />
+            </div>
           </label>
 
           <label class="form-control">
             <div class="label">
-              <span class="label-text">Nom *</span>
+              <span class="label-text font-medium">Nom *</span>
             </div>
-            <input
-              v-model="form.lastName"
-              type="text"
-              class="input input-bordered"
-              required
-              placeholder="Dupont"
-            />
+            <div class="relative">
+              <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <HugeiconsIcon :icon="User02Icon" :size="18" class="text-base-content/40" />
+              </div>
+              <input
+                v-model="form.lastName"
+                type="text"
+                class="input input-bordered w-full pl-10"
+                required
+                placeholder="Dupont"
+              />
+            </div>
           </label>
         </div>
 
+        <!-- Matricule (lecture seule) -->
         <label class="form-control">
           <div class="label">
-            <span class="label-text">Email professionnel *</span>
+            <span class="label-text font-medium">Matricule</span>
           </div>
-          <input
-            v-model="form.email"
-            type="email"
-            class="input input-bordered"
-            required
-            placeholder="jean.dupont@police.belgium.eu"
-          />
+          <div class="relative">
+            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <HugeiconsIcon :icon="IdIcon" :size="18" class="text-base-content/40" />
+            </div>
+            <input
+              :value="form.matricule"
+              type="text"
+              class="input input-bordered w-full pl-10 bg-base-300/50"
+              disabled
+            />
+          </div>
+          <div class="label">
+            <span class="label-text-alt text-base-content/60">
+              Le matricule ne peut pas être modifié
+            </span>
+          </div>
         </label>
 
+        <!-- Email -->
+        <label class="form-control">
+          <div class="label">
+            <span class="label-text font-medium">Email professionnel *</span>
+          </div>
+          <div class="relative">
+            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <HugeiconsIcon :icon="Mail01Icon" :size="18" class="text-base-content/40" />
+            </div>
+            <input
+              v-model="form.email"
+              type="email"
+              class="input input-bordered w-full pl-10"
+              required
+              placeholder="jean.dupont@police.belgium.eu"
+            />
+          </div>
+        </label>
+
+        <!-- Téléphone et Grade -->
         <div class="grid gap-4 md:grid-cols-2">
           <label class="form-control">
             <div class="label">
-              <span class="label-text">Téléphone</span>
+              <span class="label-text font-medium">Téléphone</span>
             </div>
-            <input
-              v-model="form.phone"
-              type="tel"
-              class="input input-bordered"
-              placeholder="+32 2 123 45 67"
-            />
+            <div class="relative">
+              <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <HugeiconsIcon :icon="Call02Icon" :size="18" class="text-base-content/40" />
+              </div>
+              <input
+                v-model="form.phone"
+                type="tel"
+                class="input input-bordered w-full pl-10"
+                placeholder="+32 2 123 45 67"
+              />
+            </div>
           </label>
 
           <label class="form-control">
             <div class="label">
-              <span class="label-text">Grade</span>
+              <span class="label-text font-medium">Grade</span>
             </div>
             <select v-model="form.grade" class="select select-bordered">
               <option value="">Sélectionnez un grade</option>
@@ -145,14 +224,18 @@ function goBack() {
               <option value="Premier Commissaire">Premier Commissaire</option>
             </select>
             <div class="label">
-              <span class="label-text-alt">Utilisé pour la signature des rapports</span>
+              <span class="label-text-alt text-base-content/60">Utilisé pour la signature des rapports</span>
             </div>
           </label>
         </div>
 
+        <!-- Rôle -->
         <label class="form-control">
           <div class="label">
-            <span class="label-text">Rôle *</span>
+            <span class="label-text font-medium flex items-center gap-2">
+              <HugeiconsIcon :icon="ShieldUserIcon" :size="18" />
+              Rôle *
+            </span>
           </div>
           <select v-model="form.roleId" class="select select-bordered" required>
             <option value="" disabled>Sélectionnez un rôle</option>
@@ -162,13 +245,16 @@ function goBack() {
           </select>
         </label>
 
-        <div class="card-actions justify-end pt-4">
-          <button type="button" class="btn btn-ghost" @click="goBack" :disabled="submitting">
+        <!-- Actions -->
+        <div class="flex gap-3 justify-end pt-6 border-t border-base-300">
+          <button type="button" class="btn btn-ghost gap-2" @click="goBack" :disabled="submitting">
+            <HugeiconsIcon :icon="Cancel01Icon" :size="18" />
             Annuler
           </button>
-          <button type="submit" class="btn btn-primary" :disabled="submitting">
+          <button type="submit" class="btn btn-primary gap-2" :disabled="submitting">
             <span v-if="submitting" class="loading loading-spinner loading-sm"></span>
-            <span v-else>Enregistrer</span>
+            <HugeiconsIcon v-else :icon="CheckmarkCircle01Icon" :size="18" />
+            {{ submitting ? 'Enregistrement...' : 'Enregistrer les modifications' }}
           </button>
         </div>
       </div>

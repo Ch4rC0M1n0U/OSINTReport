@@ -1,57 +1,67 @@
 <template>
-  <div class="container mx-auto p-6 space-y-6">
-    <!-- En-tête -->
-    <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-      <div>
-        <h1 class="text-3xl font-bold text-base-content">Entités</h1>
-        <p class="text-base-content/70 mt-1">
-          Gérez et recherchez toutes les entités encodées dans vos rapports
-        </p>
+  <section class="space-y-6">
+    <!-- En-tête avec style cohérent -->
+    <header class="bg-base-200 border-l-4 border-accent p-6">
+      <div class="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+        <div class="flex-1">
+          <div class="flex items-center gap-3 mb-2">
+            <HugeiconsIcon :icon="UserCircle02Icon" :size="32" class="text-accent" />
+            <h2 class="text-3xl font-bold">Entités</h2>
+          </div>
+          <p class="text-sm text-base-content/60">
+            Gérez et recherchez toutes les entités encodées dans vos rapports
+          </p>
+        </div>
+        <button
+          v-if="canWrite"
+          @click="openCreateModal"
+          class="btn btn-primary gap-2"
+        >
+          <HugeiconsIcon :icon="Add01Icon" :size="20" />
+          Nouvelle entité
+        </button>
       </div>
-      <button
-        v-if="canWrite"
-        @click="openCreateModal"
-        class="btn btn-primary gap-2"
-      >
-        <HugeiconsIcon :icon="Add01Icon" :size="20" />
-        Nouvelle entité
-      </button>
-    </div>
+    </header>
 
-    <!-- Barre de recherche -->
-    <div class="relative">
-      <HugeiconsIcon :icon="Search01Icon" :size="20" class="absolute left-4 top-1/2 -translate-y-1/2 text-base-content/50" />
-      <input
-        v-model="searchQuery"
-        type="text"
-        placeholder="Rechercher une entité..."
-        class="input input-bordered w-full pl-12"
-        @input="handleSearch"
-      />
-    </div>
+    <!-- Barre de recherche et filtres -->
+    <div class="bg-base-100 border-l-4 border-info shadow-sm p-6">
+      <div class="flex flex-col gap-4">
+        <!-- Recherche -->
+        <div class="relative">
+          <HugeiconsIcon :icon="Search01Icon" :size="20" class="absolute left-4 top-1/2 -translate-y-1/2 text-base-content/50" />
+          <input
+            v-model="searchQuery"
+            type="text"
+            placeholder="Rechercher une entité..."
+            class="input input-bordered w-full pl-12"
+            @input="handleSearch"
+          />
+        </div>
 
-    <!-- Filtres par catégorie -->
-    <div class="flex flex-wrap gap-3">
-      <button
-        v-for="filter in categoryFilters"
-        :key="filter.type"
-        @click="selectedType = filter.type"
-        :class="[
-          'btn gap-2 normal-case',
-          selectedType === filter.type 
-            ? 'btn-primary shadow-lg' 
-            : 'btn-outline btn-ghost hover:btn-outline hover:btn-primary'
-        ]"
-      >
-        <HugeiconsIcon :icon="filter.icon" :size="20" />
-        <span class="font-medium">{{ filter.label }}</span>
-        <span v-if="filter.count !== undefined" :class="[
-          'badge',
-          selectedType === filter.type ? 'badge-neutral' : 'badge-ghost'
-        ]">
-          {{ filter.count }}
-        </span>
-      </button>
+        <!-- Filtres par catégorie -->
+        <div class="flex flex-wrap gap-2">
+          <button
+            v-for="filter in categoryFilters"
+            :key="filter.type"
+            @click="selectedType = filter.type"
+            :class="[
+              'btn btn-sm gap-2 normal-case transition-all',
+              selectedType === filter.type 
+                ? 'btn-primary' 
+                : 'btn-ghost hover:btn-outline'
+            ]"
+          >
+            <HugeiconsIcon :icon="filter.icon" :size="18" />
+            <span class="font-medium">{{ filter.label }}</span>
+            <span v-if="filter.count !== undefined" 
+                  class="badge badge-sm"
+                  :class="selectedType === filter.type ? 'badge-neutral' : 'badge-ghost'"
+            >
+              {{ filter.count }}
+            </span>
+          </button>
+        </div>
+      </div>
     </div>
 
     <!-- État de chargement -->
@@ -59,7 +69,7 @@
       <div
         v-for="i in 6"
         :key="i"
-        class="card bg-base-200 h-40 animate-pulse"
+        class="bg-base-100 border-l-4 border-base-300 h-40 animate-pulse shadow-sm"
       ></div>
     </div>
 
@@ -82,81 +92,86 @@
         v-for="entity in entities"
         :key="entity.id"
         @click="viewEntity(entity)"
-        class="card bg-base-200 shadow-xl cursor-pointer transition-all duration-200 hover:shadow-2xl hover:scale-105"
+        class="bg-base-100 border-l-4 shadow-sm cursor-pointer transition-all duration-200 hover:shadow-md p-5"
+        :class="{
+          'border-primary': entity.type === 'PERSON',
+          'border-secondary': entity.type === 'ORGANIZATION',
+          'border-accent': entity.type === 'TELEPHONE',
+          'border-info': entity.type === 'EMAIL',
+          'border-success': entity.type === 'ACCOUNT',
+          'border-warning': entity.type === 'ADDRESS',
+          'border-neutral': entity.type === 'OTHER'
+        }"
       >
-        <div class="card-body">
-          <div class="flex items-start justify-between mb-2">
-            <div class="flex items-center gap-2">
-              <div class="avatar placeholder">
-                <div class="w-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                  <HugeiconsIcon :icon="getEntityIcon(entity.type)" :size="20" class="text-primary" />
-                </div>
-              </div>
-              <span class="badge badge-outline badge-sm">
-                {{ getEntityTypeLabel(entity.type) }}
-              </span>
+        <div class="flex items-start justify-between mb-3">
+          <div class="flex items-center gap-2">
+            <div class="p-2 rounded-lg bg-base-200">
+              <HugeiconsIcon :icon="getEntityIcon(entity.type)" :size="20" :class="`text-${getEntityColor(entity.type)}`" />
             </div>
-            <button
-              v-if="canWrite"
-              @click.stop="openDeleteModal(entity)"
-              class="btn btn-ghost btn-xs btn-circle text-error hover:bg-error/10"
-            >
-              <HugeiconsIcon :icon="Delete02Icon" :size="16" />
-            </button>
-          </div>
-
-          <h2 class="card-title text-lg truncate">
-            {{ entity.label }}
-          </h2>
-
-          <p v-if="entity.notes" class="text-sm opacity-70 line-clamp-2">
-            {{ entity.notes }}
-          </p>
-
-          <div class="flex items-center gap-3 text-xs opacity-60 mt-2">
-            <span v-if="entity._count?.modules" class="flex items-center gap-1">
-              <HugeiconsIcon :icon="FileAttachmentIcon" :size="12" />
-              {{ entity._count.modules }}
-            </span>
-            <span v-if="entity._count?.researchRecords" class="flex items-center gap-1">
-              <HugeiconsIcon :icon="Search01Icon" :size="12" />
-              {{ entity._count.researchRecords }}
+            <span class="badge badge-outline badge-sm">
+              {{ getEntityTypeLabel(entity.type) }}
             </span>
           </div>
+          <button
+            v-if="canWrite"
+            @click.stop="openDeleteModal(entity)"
+            class="btn btn-ghost btn-xs btn-circle text-error hover:bg-error/10"
+          >
+            <HugeiconsIcon :icon="Delete02Icon" :size="16" />
+          </button>
+        </div>
+
+        <h2 class="text-lg font-bold truncate mb-2">
+          {{ entity.label }}
+        </h2>
+
+        <p v-if="entity.notes" class="text-sm text-base-content/70 line-clamp-2 mb-3">
+          {{ entity.notes }}
+        </p>
+
+        <div class="flex items-center gap-3 text-xs text-base-content/60">
+          <span v-if="entity._count?.modules" class="flex items-center gap-1">
+            <HugeiconsIcon :icon="FileAttachmentIcon" :size="14" />
+            {{ entity._count.modules }}
+          </span>
+          <span v-if="entity._count?.researchRecords" class="flex items-center gap-1">
+            <HugeiconsIcon :icon="Search01Icon" :size="14" />
+            {{ entity._count.researchRecords }}
+          </span>
         </div>
       </div>
     </div>
 
     <!-- État vide -->
-    <div v-else class="text-center py-12">
-      <div class="card bg-base-200 inline-block">
-        <div class="card-body items-center">
-          <HugeiconsIcon :icon="FolderOffIcon" :size="64" class="opacity-30 mb-4" />
-          <p class="text-lg font-semibold">Aucune entité trouvée</p>
-          <p class="text-sm opacity-70 mt-2">
-            {{ searchQuery ? "Modifiez vos critères de recherche" : "Créez votre première entité pour commencer" }}
-          </p>
-        </div>
+    <div v-else class="bg-base-100 border-l-4 border-base-300 shadow-sm p-12">
+      <div class="text-center">
+        <HugeiconsIcon :icon="FolderOffIcon" :size="64" class="text-base-content/20 mx-auto mb-4" />
+        <p class="text-lg font-semibold mb-2">Aucune entité trouvée</p>
+        <p class="text-sm text-base-content/60">
+          {{ searchQuery ? "Modifiez vos critères de recherche" : "Créez votre première entité pour commencer" }}
+        </p>
       </div>
     </div>
 
     <!-- Pagination -->
-    <div v-if="total > limit" class="flex justify-center gap-2 mt-6">
+    <div v-if="total > limit" class="flex justify-center gap-2">
       <button
         @click="previousPage"
         :disabled="offset === 0"
         class="btn btn-sm"
       >
         <HugeiconsIcon :icon="ArrowLeft01Icon" :size="16" />
+        Précédent
       </button>
       <div class="flex items-center gap-2 px-4">
-        <span>Page {{ currentPage }} sur {{ totalPages }}</span>
+        <span class="text-sm font-medium">Page {{ currentPage }} sur {{ totalPages }}</span>
       </div>
       <button
         @click="nextPage"
         :disabled="offset + limit >= total"
         class="btn btn-sm"
       >
+        Suivant
         <HugeiconsIcon :icon="ArrowRight01Icon" :size="16" />
       </button>
     </div>
@@ -384,7 +399,7 @@
         </div>
       </div>
     </dialog>
-  </div>
+  </section>
 </template>
 
 <script setup lang="ts">

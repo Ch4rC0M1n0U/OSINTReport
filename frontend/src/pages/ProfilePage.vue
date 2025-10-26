@@ -9,7 +9,14 @@ import {
   Upload01Icon,
   IdIcon,
   Cancel01Icon,
-  PencilEdit01Icon
+  PencilEdit01Icon,
+  CheckmarkCircle01Icon,
+  AlertCircleIcon,
+  Mail01Icon,
+  Call02Icon,
+  UserCircle02Icon,
+  Camera01Icon,
+  Delete02Icon
 } from "@hugeicons/core-free-icons";
 import SignaturePad from "@/components/SignaturePad.vue";
 import ProtectedSignature from "@/components/ProtectedSignature.vue";
@@ -312,41 +319,59 @@ async function removeSignature() {
 </script>
 
 <template>
-  <section class="max-w-4xl mx-auto space-y-6 pb-8">
-    <!-- Alert Messages -->
-    <div v-if="message" :class="`alert alert-${message.type} shadow-lg`" class="mb-6">
-      <div class="flex items-center gap-2">
-        <HugeiconsIcon 
-          :icon="message.type === 'success' ? User02Icon : Cancel01Icon" 
-          class="w-5 h-5"
-        />
-        <span>{{ message.text }}</span>
+  <section class="max-w-5xl mx-auto space-y-6 pb-8">
+    <!-- En-tête de la page -->
+    <header class="bg-base-200 border-l-4 border-primary p-6">
+      <div class="flex items-center gap-4">
+        <div class="p-2 rounded-lg bg-primary/10">
+          <HugeiconsIcon :icon="UserCircle02Icon" :size="32" class="text-primary" />
+        </div>
+        <div>
+          <h1 class="text-3xl font-bold">Mon profil</h1>
+          <p class="text-base-content/70 mt-1">
+            Gérez vos informations personnelles et préférences
+          </p>
+        </div>
       </div>
-      <button @click="message = null" class="btn btn-ghost btn-sm btn-circle">
-        <HugeiconsIcon :icon="Cancel01Icon" class="w-4 h-4" />
-      </button>
+    </header>
+
+    <!-- Alert Messages -->
+    <div v-if="message" class="bg-base-200 border-l-4 p-4" :class="message.type === 'success' ? 'border-success' : 'border-error'">
+      <div class="flex items-center justify-between gap-3">
+        <div class="flex items-center gap-3">
+          <HugeiconsIcon 
+            :icon="message.type === 'success' ? CheckmarkCircle01Icon : AlertCircleIcon" 
+            :size="24"
+            :class="message.type === 'success' ? 'text-success' : 'text-error'"
+          />
+          <span class="font-medium">{{ message.text }}</span>
+        </div>
+        <button @click="message = null" class="btn btn-ghost btn-sm btn-circle">
+          <HugeiconsIcon :icon="Cancel01Icon" :size="16" />
+        </button>
+      </div>
     </div>
 
     <!-- User Profile Section -->
-    <div class="bg-base-100 rounded-lg shadow-md border border-base-200">
-      <div class="p-6 border-b border-base-200">
+    <div class="bg-base-200 border-l-4 border-accent">
+      <div class="p-6 border-b border-base-300">
         <div class="flex items-center gap-3">
-          <HugeiconsIcon :icon="User02Icon" class="w-6 h-6 text-primary" />
+          <HugeiconsIcon :icon="User02Icon" :size="24" class="text-accent" />
           <div>
-            <h2 class="text-xl font-semibold">User Profile</h2>
-            <p class="text-sm text-base-content/60">Manage your account information and settings</p>
+            <h2 class="text-xl font-semibold">Informations personnelles</h2>
+            <p class="text-sm text-base-content/60">Gérez vos informations de profil et photo</p>
           </div>
         </div>
       </div>
 
       <div class="p-6">
-        <div class="flex flex-col sm:flex-row gap-6 mb-6">
-          <!-- Avatar -->
-          <div class="flex-shrink-0">
+        <div class="flex flex-col lg:flex-row gap-8 mb-6">
+          <!-- Avatar Section -->
+          <div class="flex flex-col items-center gap-4">
             <div class="avatar">
               <div
                 v-if="profileForm.avatarUrl"
-                class="w-24 h-24 rounded-full ring ring-primary ring-offset-base-100 ring-offset-2"
+                class="w-32 h-32 rounded-full ring-4 ring-accent ring-offset-4 ring-offset-base-200"
               >
                 <img 
                   :src="profileForm.avatarUrl" 
@@ -356,89 +381,137 @@ async function removeSignature() {
               </div>
               <div
                 v-else
-                class="w-24 h-24 rounded-full bg-gradient-to-br from-primary to-secondary text-primary-content flex items-center justify-center text-2xl font-bold ring ring-primary ring-offset-base-100 ring-offset-2"
+                class="w-32 h-32 rounded-full bg-gradient-to-br from-accent to-primary text-white flex items-center justify-center text-3xl font-bold ring-4 ring-accent ring-offset-4 ring-offset-base-200"
               >
                 {{ userInitials }}
               </div>
+            </div>
+
+            <!-- Upload Photo Buttons -->
+            <div class="flex flex-col gap-2 w-full">
+              <label class="btn btn-sm btn-accent gap-2">
+                <HugeiconsIcon :icon="Camera01Icon" :size="16" />
+                <span>Changer la photo</span>
+                <input
+                  type="file"
+                  accept="image/png,image/jpeg,image/jpg"
+                  class="hidden"
+                  @change="handleImageUpload"
+                />
+              </label>
+              <button 
+                type="button"
+                @click="profileForm.avatarUrl = ''"
+                class="btn btn-sm btn-ghost gap-2"
+                v-if="profileForm.avatarUrl"
+              >
+                <HugeiconsIcon :icon="Delete02Icon" :size="16" />
+                Supprimer
+              </button>
             </div>
           </div>
 
           <!-- User Info Form -->
           <div class="flex-1 space-y-4">
-            <div class="grid gap-4 md:grid-cols-2">
+            <div class="grid gap-4 sm:grid-cols-2">
               <!-- Prénom -->
               <label class="form-control">
                 <div class="label">
-                  <span class="label-text">Prénom</span>
+                  <span class="label-text font-medium">Prénom</span>
                 </div>
-                <input
-                  v-model="profileForm.firstName"
-                  type="text"
-                  placeholder="Gaëtan"
-                  class="input input-bordered"
-                  required
-                />
+                <div class="relative">
+                  <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <HugeiconsIcon :icon="User02Icon" :size="18" class="text-base-content/40" />
+                  </div>
+                  <input
+                    v-model="profileForm.firstName"
+                    type="text"
+                    placeholder="Gaëtan"
+                    class="input input-bordered w-full pl-10"
+                    required
+                  />
+                </div>
               </label>
 
               <!-- Nom -->
               <label class="form-control">
                 <div class="label">
-                  <span class="label-text">Nom</span>
+                  <span class="label-text font-medium">Nom</span>
                 </div>
-                <input
-                  v-model="profileForm.lastName"
-                  type="text"
-                  placeholder="Dupont"
-                  class="input input-bordered"
-                  required
-                />
+                <div class="relative">
+                  <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <HugeiconsIcon :icon="User02Icon" :size="18" class="text-base-content/40" />
+                  </div>
+                  <input
+                    v-model="profileForm.lastName"
+                    type="text"
+                    placeholder="Dupont"
+                    class="input input-bordered w-full pl-10"
+                    required
+                  />
+                </div>
               </label>
 
               <!-- Matricule -->
               <label class="form-control">
                 <div class="label">
-                  <span class="label-text">Matricule</span>
+                  <span class="label-text font-medium">Matricule</span>
                 </div>
-                <input
-                  v-model="profileForm.matricule"
-                  type="text"
-                  placeholder="BE-POL-2024-001"
-                  class="input input-bordered"
-                  required
-                />
+                <div class="relative">
+                  <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <HugeiconsIcon :icon="IdIcon" :size="18" class="text-base-content/40" />
+                  </div>
+                  <input
+                    v-model="profileForm.matricule"
+                    type="text"
+                    placeholder="BE-POL-2024-001"
+                    class="input input-bordered w-full pl-10"
+                    required
+                  />
+                </div>
               </label>
 
               <!-- Email -->
               <label class="form-control">
                 <div class="label">
-                  <span class="label-text">Email professionnel</span>
+                  <span class="label-text font-medium">Email professionnel</span>
                 </div>
-                <input
-                  v-model="profileForm.email"
-                  type="email"
-                  placeholder="admin@police.belgium.eu"
-                  class="input input-bordered"
-                  required
-                />
+                <div class="relative">
+                  <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <HugeiconsIcon :icon="Mail01Icon" :size="18" class="text-base-content/40" />
+                  </div>
+                  <input
+                    v-model="profileForm.email"
+                    type="email"
+                    placeholder="admin@police.belgium.eu"
+                    class="input input-bordered w-full pl-10"
+                    required
+                  />
+                </div>
               </label>
 
               <!-- Téléphone -->
               <label class="form-control">
                 <div class="label">
-                  <span class="label-text">Téléphone</span>
+                  <span class="label-text font-medium">Téléphone</span>
                 </div>
-                <input
-                  v-model="profileForm.phone"
-                  type="tel"
-                  placeholder="+32 2 123 45 67"
-                  class="input input-bordered"
-                />
+                <div class="relative">
+                  <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <HugeiconsIcon :icon="Call02Icon" :size="18" class="text-base-content/40" />
+                  </div>
+                  <input
+                    v-model="profileForm.phone"
+                    type="tel"
+                    placeholder="+32 2 123 45 67"
+                    class="input input-bordered w-full pl-10"
+                  />
+                </div>
               </label>
 
               <!-- Grade -->
               <label class="form-control">
                 <div class="label">
-                  <span class="label-text">Grade</span>
+                  <span class="label-text font-medium">Grade</span>
                 </div>
                 <select
                   v-model="profileForm.grade"
@@ -450,55 +523,33 @@ async function removeSignature() {
                   </option>
                 </select>
                 <div class="label">
-                  <span class="label-text-alt">Utilisé pour la signature des rapports</span>
+                  <span class="label-text-alt text-base-content/50">Utilisé pour la signature des rapports</span>
                 </div>
               </label>
-            </div>
-
-            <!-- Upload Photo Button -->
-            <div class="flex flex-wrap gap-2 pt-2">
-              <label class="btn btn-primary btn-sm">
-                <HugeiconsIcon :icon="Upload01Icon" class="w-4 h-4" />
-                <span>Upload Photo</span>
-                <input
-                  type="file"
-                  accept="image/png,image/jpeg,image/jpg"
-                  class="hidden"
-                  @change="handleImageUpload"
-                />
-              </label>
-              <button 
-                type="button"
-                @click="profileForm.avatarUrl = ''"
-                class="btn btn-outline btn-sm"
-                v-if="profileForm.avatarUrl"
-              >
-                Remove Photo
-              </button>
             </div>
           </div>
         </div>
 
         <!-- Update Button -->
-        <div class="flex justify-end pt-4 border-t border-base-200">
+        <div class="flex justify-end pt-4 border-t border-base-300">
           <button 
             @click="handleProfileUpdate"
-            class="btn btn-primary"
+            class="btn btn-primary gap-2"
             :disabled="saving"
           >
             <span v-if="saving" class="loading loading-spinner loading-sm"></span>
-            <HugeiconsIcon v-else :icon="Upload01Icon" class="w-4 h-4" />
-            {{ saving ? 'Mise à jour...' : 'Mettre à jour' }}
+            <HugeiconsIcon v-else :icon="CheckmarkCircle01Icon" :size="18" />
+            {{ saving ? 'Mise à jour...' : 'Mettre à jour le profil' }}
           </button>
         </div>
       </div>
     </div>
 
     <!-- Time Preferences Section -->
-    <div class="bg-base-100 rounded-lg shadow-md border border-base-200">
-      <div class="p-6 border-b border-base-200">
+    <div class="bg-base-200 border-l-4 border-info">
+      <div class="p-6 border-b border-base-300">
         <div class="flex items-center gap-3">
-          <HugeiconsIcon :icon="Time01Icon" class="w-6 h-6 text-primary" />
+          <HugeiconsIcon :icon="Time01Icon" :size="24" class="text-info" />
           <div>
             <h2 class="text-xl font-semibold">Préférences de temps</h2>
             <p class="text-sm text-base-content/60">Configurez votre fuseau horaire et format d'heure</p>
@@ -546,29 +597,25 @@ async function removeSignature() {
         </div>
 
         <!-- Action Buttons -->
-        <div class="flex justify-end items-center pt-4 border-t border-base-200">
-          <div class="flex gap-2">
-            <button type="button" class="btn btn-ghost">
-              <HugeiconsIcon :icon="Cancel01Icon" class="w-4 h-4" />
-              Annuler
-            </button>
-            <button 
-              @click="handleTimePreferencesUpdate"
-              class="btn btn-primary"
-            >
-              <HugeiconsIcon :icon="Upload01Icon" class="w-4 h-4" />
-              Mettre à jour
-            </button>
-          </div>
+        <div class="flex justify-end pt-4 border-t border-base-300">
+          <button 
+            @click="handleTimePreferencesUpdate"
+            class="btn btn-info gap-2"
+            :disabled="saving"
+          >
+            <span v-if="saving" class="loading loading-spinner loading-sm"></span>
+            <HugeiconsIcon v-else :icon="CheckmarkCircle01Icon" :size="18" />
+            {{ saving ? 'Mise à jour...' : 'Mettre à jour' }}
+          </button>
         </div>
       </div>
     </div>
 
     <!-- Signature Section -->
-    <div class="bg-base-100 rounded-lg shadow-md border border-base-200">
-      <div class="p-6 border-b border-base-200">
+    <div class="bg-base-200 border-l-4 border-warning">
+      <div class="p-6 border-b border-base-300">
         <div class="flex items-center gap-3">
-          <HugeiconsIcon :icon="PencilEdit01Icon" class="w-6 h-6 text-primary" />
+          <HugeiconsIcon :icon="PencilEdit01Icon" :size="24" class="text-warning" />
           <div>
             <h2 class="text-xl font-semibold">Signature manuscrite</h2>
             <p class="text-sm text-base-content/60">Votre signature sera utilisée dans les rapports générés</p>
@@ -596,7 +643,7 @@ async function removeSignature() {
           <!-- Current signature or placeholder -->
           <div v-else>
             <!-- Signature exists -->
-            <div v-if="profileForm.signatureUrl" class="inline-block max-w-md w-full">
+            <div v-if="profileForm.signatureUrl" class="inline-block max-w-md w-full bg-base-100 p-4 rounded-lg">
               <ProtectedSignature 
                 :src="profileForm.signatureUrl"
                 max-height="200px"
@@ -604,10 +651,12 @@ async function removeSignature() {
             </div>
             
             <!-- No signature placeholder -->
-            <div v-else class="border-2 border-dashed border-base-300 rounded-lg p-8 bg-base-50 text-center">
-              <HugeiconsIcon :icon="PencilEdit01Icon" class="w-16 h-16 mx-auto text-base-300 mb-3" />
-              <p class="text-base-content/60 font-medium mb-2">Aucune signature enregistrée</p>
-              <p class="text-sm text-base-content/40">
+            <div v-else class="border-2 border-dashed border-base-300 rounded-lg p-12 bg-base-100/50 text-center">
+              <div class="p-4 rounded-lg bg-warning/10 inline-block mb-4">
+                <HugeiconsIcon :icon="PencilEdit01Icon" :size="48" class="text-warning" />
+              </div>
+              <p class="text-base-content/70 font-medium mb-2">Aucune signature enregistrée</p>
+              <p class="text-sm text-base-content/50">
                 Ajoutez votre signature manuscrite pour personnaliser vos rapports
               </p>
             </div>
@@ -622,17 +671,18 @@ async function removeSignature() {
             <template v-if="profileForm.signatureUrl">
               <button 
                 @click="showSignaturePad = true"
-                class="btn btn-primary btn-sm"
+                class="btn btn-warning gap-2"
               >
-                <HugeiconsIcon :icon="PencilEdit01Icon" class="w-4 h-4" />
+                <HugeiconsIcon :icon="PencilEdit01Icon" :size="18" />
                 Modifier la signature
               </button>
               <button 
                 @click="removeSignature"
-                class="btn btn-outline btn-error btn-sm"
+                class="btn btn-outline btn-error gap-2"
                 :disabled="saving"
               >
-                <HugeiconsIcon :icon="Cancel01Icon" class="w-4 h-4" />
+                <span v-if="saving" class="loading loading-spinner loading-sm"></span>
+                <HugeiconsIcon v-else :icon="Delete02Icon" :size="18" />
                 Supprimer la signature
               </button>
             </template>
@@ -641,9 +691,9 @@ async function removeSignature() {
             <button 
               v-else
               @click="showSignaturePad = true"
-              class="btn btn-primary btn-sm"
+              class="btn btn-warning gap-2"
             >
-              <HugeiconsIcon :icon="PencilEdit01Icon" class="w-4 h-4" />
+              <HugeiconsIcon :icon="PencilEdit01Icon" :size="18" />
               Ajouter une signature
             </button>
           </template>
@@ -652,10 +702,10 @@ async function removeSignature() {
     </div>
 
     <!-- Read-only Info Section -->
-    <div class="bg-base-100 rounded-lg shadow-md border border-base-200">
-      <div class="p-6 border-b border-base-200">
+    <div class="bg-base-200 border-l-4 border-success">
+      <div class="p-6 border-b border-base-300">
         <div class="flex items-center gap-3">
-          <HugeiconsIcon :icon="IdIcon" class="w-6 h-6 text-primary" />
+          <HugeiconsIcon :icon="IdIcon" :size="24" class="text-success" />
           <div>
             <h2 class="text-xl font-semibold">Informations du compte</h2>
             <p class="text-sm text-base-content/60">Informations en lecture seule gérées par les administrateurs</p>
@@ -664,16 +714,13 @@ async function removeSignature() {
       </div>
 
       <div class="p-6">
-        <div class="grid grid-cols-1 md:grid-cols-1 gap-6">
+        <div class="flex items-center gap-3 bg-base-100 p-4 rounded-lg">
+          <div class="p-2 rounded-lg bg-success/10">
+            <HugeiconsIcon :icon="UserCircle02Icon" :size="24" class="text-success" />
+          </div>
           <div>
-            <label class="label">
-              <span class="label-text text-base-content/70 font-medium">Rôle</span>
-            </label>
-            <div class="flex items-center gap-2">
-              <span class="badge badge-primary badge-lg px-4 py-3 text-base">
-                {{ authStore.user?.roleName || "—" }}
-              </span>
-            </div>
+            <p class="text-sm text-base-content/60 font-medium">Rôle</p>
+            <p class="text-lg font-semibold">{{ authStore.user?.roleName || "—" }}</p>
           </div>
         </div>
       </div>

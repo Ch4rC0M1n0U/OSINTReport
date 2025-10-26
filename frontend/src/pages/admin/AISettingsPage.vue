@@ -1,273 +1,292 @@
 <template>
-  <div class="container mx-auto px-4 py-6">
-    <div class="mb-6">
-      <h1 class="text-2xl font-bold text-gray-900 dark:text-white">
-        Paramètres IA
-      </h1>
-      <p class="text-gray-600 dark:text-gray-400 mt-1">
-        Configurez les clés API pour la génération de texte dans les rapports
-      </p>
-    </div>
+  <section class="space-y-6">
+    <!-- En-tête de la page -->
+    <header class="bg-base-200 border-l-4 border-primary p-6">
+      <div class="flex items-center gap-4">
+        <div class="p-2 rounded-lg bg-primary/10">
+          <HugeiconsIcon :icon="ArtificialIntelligence01Icon" :size="32" class="text-primary" />
+        </div>
+        <div>
+          <h1 class="text-3xl font-bold">Paramètres IA</h1>
+          <p class="text-base-content/70 mt-1">
+            Configurez les clés API pour la génération de texte dans les rapports
+          </p>
+        </div>
+      </div>
+    </header>
 
     <!-- Alert de succès -->
-    <div v-if="showSuccess" class="alert alert-success mb-4">
-      <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-      </svg>
-      <span>Paramètres IA sauvegardés avec succès !</span>
+    <div v-if="showSuccess" class="bg-base-200 border-l-4 border-success p-5">
+      <div class="flex items-center gap-3">
+        <HugeiconsIcon :icon="CheckmarkCircle01Icon" :size="24" class="text-success" />
+        <span class="font-medium">Paramètres IA sauvegardés avec succès !</span>
+      </div>
     </div>
 
     <!-- Alert d'erreur -->
-    <div v-if="error" class="alert alert-error mb-4">
-      <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
-      </svg>
-      <span>{{ error }}</span>
+    <div v-if="error" class="bg-base-200 border-l-4 border-error p-5">
+      <div class="flex items-center gap-3">
+        <HugeiconsIcon :icon="AlertCircleIcon" :size="24" class="text-error" />
+        <span class="font-medium">{{ error }}</span>
+      </div>
     </div>
 
-    <div class="grid gap-6">
-      <!-- Carte principale -->
-      <div class="card bg-base-100 shadow-xl">
-        <div class="card-body">
-          <h2 class="card-title mb-4">Configuration de l'IA</h2>
-
-          <form @submit.prevent="handleSubmit" class="space-y-4">
-            <!-- Activation de l'IA -->
-            <div class="form-control">
-              <label class="label cursor-pointer">
-                <span class="label-text font-semibold">Activer la génération de texte par IA</span>
-                <input
-                  type="checkbox"
-                  v-model="formData.aiEnabled"
-                  class="toggle toggle-primary"
-                />
-              </label>
-              <label class="label">
-                <span class="label-text-alt text-gray-600">
-                  Permet aux utilisateurs de générer automatiquement du texte dans les rapports
-                </span>
-              </label>
-            </div>
-
-            <div class="divider"></div>
-
-            <!-- Provider IA -->
-            <div class="form-control">
-              <label class="label">
-                <span class="label-text font-semibold">Fournisseur d'IA</span>
-              </label>
-              <select
-                v-model="formData.aiProvider"
-                class="select select-bordered w-full"
-                :disabled="!formData.aiEnabled"
-              >
-                <option value="gemini">Google Gemini</option>
-                <option value="openai">OpenAI</option>
-                <option value="claude">Anthropic Claude</option>
-              </select>
-            </div>
-
-            <!-- Clé API Gemini -->
-            <div v-if="formData.aiProvider === 'gemini'" class="form-control">
-              <label class="label">
-                <span class="label-text font-semibold">Clé API Google Gemini</span>
-              </label>
-              <div class="relative">
-                <input
-                  :type="showGeminiKey ? 'text' : 'password'"
-                  v-model="formData.geminiApiKey"
-                  placeholder="Entrez votre clé API Gemini"
-                  class="input input-bordered w-full pr-10"
-                  :disabled="!formData.aiEnabled"
-                />
-                <button
-                  type="button"
-                  @click="showGeminiKey = !showGeminiKey"
-                  class="absolute right-3 top-1/2 -translate-y-1/2"
-                  :disabled="!formData.aiEnabled"
-                >
-                  <svg v-if="!showGeminiKey" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                  </svg>
-                  <svg v-else xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88" />
-                  </svg>
-                </button>
-              </div>
-              <label class="label">
-                <span class="label-text-alt text-gray-600">
-                  <a href="https://makersuite.google.com/app/apikey" target="_blank" class="link link-primary">
-                    Obtenir une clé API Gemini
-                  </a>
-                </span>
-                <span v-if="currentSettings.hasGeminiKey" class="label-text-alt text-success">
-                  ✓ Clé configurée
-                </span>
-              </label>
-            </div>
-
-            <!-- Clé API OpenAI -->
-            <div v-if="formData.aiProvider === 'openai'" class="form-control">
-              <label class="label">
-                <span class="label-text font-semibold">Clé API OpenAI</span>
-              </label>
-              <div class="relative">
-                <input
-                  :type="showOpenAIKey ? 'text' : 'password'"
-                  v-model="formData.openaiApiKey"
-                  placeholder="Entrez votre clé API OpenAI"
-                  class="input input-bordered w-full pr-10"
-                  :disabled="!formData.aiEnabled"
-                />
-                <button
-                  type="button"
-                  @click="showOpenAIKey = !showOpenAIKey"
-                  class="absolute right-3 top-1/2 -translate-y-1/2"
-                  :disabled="!formData.aiEnabled"
-                >
-                  <svg v-if="!showOpenAIKey" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                  </svg>
-                  <svg v-else xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88" />
-                  </svg>
-                </button>
-              </div>
-              <label class="label">
-                <span class="label-text-alt text-gray-600">
-                  <a href="https://platform.openai.com/api-keys" target="_blank" class="link link-primary">
-                    Obtenir une clé API OpenAI
-                  </a>
-                </span>
-                <span v-if="currentSettings.hasOpenAIKey" class="label-text-alt text-success">
-                  ✓ Clé configurée
-                </span>
-              </label>
-            </div>
-
-            <!-- Clé API Claude -->
-            <div v-if="formData.aiProvider === 'claude'" class="form-control">
-              <label class="label">
-                <span class="label-text font-semibold">Clé API Anthropic Claude</span>
-              </label>
-              <div class="relative">
-                <input
-                  :type="showClaudeKey ? 'text' : 'password'"
-                  v-model="formData.claudeApiKey"
-                  placeholder="Entrez votre clé API Claude"
-                  class="input input-bordered w-full pr-10"
-                  :disabled="!formData.aiEnabled"
-                />
-                <button
-                  type="button"
-                  @click="showClaudeKey = !showClaudeKey"
-                  class="absolute right-3 top-1/2 -translate-y-1/2"
-                  :disabled="!formData.aiEnabled"
-                >
-                  <svg v-if="!showClaudeKey" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                  </svg>
-                  <svg v-else xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88" />
-                  </svg>
-                </button>
-              </div>
-              <label class="label">
-                <span class="label-text-alt text-gray-600">
-                  <a href="https://console.anthropic.com/settings/keys" target="_blank" class="link link-primary">
-                    Obtenir une clé API Claude
-                  </a>
-                </span>
-                <span v-if="currentSettings.hasClaudeKey" class="label-text-alt text-success">
-                  ✓ Clé configurée
-                </span>
-              </label>
-            </div>
-
-            <!-- Modèle IA -->
-            <div class="form-control">
-              <label class="label">
-                <span class="label-text font-semibold">Modèle IA</span>
-              </label>
-              <select
-                v-model="formData.aiModel"
-                class="select select-bordered w-full"
-                :disabled="!formData.aiEnabled"
-              >
-                <option 
-                  v-for="model in availableModels" 
-                  :key="model.value" 
-                  :value="model.value"
-                >
-                  {{ model.label }}
-                </option>
-              </select>
-              <label class="label">
-                <span v-if="formData.aiModel && availableModels.length > 0" class="label-text-alt text-gray-600">
-                  {{ availableModels.find(m => m.value === formData.aiModel)?.description }}
-                </span>
-                <span v-else class="label-text-alt text-gray-600">
-                  Choisissez le modèle d'IA à utiliser pour la génération de texte
-                </span>
-              </label>
-            </div>
-
-            <div class="divider"></div>
-
-            <!-- Boutons d'action -->
-            <div class="flex gap-2 justify-end">
-              <button
-                type="button"
-                @click="testConnection"
-                class="btn btn-outline"
-                :disabled="loading || !formData.aiEnabled || (!formData.geminiApiKey && !formData.openaiApiKey)"
-              >
-                <svg v-if="testing" class="animate-spin h-5 w-5 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                Tester la connexion
-              </button>
-              <button
-                type="submit"
-                class="btn btn-primary"
-                :disabled="loading"
-              >
-                <svg v-if="loading" class="animate-spin h-5 w-5 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                Enregistrer
-              </button>
-            </div>
-          </form>
+    <!-- Configuration principale -->
+    <div class="bg-base-200 border-l-4 border-accent">
+      <div class="p-6 border-b border-base-300">
+        <div class="flex items-center gap-3">
+          <HugeiconsIcon :icon="Settings02Icon" :size="24" class="text-accent" />
+          <h2 class="text-xl font-semibold">Configuration de l'IA</h2>
         </div>
       </div>
 
-      <!-- Carte d'information -->
-      <div class="card bg-base-200">
-        <div class="card-body">
-          <h3 class="font-semibold mb-2">ℹ️ Information</h3>
-          <ul class="list-disc list-inside space-y-1 text-sm text-gray-600 dark:text-gray-400">
-            <li>Les clés API sont chiffrées avant d'être stockées dans la base de données</li>
-            <li>Seuls les administrateurs système peuvent configurer les paramètres IA</li>
-            <li>3 fournisseurs disponibles : Google Gemini, OpenAI, Anthropic Claude</li>
-            <li>Google Gemini offre un quota gratuit généreux pour commencer</li>
-            <li>Les utilisateurs avec la permission "Modifier les rapports" pourront utiliser l'IA</li>
-          </ul>
+      <form @submit.prevent="handleSubmit" class="p-6 space-y-6">
+        <!-- Activation de l'IA -->
+        <div class="form-control">
+          <label class="label cursor-pointer justify-start gap-4">
+            <input
+              type="checkbox"
+              v-model="formData.aiEnabled"
+              class="toggle toggle-primary"
+            />
+            <div>
+              <span class="label-text font-semibold block">Activer la génération de texte par IA</span>
+              <span class="label-text-alt text-base-content/60 block mt-1">
+                Permet aux utilisateurs de générer automatiquement du texte dans les rapports
+              </span>
+            </div>
+          </label>
+        </div>
+
+        <div class="divider"></div>
+
+        <!-- Provider IA -->
+        <div class="form-control">
+          <label class="label">
+            <span class="label-text font-medium">Fournisseur d'IA</span>
+          </label>
+          <select
+            v-model="formData.aiProvider"
+            class="select select-bordered w-full"
+            :disabled="!formData.aiEnabled"
+          >
+            <option value="gemini">Google Gemini</option>
+            <option value="openai">OpenAI</option>
+            <option value="claude">Anthropic Claude</option>
+          </select>
+        </div>
+
+        <!-- Clé API Gemini -->
+        <div v-if="formData.aiProvider === 'gemini'" class="form-control">
+          <label class="label">
+            <span class="label-text font-medium">Clé API Google Gemini</span>
+          </label>
+          <div class="relative">
+            <input
+              :type="showGeminiKey ? 'text' : 'password'"
+              v-model="formData.geminiApiKey"
+              placeholder="Entrez votre clé API Gemini"
+              class="input input-bordered w-full pr-10"
+              :disabled="!formData.aiEnabled"
+            />
+            <button
+              type="button"
+              @click="showGeminiKey = !showGeminiKey"
+              class="absolute right-3 top-1/2 -translate-y-1/2 hover:text-primary"
+              :disabled="!formData.aiEnabled"
+            >
+              <HugeiconsIcon :icon="showGeminiKey ? ViewOffIcon : ViewIcon" :size="20" />
+            </button>
+          </div>
+          <label class="label">
+            <span class="label-text-alt text-base-content/60">
+              <a href="https://makersuite.google.com/app/apikey" target="_blank" class="link link-primary">
+                Obtenir une clé API Gemini
+              </a>
+            </span>
+            <span v-if="currentSettings.hasGeminiKey" class="label-text-alt text-success flex items-center gap-1">
+              <HugeiconsIcon :icon="CheckmarkCircle01Icon" :size="16" />
+              Clé configurée
+            </span>
+          </label>
+        </div>
+
+        <!-- Clé API OpenAI -->
+        <div v-if="formData.aiProvider === 'openai'" class="form-control">
+          <label class="label">
+            <span class="label-text font-medium">Clé API OpenAI</span>
+          </label>
+          <div class="relative">
+            <input
+              :type="showOpenAIKey ? 'text' : 'password'"
+              v-model="formData.openaiApiKey"
+              placeholder="Entrez votre clé API OpenAI"
+              class="input input-bordered w-full pr-10"
+              :disabled="!formData.aiEnabled"
+            />
+            <button
+              type="button"
+              @click="showOpenAIKey = !showOpenAIKey"
+              class="absolute right-3 top-1/2 -translate-y-1/2 hover:text-primary"
+              :disabled="!formData.aiEnabled"
+            >
+              <HugeiconsIcon :icon="showOpenAIKey ? ViewOffIcon : ViewIcon" :size="20" />
+            </button>
+          </div>
+          <label class="label">
+            <span class="label-text-alt text-base-content/60">
+              <a href="https://platform.openai.com/api-keys" target="_blank" class="link link-primary">
+                Obtenir une clé API OpenAI
+              </a>
+            </span>
+            <span v-if="currentSettings.hasOpenAIKey" class="label-text-alt text-success flex items-center gap-1">
+              <HugeiconsIcon :icon="CheckmarkCircle01Icon" :size="16" />
+              Clé configurée
+            </span>
+          </label>
+        </div>
+
+        <!-- Clé API Claude -->
+        <div v-if="formData.aiProvider === 'claude'" class="form-control">
+          <label class="label">
+            <span class="label-text font-medium">Clé API Anthropic Claude</span>
+          </label>
+          <div class="relative">
+            <input
+              :type="showClaudeKey ? 'text' : 'password'"
+              v-model="formData.claudeApiKey"
+              placeholder="Entrez votre clé API Claude"
+              class="input input-bordered w-full pr-10"
+              :disabled="!formData.aiEnabled"
+            />
+            <button
+              type="button"
+              @click="showClaudeKey = !showClaudeKey"
+              class="absolute right-3 top-1/2 -translate-y-1/2 hover:text-primary"
+              :disabled="!formData.aiEnabled"
+            >
+              <HugeiconsIcon :icon="showClaudeKey ? ViewOffIcon : ViewIcon" :size="20" />
+            </button>
+          </div>
+          <label class="label">
+            <span class="label-text-alt text-base-content/60">
+              <a href="https://console.anthropic.com/settings/keys" target="_blank" class="link link-primary">
+                Obtenir une clé API Claude
+              </a>
+            </span>
+            <span v-if="currentSettings.hasClaudeKey" class="label-text-alt text-success flex items-center gap-1">
+              <HugeiconsIcon :icon="CheckmarkCircle01Icon" :size="16" />
+              Clé configurée
+            </span>
+          </label>
+        </div>
+
+        <!-- Modèle IA -->
+        <div class="form-control">
+          <label class="label">
+            <span class="label-text font-medium">Modèle IA</span>
+          </label>
+          <select
+            v-model="formData.aiModel"
+            class="select select-bordered w-full"
+            :disabled="!formData.aiEnabled"
+          >
+            <option 
+              v-for="model in availableModels" 
+              :key="model.value" 
+              :value="model.value"
+            >
+              {{ model.label }}
+            </option>
+          </select>
+          <label class="label">
+            <span v-if="formData.aiModel && availableModels.length > 0" class="label-text-alt text-base-content/60">
+              {{ availableModels.find(m => m.value === formData.aiModel)?.description }}
+            </span>
+            <span v-else class="label-text-alt text-base-content/60">
+              Choisissez le modèle d'IA à utiliser pour la génération de texte
+            </span>
+          </label>
+        </div>
+
+        <div class="divider"></div>
+
+        <!-- Boutons d'action -->
+        <div class="flex gap-3 justify-end pt-4">
+          <button
+            type="button"
+            @click="testConnection"
+            class="btn btn-outline gap-2"
+            :disabled="loading || !formData.aiEnabled || (!formData.geminiApiKey && !formData.openaiApiKey && !formData.claudeApiKey)"
+          >
+            <span v-if="testing" class="loading loading-spinner loading-sm"></span>
+            <HugeiconsIcon v-else :icon="CheckmarkCircle01Icon" :size="18" />
+            Tester la connexion
+          </button>
+          <button
+            type="submit"
+            class="btn btn-primary gap-2"
+            :disabled="loading"
+          >
+            <span v-if="loading" class="loading loading-spinner loading-sm"></span>
+            <HugeiconsIcon v-else :icon="CheckmarkCircle01Icon" :size="18" />
+            {{ loading ? 'Enregistrement...' : 'Enregistrer' }}
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Carte d'information -->
+    <div class="bg-base-200 border-l-4 border-info">
+      <div class="p-6 border-b border-base-300">
+        <div class="flex items-center gap-3">
+          <HugeiconsIcon :icon="InformationCircleIcon" :size="24" class="text-info" />
+          <h2 class="text-xl font-semibold">Informations</h2>
         </div>
       </div>
+      <div class="p-6">
+        <ul class="space-y-2 text-sm text-base-content/70">
+          <li class="flex items-start gap-2">
+            <span class="text-info mt-1">•</span>
+            <span>Les clés API sont chiffrées avant d'être stockées dans la base de données</span>
+          </li>
+          <li class="flex items-start gap-2">
+            <span class="text-info mt-1">•</span>
+            <span>Seuls les administrateurs système peuvent configurer les paramètres IA</span>
+          </li>
+          <li class="flex items-start gap-2">
+            <span class="text-info mt-1">•</span>
+            <span>3 fournisseurs disponibles : Google Gemini, OpenAI, Anthropic Claude</span>
+          </li>
+          <li class="flex items-start gap-2">
+            <span class="text-info mt-1">•</span>
+            <span>Google Gemini offre un quota gratuit généreux pour commencer</span>
+          </li>
+          <li class="flex items-start gap-2">
+            <span class="text-info mt-1">•</span>
+            <span>Les utilisateurs avec la permission "Modifier les rapports" pourront utiliser l'IA</span>
+          </li>
+        </ul>
+      </div>
     </div>
-  </div>
+  </section>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue';
+import { ref, onMounted, computed, watch } from 'vue';
 import { api } from '@/services/http';
 import { AI_PROVIDERS, getModelsForProvider, DEFAULT_MODELS, type AIProvider } from '@/config/ai-models.config';
+import { HugeiconsIcon } from "@hugeicons/vue";
+import {
+  ArtificialIntelligence01Icon,
+  Settings02Icon,
+  Key01Icon,
+  CheckmarkCircle01Icon,
+  AlertCircleIcon,
+  InformationCircleIcon,
+  ViewIcon,
+  ViewOffIcon,
+} from "@hugeicons/core-free-icons";
 
 interface AISettings {
   aiEnabled: boolean;
@@ -324,7 +343,6 @@ const currentProviderInfo = computed(() => {
 });
 
 // Watcher: Changer le modèle par défaut quand on change de provider
-import { watch } from 'vue';
 watch(() => formData.value.aiProvider, (newProvider) => {
   if (DEFAULT_MODELS[newProvider]) {
     formData.value.aiModel = DEFAULT_MODELS[newProvider];

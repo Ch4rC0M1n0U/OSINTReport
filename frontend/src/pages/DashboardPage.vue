@@ -22,6 +22,8 @@ import {
   Logout01Icon,
   MoreVerticalIcon,
   ArrowDown01Icon,
+  Add01Icon,
+  ViewIcon,
 } from "@hugeicons/core-free-icons";
 
 const auth = useAuthStore();
@@ -56,24 +58,39 @@ const mainNavigation = computed(() => {
       to: { name: "dashboard" },
       icon: DashboardSpeed01Icon,
       badge: undefined,
+      children: null,
     },
     {
       label: "Rapports",
       to: { name: "reports.list" },
       icon: FileAttachmentIcon,
-      badge: undefined, // Vous pouvez ajouter un compteur ici plus tard
+      badge: undefined,
+      children: [
+        {
+          label: "Nouveau rapport",
+          to: { name: "reports.create" },
+          icon: Add01Icon,
+        },
+        {
+          label: "Liste des rapports",
+          to: { name: "reports.list" },
+          icon: ViewIcon,
+        },
+      ],
     },
     {
       label: "Entités",
       to: { name: "entities" },
       icon: UserGroupIcon,
       badge: undefined,
+      children: null,
     },
     {
       label: "Recherche",
       to: { name: "search" },
       icon: Search01Icon,
       badge: undefined,
+      children: null,
     },
   ];
 });
@@ -160,49 +177,100 @@ async function handleLogout() {
   <AppShell v-else>
     <template #sidebar>
       <!-- Navigation principale -->
-      <div class="space-y-2 mb-8">
-        <RouterLink
-          v-for="item in mainNavigation"
-          :key="item.label"
-          :to="item.to"
-          class="group flex items-center justify-between px-4 py-3.5 text-base font-bold rounded-xl transition-all duration-200 backdrop-blur-md"
-          active-class="bg-white/40 text-white shadow-2xl ring-2 ring-white/40"
-          inactive-class="bg-white/10 text-white/95 hover:bg-white/25 hover:text-white hover:shadow-xl hover:ring-2 hover:ring-white/20"
-        >
-          <div class="flex items-center gap-3.5">
-            <HugeiconsIcon :icon="item.icon" :size="22" class="flex-shrink-0 drop-shadow-md" />
-            <span class="tracking-wide drop-shadow-md">{{ item.label }}</span>
-          </div>
-          <span v-if="item.badge" class="badge badge-sm bg-white/40 text-white border-0 font-bold shadow-lg ring-1 ring-white/30">
-            {{ item.badge }}
-          </span>
-        </RouterLink>
+      <div class="space-y-1">
+        <div v-for="item in mainNavigation" :key="item.label">
+          <!-- Élément sans sous-menu -->
+          <RouterLink
+            v-if="!item.children"
+            :to="item.to"
+            class="group flex items-center gap-3 px-3 py-3 text-sm font-medium rounded-lg transition-all duration-200"
+            active-class="bg-white/95 text-gray-900 shadow-sm"
+            inactive-class="text-white/85 hover:bg-white/10 hover:text-white"
+          >
+            <div class="p-1.5 rounded-lg transition-colors duration-200"
+                 :class="$route.name === item.to.name ? 'bg-primary/10 text-primary' : 'bg-white/10 group-hover:bg-white/15'"
+            >
+              <HugeiconsIcon :icon="item.icon" :size="20" class="flex-shrink-0" />
+            </div>
+            <span class="flex-1">{{ item.label }}</span>
+            <span v-if="item.badge" 
+                  class="badge badge-sm border-0 font-semibold"
+                  :class="$route.name === item.to.name ? 'bg-primary/20 text-primary' : 'bg-white/20 text-white'"
+            >
+              {{ item.badge }}
+            </span>
+          </RouterLink>
+
+          <!-- Élément avec sous-menu -->
+          <details v-else class="group/submenu">
+            <summary class="flex items-center gap-3 px-3 py-3 text-sm font-medium rounded-lg cursor-pointer transition-all duration-200 list-none"
+                     :class="$route.path.startsWith('/reports') ? 'bg-white/95 text-gray-900 shadow-sm' : 'text-white/85 hover:bg-white/10 hover:text-white'"
+            >
+              <div class="p-1.5 rounded-lg transition-colors duration-200"
+                   :class="$route.path.startsWith('/reports') ? 'bg-primary/10 text-primary' : 'bg-white/10 group-hover/submenu:bg-white/15'"
+              >
+                <HugeiconsIcon :icon="item.icon" :size="20" class="flex-shrink-0" />
+              </div>
+              <span class="flex-1">{{ item.label }}</span>
+              <HugeiconsIcon :icon="ArrowDown01Icon" :size="14" class="transition-transform duration-200 group-open/submenu:rotate-180 flex-shrink-0" />
+            </summary>
+            
+            <div class="mt-1 mb-2 ml-3 space-y-0.5 pl-3 border-l-2 border-white/10">
+              <RouterLink
+                v-for="child in item.children"
+                :key="child.label"
+                :to="child.to"
+                class="group/child flex items-center gap-2.5 px-3 py-2 text-sm font-medium rounded-lg transition-all duration-200"
+                active-class="bg-white/90 text-gray-900"
+                inactive-class="text-white/75 hover:bg-white/10 hover:text-white"
+              >
+                <div class="p-1 rounded transition-colors duration-200"
+                     :class="$route.name === child.to.name ? 'bg-primary/10 text-primary' : 'bg-transparent group-hover/child:bg-white/10'"
+                >
+                  <HugeiconsIcon :icon="child.icon" :size="16" class="flex-shrink-0" />
+                </div>
+                <span class="flex-1 text-xs">{{ child.label }}</span>
+              </RouterLink>
+            </div>
+          </details>
+        </div>
       </div>
 
-      <!-- Section Administration (déroulant) -->
-      <div v-if="adminNavigation" class="mt-8 pt-8 border-t border-white/30">
-        <details class="group">
-          <summary class="flex items-center justify-between px-4 py-3 text-sm font-bold text-white hover:text-white bg-white/10 hover:bg-white/20 rounded-xl cursor-pointer transition-all duration-200 list-none mb-2 backdrop-blur-md shadow-lg">
-            <div class="flex items-center gap-3">
-              <HugeiconsIcon :icon="adminNavigation.icon" :size="20" class="flex-shrink-0 drop-shadow-md" />
-              <span class="uppercase tracking-widest text-xs drop-shadow-md">{{ adminNavigation.label }}</span>
+      <!-- Section Administration -->
+      <div v-if="adminNavigation" class="mt-8">
+        <div class="px-3 mb-3">
+          <div class="flex items-center gap-2 text-white/50">
+            <div class="h-px flex-1 bg-white/10"></div>
+            <span class="text-xs font-bold uppercase tracking-wider">Admin</span>
+            <div class="h-px flex-1 bg-white/10"></div>
+          </div>
+        </div>
+        
+        <details class="group/admin">
+          <summary class="flex items-center gap-3 px-3 py-3 text-sm font-medium text-white/85 hover:text-white hover:bg-white/10 rounded-lg cursor-pointer transition-all duration-200 list-none">
+            <div class="p-1.5 rounded-lg bg-white/10 group-hover/admin:bg-white/15 transition-colors duration-200">
+              <HugeiconsIcon :icon="adminNavigation.icon" :size="18" class="flex-shrink-0" />
             </div>
-            <HugeiconsIcon :icon="ArrowDown01Icon" :size="18" class="transition-transform duration-200 group-open:rotate-180 flex-shrink-0 drop-shadow-md" />
+            <span class="flex-1">{{ adminNavigation.label }}</span>
+            <HugeiconsIcon :icon="ArrowDown01Icon" :size="14" class="transition-transform duration-200 group-open/admin:rotate-180 flex-shrink-0" />
           </summary>
-          <div class="mt-2 space-y-1.5 ml-1">
+          
+          <div class="mt-1 mb-2 ml-3 space-y-0.5 pl-3 border-l-2 border-white/10">
             <RouterLink
               v-for="child in adminNavigation.children"
               :key="child.label"
               :to="child.to"
-              class="group flex items-center justify-between px-4 py-3 text-sm font-semibold rounded-xl transition-all duration-200 backdrop-blur-md"
-              active-class="bg-white/35 text-white shadow-xl ring-2 ring-white/30"
-              inactive-class="bg-white/10 text-white/95 hover:bg-white/20 hover:text-white hover:shadow-lg"
+              class="group/child flex items-center gap-2.5 px-3 py-2 text-sm font-medium rounded-lg transition-all duration-200"
+              active-class="bg-white/90 text-gray-900"
+              inactive-class="text-white/70 hover:bg-white/10 hover:text-white"
             >
-              <div class="flex items-center gap-3">
-                <HugeiconsIcon :icon="child.icon" :size="20" class="flex-shrink-0 drop-shadow" />
-                <span class="drop-shadow">{{ child.label }}</span>
+              <div class="p-1 rounded transition-colors duration-200"
+                   :class="$route.name === child.to.name ? 'bg-primary/10 text-primary' : 'bg-transparent group-hover/child:bg-white/10'"
+              >
+                <HugeiconsIcon :icon="child.icon" :size="16" class="flex-shrink-0" />
               </div>
-              <span v-if="child.badge" class="badge badge-sm bg-white/35 text-white border-0 font-bold shadow-md ring-1 ring-white/20">
+              <span class="flex-1 text-xs">{{ child.label }}</span>
+              <span v-if="child.badge" class="badge badge-xs bg-white/20 text-white border-0 font-semibold">
                 {{ child.badge }}
               </span>
             </RouterLink>
@@ -212,48 +280,71 @@ async function handleLogout() {
     </template>
 
     <template #user>
-      <div class="flex items-center gap-3 p-2 rounded-xl bg-white/10 hover:bg-white/20 transition-all duration-200 backdrop-blur-md shadow-lg ring-1 ring-white/20">
-        <div
-          v-if="auth.user.avatarUrl"
-          class="w-12 h-12 rounded-xl overflow-hidden ring-2 ring-white/40 shadow-xl flex-shrink-0"
-        >
-          <img 
-            :src="auth.user.avatarUrl" 
-            :alt="`${auth.user.firstName} ${auth.user.lastName}`"
-            class="w-full h-full object-cover"
-            @error="(e) => (e.target as HTMLImageElement).style.display = 'none'"
-          />
-        </div>
-        <div
-          v-else
-          class="w-12 h-12 rounded-xl bg-white/35 text-white flex items-center justify-center font-bold ring-2 ring-white/30 shadow-xl backdrop-blur-sm text-base flex-shrink-0 drop-shadow-lg"
-        >
-          {{ userInitials }}
-        </div>
-        <div class="flex-1 min-w-0">
-          <p class="text-sm font-bold text-white truncate drop-shadow-lg">
-            {{ auth.user.firstName }} {{ auth.user.lastName }}
-          </p>
-          <p class="text-xs text-white/90 truncate font-semibold drop-shadow">{{ auth.user.roleName }}</p>
-        </div>
-        <div class="dropdown dropdown-top dropdown-end flex-shrink-0">
-          <div tabindex="0" role="button" class="btn btn-ghost btn-sm btn-circle hover:bg-white/25 bg-white/15 border border-white/30 hover:border-white/40 shadow-md">
-            <HugeiconsIcon :icon="MoreVerticalIcon" :size="18" class="text-white drop-shadow" />
+      <div class="group p-3 rounded-xl bg-white/5 hover:bg-white/10 transition-all duration-200 border border-white/10">
+        <div class="flex items-center gap-3">
+          <!-- Avatar -->
+          <div class="relative flex-shrink-0">
+            <div
+              v-if="auth.user.avatarUrl"
+              class="w-11 h-11 rounded-xl overflow-hidden ring-2 ring-white/20 group-hover:ring-white/30 transition-all"
+            >
+              <img 
+                :src="auth.user.avatarUrl" 
+                :alt="`${auth.user.firstName} ${auth.user.lastName}`"
+                class="w-full h-full object-cover"
+              />
+            </div>
+            <div
+              v-else
+              class="w-11 h-11 rounded-xl bg-gradient-to-br from-white/20 to-white/10 text-white flex items-center justify-center font-bold ring-2 ring-white/20 group-hover:ring-white/30 transition-all text-sm"
+            >
+              {{ userInitials }}
+            </div>
+            <!-- Indicateur en ligne (optionnel) -->
+            <div class="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-green-400 rounded-full ring-2 ring-[rgb(var(--secondary-rgb))]"></div>
           </div>
-          <ul tabindex="0" class="dropdown-content z-[1] menu p-2 shadow-2xl bg-white rounded-xl w-52 border border-gray-100 mb-2">
-            <li>
-              <RouterLink :to="{ name: 'profile' }" class="flex items-center gap-3 text-gray-700 hover:bg-gray-50 rounded-lg px-4 py-3 font-medium">
-                <HugeiconsIcon :icon="User02Icon" :size="20" />
-                <span>Mon profil</span>
-              </RouterLink>
-            </li>
-            <li>
-              <button @click="handleLogout" class="flex items-center gap-3 text-red-600 hover:bg-red-50 rounded-lg px-4 py-3 font-medium">
-                <HugeiconsIcon :icon="Logout01Icon" :size="20" />
-                <span>Déconnexion</span>
-              </button>
-            </li>
-          </ul>
+          
+          <!-- Infos utilisateur -->
+          <div class="flex-1 min-w-0">
+            <p class="text-sm font-bold text-white truncate leading-tight">
+              {{ auth.user.firstName }} {{ auth.user.lastName }}
+            </p>
+            <p class="text-xs text-white/70 truncate font-medium mt-0.5">
+              {{ auth.user.roleName }}
+            </p>
+          </div>
+          
+          <!-- Menu déroulant -->
+          <div class="dropdown dropdown-top dropdown-end flex-shrink-0">
+            <div tabindex="0" role="button" class="btn btn-ghost btn-xs btn-circle hover:bg-white/20 text-white/80 hover:text-white transition-colors">
+              <HugeiconsIcon :icon="MoreVerticalIcon" :size="16" />
+            </div>
+            <ul tabindex="0" class="dropdown-content z-[1] menu p-1.5 shadow-2xl bg-white rounded-xl w-56 mb-2 border border-gray-100">
+              <li>
+                <RouterLink 
+                  :to="{ name: 'profile' }" 
+                  class="flex items-center gap-3 text-gray-700 hover:bg-gray-50 rounded-lg px-3.5 py-3 font-medium group"
+                >
+                  <div class="p-1.5 rounded-lg bg-primary/10 text-primary group-hover:bg-primary/20 transition-colors">
+                    <HugeiconsIcon :icon="User02Icon" :size="18" />
+                  </div>
+                  <span>Mon profil</span>
+                </RouterLink>
+              </li>
+              <div class="divider my-1"></div>
+              <li>
+                <button 
+                  @click="handleLogout" 
+                  class="flex items-center gap-3 text-red-600 hover:bg-red-50 rounded-lg px-3.5 py-3 font-medium group"
+                >
+                  <div class="p-1.5 rounded-lg bg-red-100 text-red-600 group-hover:bg-red-200 transition-colors">
+                    <HugeiconsIcon :icon="Logout01Icon" :size="18" />
+                  </div>
+                  <span>Déconnexion</span>
+                </button>
+              </li>
+            </ul>
+          </div>
         </div>
       </div>
     </template>

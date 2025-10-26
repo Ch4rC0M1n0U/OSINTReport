@@ -181,58 +181,72 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="container mx-auto p-6 max-w-6xl">
-    <!-- Header -->
-    <div class="flex items-center justify-between mb-6">
-      <div>
-        <h1 class="text-3xl font-bold flex items-center gap-2">
-          <HugeiconsIcon :icon="Mail01Icon" :size="32" class="text-primary" />
-          Configuration SMTP
-        </h1>
-        <p class="text-base-content/60 mt-1">
-          Gérez les serveurs SMTP pour l'envoi d'emails
-        </p>
+  <section class="space-y-6">
+    <!-- En-tête de la page -->
+    <header class="bg-base-200 border-l-4 border-primary p-6">
+      <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+        <div class="flex items-center gap-4">
+          <div class="p-2 rounded-lg bg-primary/10">
+            <HugeiconsIcon :icon="Mail01Icon" :size="32" class="text-primary" />
+          </div>
+          <div>
+            <h1 class="text-3xl font-bold">Configuration SMTP</h1>
+            <p class="text-base-content/70 mt-1">
+              Gérez les serveurs SMTP pour l'envoi d'emails
+            </p>
+          </div>
+        </div>
+        <button 
+          v-if="!showForm"
+          class="btn btn-primary gap-2" 
+          @click="showForm = true"
+        >
+          <HugeiconsIcon :icon="Add01Icon" :size="20" />
+          Nouvelle configuration
+        </button>
       </div>
-      <button 
-        v-if="!showForm"
-        class="btn btn-primary" 
-        @click="showForm = true"
-      >
-        <HugeiconsIcon :icon="Add01Icon" :size="20" />
-        Nouvelle configuration
-      </button>
+    </header>
+
+    <!-- Messages d'alerte -->
+    <div v-if="success" class="bg-base-200 border-l-4 border-success p-5">
+      <div class="flex items-center justify-between gap-3">
+        <div class="flex items-center gap-3">
+          <HugeiconsIcon :icon="CheckmarkCircle01Icon" :size="24" class="text-success" />
+          <span class="font-medium">{{ success }}</span>
+        </div>
+        <button class="btn btn-ghost btn-sm btn-circle" @click="success = ''">
+          <HugeiconsIcon :icon="Cancel01Icon" :size="18" />
+        </button>
+      </div>
     </div>
 
-    <!-- Alerts -->
-    <div v-if="success" class="alert alert-success mb-4">
-      <HugeiconsIcon :icon="CheckmarkCircle01Icon" :size="20" />
-      <span>{{ success }}</span>
-      <button class="btn btn-sm btn-ghost" @click="success = ''">
-        <HugeiconsIcon :icon="Cancel01Icon" :size="18" />
-      </button>
+    <div v-if="error" class="bg-base-200 border-l-4 border-error p-5">
+      <div class="flex items-center justify-between gap-3">
+        <div class="flex items-center gap-3">
+          <HugeiconsIcon :icon="AlertCircleIcon" :size="24" class="text-error" />
+          <span class="font-medium">{{ error }}</span>
+        </div>
+        <button class="btn btn-ghost btn-sm btn-circle" @click="error = ''">
+          <HugeiconsIcon :icon="Cancel01Icon" :size="18" />
+        </button>
+      </div>
     </div>
 
-    <div v-if="error" class="alert alert-error mb-4">
-      <HugeiconsIcon :icon="AlertCircleIcon" :size="20" />
-      <span>{{ error }}</span>
-      <button class="btn btn-sm btn-ghost" @click="error = ''">
-        <HugeiconsIcon :icon="Cancel01Icon" :size="18" />
-      </button>
-    </div>
-
-    <!-- Form -->
-    <div v-if="showForm" class="card bg-base-200 shadow-xl mb-6">
-      <div class="card-body">
-        <div class="flex items-center justify-between mb-4">
-          <h2 class="card-title">
+    <!-- Formulaire de configuration -->
+    <div v-if="showForm" class="bg-base-200 border-l-4 border-accent">
+      <div class="p-6 border-b border-base-300">
+        <div class="flex items-center justify-between">
+          <h2 class="text-xl font-semibold">
             {{ editingId ? 'Modifier' : 'Nouvelle' }} configuration SMTP
           </h2>
-          <button class="btn btn-ghost btn-sm" @click="resetForm">
+          <button class="btn btn-ghost btn-sm btn-circle" @click="resetForm">
             <HugeiconsIcon :icon="Cancel01Icon" :size="18" />
           </button>
         </div>
+      </div>
 
-        <form @submit.prevent="handleSubmit" class="space-y-4">
+      <div class="p-6">
+        <form @submit.prevent="handleSubmit" class="space-y-6">
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <!-- Host -->
             <label class="form-control">
@@ -318,49 +332,56 @@ onMounted(() => {
             </label>
           </div>
 
-          <!-- Secure -->
-          <label class="form-control">
-            <label class="label cursor-pointer justify-start gap-4">
-              <input 
-                v-model="form.secure" 
-                type="checkbox" 
-                class="checkbox checkbox-primary" 
-              />
-              <div>
-                <span class="label-text font-medium">Connexion sécurisée (SSL/TLS)</span>
-                <p class="text-sm text-base-content/60">Recommandé pour la sécurité</p>
-              </div>
+          <!-- Options -->
+          <div class="space-y-3">
+            <label class="form-control bg-base-100 p-4 rounded-lg">
+              <label class="label cursor-pointer justify-start gap-4">
+                <input 
+                  v-model="form.secure" 
+                  type="checkbox" 
+                  class="checkbox checkbox-primary" 
+                />
+                <div>
+                  <span class="label-text font-medium">Connexion sécurisée (SSL/TLS)</span>
+                  <p class="text-sm text-base-content/60">Recommandé pour la sécurité</p>
+                </div>
+              </label>
             </label>
-          </label>
 
-          <!-- Active -->
-          <label class="form-control">
-            <label class="label cursor-pointer justify-start gap-4">
-              <input 
-                v-model="form.active" 
-                type="checkbox" 
-                class="checkbox checkbox-primary" 
-              />
-              <div>
-                <span class="label-text font-medium">Configuration active</span>
-                <p class="text-sm text-base-content/60">
-                  Activer cette configuration désactivera les autres
-                </p>
-              </div>
+            <label class="form-control bg-base-100 p-4 rounded-lg">
+              <label class="label cursor-pointer justify-start gap-4">
+                <input 
+                  v-model="form.active" 
+                  type="checkbox" 
+                  class="checkbox checkbox-primary" 
+                />
+                <div>
+                  <span class="label-text font-medium">Configuration active</span>
+                  <p class="text-sm text-base-content/60">
+                    Activer cette configuration désactivera les autres
+                  </p>
+                </div>
+              </label>
             </label>
-          </label>
+          </div>
 
           <!-- Test Result -->
-          <div v-if="testResult" class="alert" :class="testResult.success ? 'alert-success' : 'alert-error'">
-            <HugeiconsIcon :icon="testResult.success ? CheckmarkCircle01Icon : AlertCircleIcon" :size="20" />
-            <span>{{ testResult.message }}</span>
+          <div v-if="testResult" class="bg-base-100 border-l-4 p-5" :class="testResult.success ? 'border-success' : 'border-error'">
+            <div class="flex items-center gap-3">
+              <HugeiconsIcon 
+                :icon="testResult.success ? CheckmarkCircle01Icon : AlertCircleIcon" 
+                :size="24"
+                :class="testResult.success ? 'text-success' : 'text-error'"
+              />
+              <span class="font-medium">{{ testResult.message }}</span>
+            </div>
           </div>
 
           <!-- Actions -->
-          <div class="flex gap-2">
+          <div class="flex gap-3 pt-4 border-t border-base-300">
             <button 
               type="button"
-              class="btn btn-outline" 
+              class="btn btn-outline gap-2" 
               @click="testConnection"
               :disabled="loading || testingConnection"
             >
@@ -370,7 +391,7 @@ onMounted(() => {
             </button>
             <button 
               type="submit" 
-              class="btn btn-primary" 
+              class="btn btn-accent gap-2" 
               :disabled="loading || testingConnection"
             >
               <span v-if="loading" class="loading loading-spinner loading-sm"></span>
@@ -389,45 +410,49 @@ onMounted(() => {
       </div>
     </div>
 
-    <!-- Configurations List -->
-    <div class="card bg-base-200 shadow-xl">
-      <div class="card-body">
-        <h2 class="card-title mb-4">Configurations existantes</h2>
+    <!-- Liste des configurations -->
+    <div class="bg-base-200 border-l-4 border-info">
+      <div class="p-6 border-b border-base-300">
+        <h2 class="text-xl font-semibold">Configurations existantes</h2>
+      </div>
 
-        <div v-if="loading && configs.length === 0" class="flex justify-center p-8">
-          <span class="loading loading-spinner loading-lg"></span>
+      <div class="p-6">
+        <div v-if="loading && configs.length === 0" class="flex justify-center py-12">
+          <span class="loading loading-spinner loading-lg text-primary"></span>
         </div>
 
-        <div v-else-if="configs.length === 0" class="text-center p-8 text-base-content/60">
-          <HugeiconsIcon :icon="MailRemove01Icon" :size="64" class="mb-4" />
-          <p>Aucune configuration SMTP</p>
-          <p class="text-sm">Créez-en une pour activer l'envoi d'emails</p>
+        <div v-else-if="configs.length === 0" class="text-center py-12">
+          <div class="p-4 rounded-lg bg-base-100/50 inline-block mb-4">
+            <HugeiconsIcon :icon="MailRemove01Icon" :size="64" class="text-base-content/20" />
+          </div>
+          <p class="font-medium text-base-content/70">Aucune configuration SMTP</p>
+          <p class="text-sm text-base-content/50 mt-2">Créez-en une pour activer l'envoi d'emails</p>
         </div>
 
         <div v-else class="overflow-x-auto">
           <table class="table">
-            <thead>
+            <thead class="bg-base-300">
               <tr>
-                <th>Hôte</th>
-                <th>Port</th>
-                <th>Expéditeur</th>
-                <th>Statut</th>
-                <th>Date de création</th>
-                <th>Actions</th>
+                <th class="font-semibold">Hôte</th>
+                <th class="font-semibold">Port</th>
+                <th class="font-semibold">Expéditeur</th>
+                <th class="font-semibold">Statut</th>
+                <th class="font-semibold">Date de création</th>
+                <th class="text-right font-semibold">Actions</th>
               </tr>
             </thead>
             <tbody>
-              <tr v-for="config in configs" :key="config.id">
+              <tr v-for="config in configs" :key="config.id" class="hover:bg-base-300/50">
                 <td>
                   <div class="flex items-center gap-2">
                     <HugeiconsIcon :icon="DatabaseIcon" :size="18" class="text-base-content/40" />
-                    {{ config.host }}
+                    <span class="font-medium">{{ config.host }}</span>
                   </div>
                 </td>
                 <td>
-                  <div class="flex items-center gap-1">
-                    <HugeiconsIcon :icon="config.secure ? ViewOffIcon : ViewIcon" :size="16" />
-                    {{ config.port }}
+                  <div class="flex items-center gap-2">
+                    <HugeiconsIcon :icon="config.secure ? ViewOffIcon : ViewIcon" :size="16" class="text-base-content/60" />
+                    <span>{{ config.port }}</span>
                   </div>
                 </td>
                 <td>
@@ -438,7 +463,7 @@ onMounted(() => {
                 </td>
                 <td>
                   <span 
-                    class="badge" 
+                    class="badge gap-1" 
                     :class="config.active ? 'badge-success' : 'badge-ghost'"
                   >
                     {{ config.active ? 'Active' : 'Inactive' }}
@@ -448,28 +473,31 @@ onMounted(() => {
                   {{ new Date(config.createdAt).toLocaleDateString('fr-FR') }}
                 </td>
                 <td>
-                  <div class="flex gap-2">
+                  <div class="flex gap-2 justify-end">
                     <button 
                       v-if="!config.active"
-                      class="btn btn-sm btn-success"
+                      class="btn btn-sm btn-success gap-1"
                       @click="activateConfig(config.id)"
                       title="Activer"
                     >
-                      <HugeiconsIcon :icon="CheckmarkCircle01Icon" :size="18" />
+                      <HugeiconsIcon :icon="CheckmarkCircle01Icon" :size="16" />
+                      Activer
                     </button>
                     <button 
-                      class="btn btn-sm btn-ghost"
+                      class="btn btn-sm btn-ghost gap-1"
                       @click="editConfig(config)"
                       title="Modifier"
                     >
-                      <HugeiconsIcon :icon="Edit02Icon" :size="18" />
+                      <HugeiconsIcon :icon="Edit02Icon" :size="16" />
+                      Modifier
                     </button>
                     <button 
-                      class="btn btn-sm btn-error btn-outline"
+                      class="btn btn-sm btn-error btn-outline gap-1"
                       @click="deleteConfig(config.id)"
                       title="Supprimer"
                     >
-                      <HugeiconsIcon :icon="Delete02Icon" :size="18" />
+                      <HugeiconsIcon :icon="Delete02Icon" :size="16" />
+                      Supprimer
                     </button>
                   </div>
                 </td>
@@ -479,5 +507,5 @@ onMounted(() => {
         </div>
       </div>
     </div>
-  </div>
+  </section>
 </template>

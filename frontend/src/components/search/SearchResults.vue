@@ -1,42 +1,38 @@
 <template>
   <div class="space-y-4">
     <!-- En-tête des résultats -->
-    <div class="flex items-center justify-between">
-      <div>
-        <p class="text-sm text-base-content/70">
-          <span v-if="searchStore.totalHits > 0">
-            {{ searchStore.totalHits }} résultat{{ searchStore.totalHits > 1 ? "s" : "" }}
-          </span>
-          <span v-else>Aucun résultat</span>
-          <span v-if="searchStore.hasQuery"> pour "{{ searchStore.query }}"</span>
-          <span v-if="searchStore.processingTime > 0" class="ml-2 opacity-60">
-            ({{ searchStore.processingTime }}ms)
-          </span>
-        </p>
+    <div class="bg-base-200 border-l-4 border-success p-4">
+      <div class="flex items-center gap-3">
+        <HugeiconsIcon :icon="FileAttachmentIcon" :size="24" class="text-success" />
+        <div>
+          <p class="font-semibold">
+            <span v-if="searchStore.totalHits > 0">
+              {{ searchStore.totalHits }} résultat{{ searchStore.totalHits > 1 ? "s" : "" }}
+            </span>
+            <span v-else>Aucun résultat</span>
+            <span v-if="searchStore.hasQuery"> pour "{{ searchStore.query }}"</span>
+          </p>
+          <p v-if="searchStore.processingTime > 0" class="text-sm text-base-content/60">
+            Recherche effectuée en {{ searchStore.processingTime }}ms
+          </p>
+        </div>
       </div>
     </div>
 
     <!-- Loader -->
     <div v-if="searchStore.loading" class="flex justify-center py-12">
-      <span class="loading loading-spinner loading-lg"></span>
+      <span class="loading loading-spinner loading-lg text-primary"></span>
     </div>
 
     <!-- Message d'erreur -->
-    <div v-else-if="searchStore.error" class="alert alert-error">
-      <svg
-        xmlns="http://www.w3.org/2000/svg"
-        class="h-6 w-6 shrink-0 stroke-current"
-        fill="none"
-        viewBox="0 0 24 24"
-      >
-        <path
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          stroke-width="2"
-          d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"
-        />
-      </svg>
-      <span>{{ searchStore.error }}</span>
+    <div v-else-if="searchStore.error" class="bg-base-200 border-l-4 border-error p-6">
+      <div class="flex items-center gap-3">
+        <HugeiconsIcon :icon="AlertCircleIcon" :size="32" class="text-error" />
+        <div>
+          <h3 class="font-semibold text-error">Erreur de recherche</h3>
+          <p class="text-sm text-base-content/70">{{ searchStore.error }}</p>
+        </div>
+      </div>
     </div>
 
     <!-- Liste des résultats -->
@@ -44,154 +40,121 @@
       <div
         v-for="hit in searchStore.results"
         :key="hit.id"
-        class="card bg-base-100 shadow-sm hover:shadow-md transition-shadow cursor-pointer"
+        class="bg-base-200 border-l-4 border-primary hover:border-accent transition-colors cursor-pointer p-5"
         @click="navigateToReport(hit.id)"
       >
-        <div class="card-body p-4">
-          <!-- En-tête du résultat -->
-          <div class="flex items-start justify-between gap-3">
-            <div class="flex-1 min-w-0">
-              <h3
-                class="card-title text-base mb-1"
-                v-html="hit._formatted?.title || hit.title"
-              ></h3>
-              <div class="flex flex-wrap gap-2 text-xs text-base-content/70">
-                <span v-if="hit.caseNumber" class="badge badge-ghost badge-sm">
-                  📋 {{ hit.caseNumber }}
-                </span>
-                <span v-if="hit.reportNumber" class="badge badge-ghost badge-sm">
-                  #{{ hit.reportNumber }}
-                </span>
-                <span class="badge badge-ghost badge-sm">
-                  👤 {{ hit.ownerName }}
-                </span>
-              </div>
-            </div>
-
-            <!-- Badges statut, urgence, classification -->
-            <div class="flex flex-wrap gap-1 justify-end">
-              <span :class="getStatusBadgeClass(hit.status)">
-                {{ getStatusLabel(hit.status) }}
+        <!-- En-tête du résultat -->
+        <div class="flex items-start justify-between gap-3 mb-3">
+          <div class="flex-1 min-w-0">
+            <h3
+              class="text-lg font-semibold mb-2"
+              v-html="hit._formatted?.title || hit.title"
+            ></h3>
+            <div class="flex flex-wrap gap-2 text-xs">
+              <span v-if="hit.caseNumber" class="flex items-center gap-1 px-2 py-1 bg-base-300 rounded">
+                <HugeiconsIcon :icon="FolderIcon" :size="14" />
+                {{ hit.caseNumber }}
               </span>
-              <span v-if="hit.urgencyLevel" :class="getUrgencyBadgeClass(hit.urgencyLevel)">
-                {{ getUrgencyLabel(hit.urgencyLevel) }}
+              <span v-if="hit.reportNumber" class="flex items-center gap-1 px-2 py-1 bg-base-300 rounded">
+                <HugeiconsIcon :icon="FileAttachmentIcon" :size="14" />
+                #{{ hit.reportNumber }}
               </span>
-              <span
-                v-if="hit.classification"
-                :class="getClassificationBadgeClass(hit.classification)"
-              >
-                {{ getClassificationLabel(hit.classification) }}
+              <span class="flex items-center gap-1 px-2 py-1 bg-base-300 rounded">
+                <HugeiconsIcon :icon="User02Icon" :size="14" />
+                {{ hit.ownerName }}
               </span>
             </div>
           </div>
 
-          <!-- Résumé avec highlighting -->
-          <p
-            v-if="hit._formatted?.summary || hit.summary"
-            class="text-sm text-base-content/80 line-clamp-2 mt-2"
-            v-html="hit._formatted?.summary || hit.summary"
-          ></p>
-
-          <!-- Contexte d'investigation avec highlighting -->
-          <p
-            v-if="hit._formatted?.investigationContext || hit.investigationContext"
-            class="text-sm text-base-content/60 line-clamp-1 mt-1 italic"
-            v-html="hit._formatted?.investigationContext || hit.investigationContext"
-          ></p>
-
-          <!-- Mots-clés -->
-          <div v-if="hit.keywords && hit.keywords.length > 0" class="flex flex-wrap gap-1 mt-2">
+          <!-- Badges statut, urgence, classification -->
+          <div class="flex flex-wrap gap-1 justify-end">
+            <span :class="getStatusBadgeClass(hit.status)">
+              {{ getStatusLabel(hit.status) }}
+            </span>
+            <span v-if="hit.urgencyLevel" :class="getUrgencyBadgeClass(hit.urgencyLevel)">
+              {{ getUrgencyLabel(hit.urgencyLevel) }}
+            </span>
             <span
-              v-for="keyword in hit.keywords.slice(0, 5)"
-              :key="keyword"
-              class="badge badge-outline badge-sm"
+              v-if="hit.classification"
+              :class="getClassificationBadgeClass(hit.classification)"
             >
-              {{ keyword }}
-            </span>
-            <span v-if="hit.keywords.length > 5" class="badge badge-ghost badge-sm">
-              +{{ hit.keywords.length - 5 }}
+              {{ getClassificationLabel(hit.classification) }}
             </span>
           </div>
+        </div>
 
-          <!-- Pied du résultat -->
-          <div class="flex items-center justify-between mt-3 text-xs text-base-content/60">
-            <div class="flex items-center gap-3">
-              <span>
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  class="h-3.5 w-3.5 inline mr-1"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
-                  />
-                </svg>
-                {{ formatDate(hit.createdAt) }}
-              </span>
-              <span v-if="hit.issuedAt">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  class="h-3.5 w-3.5 inline mr-1"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                  />
-                </svg>
-                Émis: {{ formatDate(hit.issuedAt) }}
-              </span>
-            </div>
-            <button class="btn btn-ghost btn-xs">
-              Voir détails →
-            </button>
+        <!-- Résumé avec highlighting -->
+        <p
+          v-if="hit._formatted?.summary || hit.summary"
+          class="text-sm text-base-content/80 line-clamp-2 mb-2"
+          v-html="hit._formatted?.summary || hit.summary"
+        ></p>
+
+        <!-- Contexte d'investigation avec highlighting -->
+        <p
+          v-if="hit._formatted?.investigationContext || hit.investigationContext"
+          class="text-sm text-base-content/60 line-clamp-1 italic mb-3"
+          v-html="hit._formatted?.investigationContext || hit.investigationContext"
+        ></p>
+
+        <!-- Mots-clés -->
+        <div v-if="hit.keywords && hit.keywords.length > 0" class="flex flex-wrap gap-2 mb-3">
+          <span
+            v-for="keyword in hit.keywords.slice(0, 5)"
+            :key="keyword"
+            class="flex items-center gap-1 px-2 py-1 bg-accent/10 text-accent rounded text-xs"
+          >
+            <HugeiconsIcon :icon="Tag01Icon" :size="12" />
+            {{ keyword }}
+          </span>
+          <span v-if="hit.keywords.length > 5" class="px-2 py-1 bg-base-300 rounded text-xs">
+            +{{ hit.keywords.length - 5 }}
+          </span>
+        </div>
+
+        <!-- Pied du résultat -->
+        <div class="flex items-center justify-between pt-3 border-t border-base-300 text-xs text-base-content/60">
+          <div class="flex items-center gap-4">
+            <span class="flex items-center gap-1">
+              <HugeiconsIcon :icon="Calendar03Icon" :size="14" />
+              {{ formatDate(hit.createdAt) }}
+            </span>
+            <span v-if="hit.issuedAt" class="flex items-center gap-1">
+              <HugeiconsIcon :icon="CheckmarkCircle01Icon" :size="14" />
+              Émis: {{ formatDate(hit.issuedAt) }}
+            </span>
           </div>
+          <button class="btn btn-ghost btn-xs gap-1 hover:text-primary">
+            Voir détails
+            <HugeiconsIcon :icon="ArrowRight01Icon" :size="14" />
+          </button>
         </div>
       </div>
     </div>
 
     <!-- Message vide -->
-    <div v-else class="text-center py-12">
-      <svg
-        xmlns="http://www.w3.org/2000/svg"
-        class="h-16 w-16 mx-auto text-base-content/30 mb-4"
-        fill="none"
-        viewBox="0 0 24 24"
-        stroke="currentColor"
-      >
-        <path
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          stroke-width="2"
-          d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-        />
-      </svg>
-      <p class="text-base-content/60">
+    <div v-else class="text-center py-16">
+      <div class="p-4 rounded-lg bg-base-200/50 inline-block mb-4">
+        <HugeiconsIcon :icon="Search01Icon" :size="64" class="text-base-content/20" />
+      </div>
+      <p class="text-lg font-medium text-base-content/60 mb-2">
         {{ searchStore.hasQuery ? "Aucun résultat trouvé" : "Effectuez une recherche" }}
       </p>
-      <p v-if="searchStore.hasQuery" class="text-sm text-base-content/40 mt-2">
+      <p v-if="searchStore.hasQuery" class="text-sm text-base-content/40">
         Essayez d'autres mots-clés ou de modifier les filtres
       </p>
     </div>
 
     <!-- Pagination -->
-    <div v-if="searchStore.hasResults && searchStore.totalPages > 1" class="flex justify-center">
+    <div v-if="searchStore.hasResults && searchStore.totalPages > 1" class="flex justify-center pt-4">
       <div class="join">
         <button
           @click="searchStore.previousPage()"
           :disabled="!searchStore.hasPreviousPage"
-          class="join-item btn btn-sm"
+          class="join-item btn btn-sm gap-1"
         >
-          «
+          <HugeiconsIcon :icon="ArrowLeft01Icon" :size="14" />
+          Précédent
         </button>
         <button class="join-item btn btn-sm btn-disabled">
           Page {{ searchStore.currentPage }} / {{ searchStore.totalPages }}
@@ -199,9 +162,10 @@
         <button
           @click="searchStore.nextPage()"
           :disabled="!searchStore.hasNextPage"
-          class="join-item btn btn-sm"
+          class="join-item btn btn-sm gap-1"
         >
-          »
+          Suivant
+          <HugeiconsIcon :icon="ArrowRight01Icon" :size="14" />
         </button>
       </div>
     </div>
@@ -211,6 +175,21 @@
 <script setup lang="ts">
 import { useSearchStore } from "@/stores/search";
 import { useRouter } from "vue-router";
+
+// Import HugeIcons
+import { HugeiconsIcon } from "@hugeicons/vue";
+import {
+  FileAttachmentIcon,
+  AlertCircleIcon,
+  FolderIcon,
+  User02Icon,
+  Tag01Icon,
+  Calendar03Icon,
+  CheckmarkCircle01Icon,
+  ArrowRight01Icon,
+  Search01Icon,
+  ArrowLeft01Icon,
+} from "@hugeicons/core-free-icons";
 
 const searchStore = useSearchStore();
 const router = useRouter();

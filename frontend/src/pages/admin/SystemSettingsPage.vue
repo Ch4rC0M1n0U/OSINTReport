@@ -1,55 +1,73 @@
 <template>
-  <div class="max-w-4xl mx-auto">
-    <!-- Header -->
-    <div class="mb-8">
-      <h1 class="text-3xl font-bold mb-2">Paramètres système</h1>
-      <p class="text-base-content/70">
-        Configuration de l'application et personnalisation selon votre unité
-      </p>
+  <section class="space-y-6">
+    <!-- En-tête de la page -->
+    <header class="bg-base-200 border-l-4 border-primary p-6">
+      <div class="flex items-center gap-4">
+        <div class="p-2 rounded-lg bg-primary/10">
+          <HugeiconsIcon :icon="Settings02Icon" :size="32" class="text-primary" />
+        </div>
+        <div>
+          <h1 class="text-3xl font-bold">Paramètres système</h1>
+          <p class="text-base-content/70 mt-1">
+            Configuration de l'application et personnalisation selon votre unité
+          </p>
+        </div>
+      </div>
+    </header>
+
+    <!-- Chargement -->
+    <div v-if="loading" class="bg-base-200 border-l-4 border-info p-12">
+      <div class="flex flex-col items-center gap-4">
+        <span class="loading loading-spinner loading-lg text-info"></span>
+        <p class="text-base-content/70">Chargement des paramètres...</p>
+      </div>
     </div>
 
-    <!-- Loading -->
-    <div v-if="loading" class="flex justify-center py-12">
-      <span class="loading loading-spinner loading-lg"></span>
+    <!-- Message d'erreur -->
+    <div v-else-if="error" class="bg-base-200 border-l-4 border-error p-5">
+      <div class="flex items-center gap-3">
+        <HugeiconsIcon :icon="AlertCircleIcon" :size="24" class="text-error" />
+        <span class="font-medium">{{ error }}</span>
+      </div>
     </div>
 
-    <!-- Error -->
-    <div v-else-if="error" class="alert alert-error">
-      <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
-      </svg>
-      <span>{{ error }}</span>
-    </div>
-
-    <!-- Form -->
+    <!-- Formulaire -->
     <form v-else @submit.prevent="handleSubmit" class="space-y-6">
-      <!-- Logo Section -->
-      <div class="card bg-base-100 shadow-xl">
-        <div class="card-body">
-          <h2 class="card-title">Logo du service</h2>
+      <!-- Section Logo -->
+      <div class="bg-base-200 border-l-4 border-accent">
+        <div class="p-6 border-b border-base-300">
+          <div class="flex items-center gap-3">
+            <HugeiconsIcon :icon="ImageUploadIcon" :size="24" class="text-accent" />
+            <h2 class="text-xl font-semibold">Logo du service</h2>
+          </div>
+        </div>
 
-          <!-- Current Logo -->
-          <div v-if="logoUrl" class="flex items-center gap-4 mb-4">
+        <div class="p-6 space-y-4">
+          <!-- Logo actuel -->
+          <div v-if="logoUrl" class="flex items-center gap-4 p-4 bg-base-300/30 rounded-lg">
             <img :src="logoUrl" alt="Logo actuel" class="h-20 object-contain" />
             <button
               type="button"
               @click.prevent="handleRemoveLogo"
-              class="btn btn-error btn-sm"
+              class="btn btn-error btn-sm gap-2"
               :disabled="uploading"
             >
               <span v-if="uploading" class="loading loading-spinner loading-xs"></span>
-              <span v-else>🗑️</span>
+              <HugeiconsIcon v-else :icon="Delete02Icon" :size="16" />
               Supprimer
             </button>
           </div>
-          <div v-else class="alert alert-info mb-4">
-            <span>Aucun logo défini</span>
+          <div v-else class="bg-base-300/30 border-l-4 border-info p-4 rounded">
+            <div class="flex items-center gap-3">
+              <HugeiconsIcon :icon="InformationCircleIcon" :size="20" class="text-info" />
+              <span class="text-sm">Aucun logo défini</span>
+            </div>
           </div>
 
           <!-- Upload Logo -->
           <div class="form-control">
             <label class="label">
-              <span class="label-text">Choisir un nouveau logo</span>
+              <span class="label-text font-medium">Choisir un nouveau logo</span>
             </label>
             <input
               type="file"
@@ -59,27 +77,36 @@
               :disabled="uploading"
             />
             <label class="label">
-              <span class="label-text-alt">Formats acceptés : PNG, JPG, SVG, WebP (max 5 MB)</span>
+              <span class="label-text-alt text-base-content/60">
+                Formats acceptés : PNG, JPG, SVG, WebP (max 5 MB)
+              </span>
             </label>
           </div>
 
-          <div v-if="uploading" class="alert alert-info">
-            <span class="loading loading-spinner"></span>
-            <span>Upload en cours...</span>
+          <div v-if="uploading" class="bg-base-300/30 border-l-4 border-info p-4 rounded">
+            <div class="flex items-center gap-3">
+              <span class="loading loading-spinner loading-sm text-info"></span>
+              <span class="text-sm">Upload en cours...</span>
+            </div>
           </div>
         </div>
       </div>
 
-      <!-- Service Information -->
-      <div class="card bg-base-100 shadow-xl">
-        <div class="card-body">
-          <h2 class="card-title">Informations du service</h2>
+      <!-- Informations du service -->
+      <div class="bg-base-200 border-l-4 border-info">
+        <div class="p-6 border-b border-base-300">
+          <div class="flex items-center gap-3">
+            <HugeiconsIcon :icon="Building03Icon" :size="24" class="text-info" />
+            <h2 class="text-xl font-semibold">Informations du service</h2>
+          </div>
+        </div>
 
+        <div class="p-6">
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <!-- Service Name -->
             <div class="form-control">
               <label class="label">
-                <span class="label-text">Nom du service *</span>
+                <span class="label-text font-medium">Nom du service *</span>
               </label>
               <input
                 v-model="form.serviceName"
@@ -93,7 +120,7 @@
             <!-- Service Full Name -->
             <div class="form-control md:col-span-2">
               <label class="label">
-                <span class="label-text">Nom complet du service</span>
+                <span class="label-text font-medium">Nom complet du service</span>
               </label>
               <input
                 v-model="form.serviceFullName"
@@ -106,7 +133,7 @@
             <!-- Address -->
             <div class="form-control md:col-span-2">
               <label class="label">
-                <span class="label-text">Adresse</span>
+                <span class="label-text font-medium">Adresse</span>
               </label>
               <input
                 v-model="form.serviceAddress"
@@ -119,7 +146,7 @@
             <!-- City -->
             <div class="form-control">
               <label class="label">
-                <span class="label-text">Ville</span>
+                <span class="label-text font-medium">Ville</span>
               </label>
               <input
                 v-model="form.serviceCity"
@@ -132,7 +159,7 @@
             <!-- Postal Code -->
             <div class="form-control">
               <label class="label">
-                <span class="label-text">Code postal</span>
+                <span class="label-text font-medium">Code postal</span>
               </label>
               <input
                 v-model="form.servicePostalCode"
@@ -145,7 +172,7 @@
             <!-- Country -->
             <div class="form-control md:col-span-2">
               <label class="label">
-                <span class="label-text">Pays</span>
+                <span class="label-text font-medium">Pays</span>
               </label>
               <input
                 v-model="form.serviceCountry"
@@ -158,16 +185,21 @@
         </div>
       </div>
 
-      <!-- Contact Information -->
-      <div class="card bg-base-100 shadow-xl">
-        <div class="card-body">
-          <h2 class="card-title">Coordonnées de contact</h2>
+      <!-- Coordonnées de contact -->
+      <div class="bg-base-200 border-l-4 border-warning">
+        <div class="p-6 border-b border-base-300">
+          <div class="flex items-center gap-3">
+            <HugeiconsIcon :icon="Call02Icon" :size="24" class="text-warning" />
+            <h2 class="text-xl font-semibold">Coordonnées de contact</h2>
+          </div>
+        </div>
 
+        <div class="p-6">
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <!-- Phone -->
             <div class="form-control">
               <label class="label">
-                <span class="label-text">Téléphone</span>
+                <span class="label-text font-medium">Téléphone</span>
               </label>
               <input
                 v-model="form.phoneNumber"
@@ -180,7 +212,7 @@
             <!-- Fax -->
             <div class="form-control">
               <label class="label">
-                <span class="label-text">Fax</span>
+                <span class="label-text font-medium">Fax</span>
               </label>
               <input
                 v-model="form.faxNumber"
@@ -193,7 +225,7 @@
             <!-- Email -->
             <div class="form-control">
               <label class="label">
-                <span class="label-text">Email de contact</span>
+                <span class="label-text font-medium">Email de contact</span>
               </label>
               <input
                 v-model="form.emailContact"
@@ -206,7 +238,7 @@
             <!-- Website -->
             <div class="form-control">
               <label class="label">
-                <span class="label-text">Site web</span>
+                <span class="label-text font-medium">Site web</span>
               </label>
               <input
                 v-model="form.websiteUrl"
@@ -219,22 +251,27 @@
         </div>
       </div>
 
-      <!-- Branding -->
-      <div class="card bg-base-100 shadow-xl">
-        <div class="card-body">
-          <h2 class="card-title">Personnalisation visuelle</h2>
+      <!-- Personnalisation visuelle -->
+      <div class="bg-base-200 border-l-4 border-success">
+        <div class="p-6 border-b border-base-300">
+          <div class="flex items-center gap-3">
+            <HugeiconsIcon :icon="PaintBoardIcon" :size="24" class="text-success" />
+            <h2 class="text-xl font-semibold">Personnalisation visuelle</h2>
+          </div>
+        </div>
 
+        <div class="p-6">
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <!-- Primary Color -->
             <div class="form-control">
               <label class="label">
-                <span class="label-text">Couleur principale</span>
+                <span class="label-text font-medium">Couleur principale</span>
               </label>
               <div class="flex gap-2">
                 <input
                   v-model="form.primaryColor"
                   type="color"
-                  class="w-16 h-12 rounded cursor-pointer"
+                  class="w-16 h-12 rounded cursor-pointer border border-base-300"
                 />
                 <input
                   v-model="form.primaryColor"
@@ -248,13 +285,13 @@
             <!-- Secondary Color -->
             <div class="form-control">
               <label class="label">
-                <span class="label-text">Couleur secondaire</span>
+                <span class="label-text font-medium">Couleur secondaire</span>
               </label>
               <div class="flex gap-2">
                 <input
                   v-model="form.secondaryColor"
                   type="color"
-                  class="w-16 h-12 rounded cursor-pointer"
+                  class="w-16 h-12 rounded cursor-pointer border border-base-300"
                 />
                 <input
                   v-model="form.secondaryColor"
@@ -268,36 +305,40 @@
         </div>
       </div>
 
-      <!-- Link to Search Management -->
-      <div class="alert alert-info">
-        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="stroke-current shrink-0 w-6 h-6">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-        </svg>
-        <div class="flex-1">
-          <h3 class="font-bold">Gestion de l'index de recherche</h3>
-          <div class="text-sm">
-            Pour gérer l'index MeiliSearch, réindexer les rapports ou consulter les statistiques de recherche,
-            rendez-vous sur la page dédiée.
+      <!-- Lien vers gestion de recherche -->
+      <div class="bg-base-200 border-l-4 border-info p-5">
+        <div class="flex items-start justify-between gap-4 flex-wrap">
+          <div class="flex items-start gap-3 flex-1">
+            <HugeiconsIcon :icon="SearchAreaIcon" :size="24" class="text-info mt-1" />
+            <div>
+              <h3 class="font-semibold text-lg mb-1">Gestion de l'index de recherche</h3>
+              <p class="text-sm text-base-content/70">
+                Pour gérer l'index MeiliSearch, réindexer les rapports ou consulter les statistiques de recherche,
+                rendez-vous sur la page dédiée.
+              </p>
+            </div>
           </div>
+          <router-link to="/admin/search" class="btn btn-info btn-sm gap-2 shrink-0">
+            <HugeiconsIcon :icon="SearchAreaIcon" :size="18" />
+            Gérer la recherche
+          </router-link>
         </div>
-        <router-link to="/admin/search" class="btn btn-primary btn-sm">
-          🔍 Gérer la recherche
-        </router-link>
       </div>
 
       <!-- Actions -->
-      <div class="flex justify-end gap-4">
+      <div class="flex justify-end gap-3 pt-4">
         <button
           type="button"
           @click="loadSettings"
-          class="btn btn-ghost"
+          class="btn btn-ghost gap-2"
           :disabled="saving"
         >
           Annuler
         </button>
-        <button type="submit" class="btn btn-primary" :disabled="saving">
-          <span v-if="saving" class="loading loading-spinner"></span>
-          💾 Enregistrer
+        <button type="submit" class="btn btn-primary gap-2" :disabled="saving">
+          <span v-if="saving" class="loading loading-spinner loading-sm"></span>
+          <HugeiconsIcon v-else :icon="CheckmarkCircle01Icon" :size="18" />
+          {{ saving ? 'Enregistrement...' : 'Enregistrer' }}
         </button>
       </div>
     </form>
@@ -314,7 +355,7 @@
       @confirm="modal.handleConfirm"
       @cancel="modal.handleCancel"
     />
-  </div>
+  </section>
 </template>
 
 <script setup lang="ts">
@@ -322,6 +363,22 @@ import { ref, computed, onMounted } from "vue";
 import { settingsApi, type SystemSettings, type UpdateSettingsData } from "@/services/api/settings";
 import { useModal } from "@/composables/useModal";
 import ModalDialog from "@/components/shared/ModalDialog.vue";
+import { HugeiconsIcon } from "@hugeicons/vue";
+import {
+  Settings02Icon,
+  ImageUploadIcon,
+  Building03Icon,
+  Location01Icon,
+  Call02Icon,
+  Mail01Icon,
+  PaintBoardIcon,
+  AlertCircleIcon,
+  CheckmarkCircle01Icon,
+  Delete02Icon,
+  Upload02Icon,
+  InformationCircleIcon,
+  SearchAreaIcon,
+} from "@hugeicons/core-free-icons";
 
 const modal = useModal();
 
