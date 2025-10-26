@@ -45,21 +45,21 @@
         <div class="p-6">
           <div v-if="searchStats" class="grid grid-cols-1 md:grid-cols-3 gap-4">
             <!-- Documents indexés -->
-            <div class="bg-base-300/30 border-l-4 border-primary rounded p-5">
+            <div class="bg-base-200 border-l-4 border-primary p-5">
               <div class="flex items-start justify-between">
                 <div class="flex-1">
                   <div class="text-sm text-base-content/70 mb-1">Documents indexés</div>
                   <div class="text-3xl font-bold text-primary">{{ searchStats.numberOfDocuments }}</div>
                   <div class="text-xs text-base-content/60 mt-1">Rapports dans l'index</div>
                 </div>
-                <div class="p-2 rounded-lg bg-primary/10">
-                  <HugeiconsIcon :icon="Database01Icon" :size="24" class="text-primary" />
+                <div class="p-3 rounded-lg bg-primary/10">
+                  <HugeiconsIcon :icon="Database01Icon" :size="28" class="text-primary" />
                 </div>
               </div>
             </div>
 
             <!-- État de l'index -->
-            <div class="bg-base-300/30 border-l-4 rounded p-5" :class="searchStats.isIndexing ? 'border-warning' : 'border-success'">
+            <div class="bg-base-200 border-l-4 p-5" :class="searchStats.isIndexing ? 'border-warning' : 'border-success'">
               <div class="flex items-start justify-between">
                 <div class="flex-1">
                   <div class="text-sm text-base-content/70 mb-1">État</div>
@@ -73,15 +73,15 @@
                     {{ searchStats.isIndexing ? "Opération en cours" : "Index disponible" }}
                   </div>
                 </div>
-                <div class="p-2 rounded-lg" :class="searchStats.isIndexing ? 'bg-warning/10' : 'bg-success/10'">
+                <div class="p-3 rounded-lg" :class="searchStats.isIndexing ? 'bg-warning/10' : 'bg-success/10'">
                   <span v-if="searchStats.isIndexing" class="loading loading-spinner loading-md text-warning"></span>
-                  <HugeiconsIcon v-else :icon="CheckmarkCircle01Icon" :size="24" class="text-success" />
+                  <HugeiconsIcon v-else :icon="CheckmarkCircle01Icon" :size="28" class="text-success" />
                 </div>
               </div>
             </div>
 
             <!-- Distribution des champs -->
-            <div class="bg-base-300/30 border-l-4 border-info rounded p-5">
+            <div class="bg-base-200 border-l-4 border-info p-5">
               <div class="flex items-start justify-between">
                 <div class="flex-1">
                   <div class="text-sm text-base-content/70 mb-1">Champs indexés</div>
@@ -90,14 +90,14 @@
                   </div>
                   <div class="text-xs text-base-content/60 mt-1">Attributs disponibles</div>
                 </div>
-                <div class="p-2 rounded-lg bg-info/10">
-                  <HugeiconsIcon :icon="Settings02Icon" :size="24" class="text-info" />
+                <div class="p-3 rounded-lg bg-info/10">
+                  <HugeiconsIcon :icon="Settings02Icon" :size="28" class="text-info" />
                 </div>
               </div>
             </div>
           </div>
 
-          <div v-else class="bg-base-300/30 border-l-4 border-warning p-5 rounded">
+          <div v-else class="bg-base-200 border-l-4 border-warning p-5">
             <div class="flex items-center gap-3">
               <HugeiconsIcon :icon="AlertCircleIcon" :size="24" class="text-warning" />
               <span class="font-medium">Impossible de charger les statistiques</span>
@@ -131,7 +131,7 @@
 
         <div class="p-6 space-y-4">
           <!-- Réindexation complète -->
-          <div class="bg-base-300/30 border border-base-300 rounded-lg p-5">
+          <div class="bg-base-200 border-l-4 border-warning p-5">
             <div class="flex items-start justify-between gap-4 flex-wrap">
               <div class="flex-1 min-w-[250px]">
                 <h3 class="font-semibold text-lg mb-2 flex items-center gap-2">
@@ -171,9 +171,9 @@
           </div>
 
           <!-- Info importante -->
-          <div class="bg-base-300/30 border-l-4 border-warning p-5 rounded">
+          <div class="bg-base-200 border-l-4 border-info p-5">
             <div class="flex items-start gap-3">
-              <HugeiconsIcon :icon="AlertCircleIcon" :size="24" class="text-warning mt-0.5" />
+              <HugeiconsIcon :icon="InformationCircleIcon" :size="24" class="text-info shrink-0 mt-0.5" />
               <div>
                 <strong>Note importante :</strong>
                 <p class="text-sm mt-1 text-base-content/70">
@@ -249,14 +249,17 @@
           </div>
 
           <div v-if="searchStats?.fieldDistribution" class="mt-6">
-            <h3 class="font-semibold mb-3">Distribution des champs</h3>
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-2">
+            <h3 class="font-semibold mb-3 flex items-center gap-2">
+              <HugeiconsIcon :icon="Analytics02Icon" :size="20" class="text-accent" />
+              Distribution des champs
+            </h3>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
               <div
                 v-for="(count, field) in searchStats.fieldDistribution"
                 :key="field"
-                class="bg-base-300/30 border-l-4 border-accent rounded p-3"
+                class="bg-base-200 border-l-4 border-accent p-3"
               >
-                <div class="text-xs text-base-content/70">{{ field }}</div>
+                <div class="text-xs text-base-content/70 mb-1">{{ field }}</div>
                 <div class="text-lg font-bold text-accent">{{ count }}</div>
               </div>
             </div>

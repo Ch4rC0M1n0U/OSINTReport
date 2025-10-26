@@ -4,7 +4,8 @@ Plateforme complète de génération et de gestion de rapports OSINT pour servic
 
 ### Guides utilisateur
 - 🚀 **[Démarrage rapide](docs/QUICKSTART.md)** - Installation et premiers pas
-- 📖 **[Guide d'implémentation des corrélations](docs/correlation-implementation-guide.md)**
+- � **[Guide Données extraites](docs/QUICKSTART-EXTRACTED-DATA.md)** - Visualisation des données indexées
+- �📖 **[Guide d'implémentation des corrélations](docs/correlation-implementation-guide.md)**
 
 ### Documentation technique
 - 🏗️ **[Architecture](docs/architecture.md)** - Vue d'ensemble du système
@@ -19,7 +20,8 @@ Plateforme complète de génération et de gestion de rapports OSINT pour servic
 ### Résumés techniques
 - ✅ **[Phase 1 - Corrélations](docs/correlation-system-phase1-summary.md)**
 - 🔍 **[Solution Avatar](docs/avatar-solution.md)**
-- 📝 **[Session 6 Complète](docs/SESSION-6-COMPLETE-SUMMARY.md)** - Résumé session Meilisearch
+- � **[Données extraites](docs/FEATURE-EXTRACTED-DATA-DISPLAY.md)** - Extraction et affichage complet
+- �📝 **[Session 6 Complète](docs/SESSION-6-COMPLETE-SUMMARY.md)** - Résumé session Meilisearch
 
 ## 🧩 Structure du projet
 
@@ -125,6 +127,8 @@ DRAFT → Actions → Publier → PUBLISHED → Actions → Archiver → ARCHIVE
 - ✅ Filtres facettés et highlighting
 - ✅ Store Pinia et service API
 - ✅ Pagination et tri des résultats
+- ✅ **Visualisation des données extraites** (téléphones, emails, entreprises, plateformes)
+- ✅ **Filtrage et recherche** dans les données indexées
 
 ### 📋 Phase 8 (À venir)
 - 📋 Export PDF avec template police belge
@@ -197,7 +201,8 @@ Propriétaire - Police Belge
 - 📦 **Modules structurés** : Analyses téléphoniques, emails, réseaux sociaux, financières, etc.
 - 🔄 **Workflow complet** : DRAFT → PUBLISHED → ARCHIVED avec duplication de templates
 - 📊 **Statistiques en temps réel** : Dashboard analytique et vue d'ensemble des enquêtes
-- 🔐 **Sécurité renforcée** : Permissions RBAC, chiffrement AES-256-GCM, audit logs
+- � **Visualisation des données extraites** : Vue d'ensemble de toutes les données indexées (téléphones, emails, entreprises, plateformes) avec recherche et filtrage
+- �🔐 **Sécurité renforcée** : Permissions RBAC, chiffrement AES-256-GCM, audit logs
 
 ## 🏗️ Architecture
 

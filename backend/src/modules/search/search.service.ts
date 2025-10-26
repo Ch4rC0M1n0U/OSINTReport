@@ -40,6 +40,13 @@ interface SearchableReport {
     urls: string[];
     accounts: string[];
   };
+  // Métadonnées supplémentaires pour recherche avancée
+  metadata: {
+    platforms: string[]; // Noms de plateformes extraits
+    companies: string[]; // Noms d'entreprises extraits
+    aliases: string[]; // Pseudos et aliases extraits
+    identifierTypes: string[]; // Types d'identifiants recherchés
+  };
 }
 
 interface SearchOptions {
@@ -70,6 +77,10 @@ export class SearchService {
     addresses: string[];
     urls: string[];
     accounts: string[];
+    platforms: string[];
+    companies: string[];
+    aliases: string[];
+    identifierTypes: string[];
   } {
     const entities = {
       phones: [] as string[],
@@ -78,6 +89,10 @@ export class SearchService {
       addresses: [] as string[],
       urls: [] as string[],
       accounts: [] as string[],
+      platforms: [] as string[],
+      companies: [] as string[],
+      aliases: [] as string[],
+      identifierTypes: [] as string[],
     };
 
     modules.forEach((module: any) => {
@@ -85,69 +100,105 @@ export class SearchService {
 
       const payload = module.payload;
 
-      // Extraire selon le type de module
-      switch (module.type) {
-        case "platform_analysis":
-          // Téléphones
-          if (payload.phoneNumbers && Array.isArray(payload.phoneNumbers)) {
-            entities.phones.push(...payload.phoneNumbers.map((p: any) => p.number || p));
-          }
-          if (payload.phone) entities.phones.push(payload.phone);
+      // Fonction helper pour extraire des findings
+      const extractFromFindings = (findings: any[]) => {
+        if (!Array.isArray(findings)) return;
+        
+        findings.forEach((finding: any) => {
+          if (!finding) return;
 
-          // Emails
-          if (payload.emails && Array.isArray(payload.emails)) {
-            entities.emails.push(...payload.emails.map((e: any) => e.email || e));
+          // Label du finding (souvent un nom, entreprise, ou identifiant)
+          if (finding.label) {
+            // Détecter si c'est un email, téléphone ou nom
+            if (/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(finding.label)) {
+              entities.emails.push(finding.label);
+            } else if (/^\+?[\d\s\-()]{10,}$/.test(finding.label)) {
+              entities.phones.push(finding.label);
+            } else if (/^https?:\/\//i.test(finding.label)) {
+              entities.urls.push(finding.label);
+            } else {
+              entities.names.push(finding.label);
+            }
           }
-          if (payload.email) entities.emails.push(payload.email);
 
-          // Noms
-          if (payload.names && Array.isArray(payload.names)) {
-            entities.names.push(...payload.names.map((n: any) => n.name || n));
+          // Description peut contenir des identifiants
+          if (finding.description) {
+            const descStr = finding.description.toLowerCase();
+            // Extraire téléphones de la description
+            const phoneMatches = finding.description.match(/\+?[\d\s\-()]{10,}/g);
+            if (phoneMatches) entities.phones.push(...phoneMatches);
+            
+            // Extraire emails de la description
+            const emailMatches = finding.description.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g);
+            if (emailMatches) entities.emails.push(...emailMatches);
+            
+            // Extraire URLs de la description
+            const urlMatches = finding.description.match(/https?:\/\/[^\s"<>]+/g);
+            if (urlMatches) entities.urls.push(...urlMatches);
           }
-          if (payload.fullName) entities.names.push(payload.fullName);
-          if (payload.realName) entities.names.push(payload.realName);
 
-          // Adresses
-          if (payload.addresses && Array.isArray(payload.addresses)) {
-            entities.addresses.push(...payload.addresses.map((a: any) => 
-              typeof a === 'string' ? a : a.address || JSON.stringify(a)
-            ));
-          }
-          if (payload.location) entities.addresses.push(payload.location);
+          // Métadonnées d'entité (EntityOverview)
+          if (finding.metadata) {
+            const metadata = finding.metadata;
 
-          // URLs
-          if (payload.urls && Array.isArray(payload.urls)) {
-            entities.urls.push(...payload.urls.map((u: any) => u.url || u));
-          }
-          if (payload.profileUrl) entities.urls.push(payload.profileUrl);
-          if (payload.websiteUrl) entities.urls.push(payload.websiteUrl);
-
-          // Comptes
-          if (payload.accounts && Array.isArray(payload.accounts)) {
-            entities.accounts.push(...payload.accounts.map((a: any) => 
-              a.username || a.handle || a.account || a
-            ));
-          }
-          if (payload.username) entities.accounts.push(payload.username);
-          if (payload.handle) entities.accounts.push(payload.handle);
-          break;
-
-        case "entity_overview":
-          // Extraire depuis metadata
-          if (payload.metadata) {
-            // Téléphones depuis personDetails
-            if (payload.metadata.personDetails?.phoneNumbers && Array.isArray(payload.metadata.personDetails.phoneNumbers)) {
-              entities.phones.push(...payload.metadata.personDetails.phoneNumbers.filter(Boolean));
+            // Aliases
+            if (metadata.aliases && Array.isArray(metadata.aliases)) {
+              entities.names.push(...metadata.aliases.filter(Boolean));
+              entities.aliases.push(...metadata.aliases.filter(Boolean)); // Aussi dans aliases dédiés
             }
 
-            // Téléphones depuis companyDetails
-            if (payload.metadata.companyDetails?.phoneNumbers && Array.isArray(payload.metadata.companyDetails.phoneNumbers)) {
-              entities.phones.push(...payload.metadata.companyDetails.phoneNumbers.filter(Boolean));
+            // Détails personne
+            if (metadata.personDetails) {
+              const person = metadata.personDetails;
+              
+              if (person.fullName) entities.names.push(person.fullName);
+              if (person.firstName && person.lastName) {
+                entities.names.push(`${person.firstName} ${person.lastName}`);
+              }
+              if (person.email) entities.emails.push(person.email);
+              if (person.phoneNumbers && Array.isArray(person.phoneNumbers)) {
+                entities.phones.push(...person.phoneNumbers.filter(Boolean));
+              }
+              if (person.physicalAddress) entities.addresses.push(person.physicalAddress);
+              if (person.dateOfBirth) {
+                // Ajouter comme metadata (peut être cherchable)
+              }
+              if (person.nationality) {
+                entities.names.push(person.nationality);
+              }
             }
 
-            // Identifiants liés (peuvent être téléphones, emails, usernames)
-            if (payload.metadata.relatedIdentifiers && Array.isArray(payload.metadata.relatedIdentifiers)) {
-              payload.metadata.relatedIdentifiers.forEach((id: string) => {
+            // Détails entreprise/organisation
+            if (metadata.companyDetails) {
+              const company = metadata.companyDetails;
+              
+              if (company.legalName) {
+                entities.names.push(company.legalName);
+                entities.companies.push(company.legalName); // Aussi dans companies dédiés
+              }
+              if (company.tradeName) {
+                entities.names.push(company.tradeName);
+                entities.companies.push(company.tradeName); // Aussi dans companies dédiés
+              }
+              if (company.registrationNumber) entities.accounts.push(company.registrationNumber);
+              if (company.vatNumber) entities.accounts.push(company.vatNumber);
+              if (company.website) entities.urls.push(company.website);
+              if (company.email) entities.emails.push(company.email);
+              if (company.phoneNumbers && Array.isArray(company.phoneNumbers)) {
+                entities.phones.push(...company.phoneNumbers.filter(Boolean));
+              }
+              if (company.headquartersAddress) entities.addresses.push(company.headquartersAddress);
+              if (company.operationalAddresses && Array.isArray(company.operationalAddresses)) {
+                entities.addresses.push(...company.operationalAddresses.filter(Boolean));
+              }
+              if (company.industry) {
+                entities.names.push(company.industry);
+              }
+            }
+
+            // Identifiants liés
+            if (metadata.relatedIdentifiers && Array.isArray(metadata.relatedIdentifiers)) {
+              metadata.relatedIdentifiers.forEach((id: string) => {
                 if (!id) return;
                 
                 // Détecter le type d'identifiant
@@ -155,61 +206,284 @@ export class SearchService {
                   entities.phones.push(id);
                 } else if (/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(id)) {
                   entities.emails.push(id);
+                } else if (/^https?:\/\//i.test(id)) {
+                  entities.urls.push(id);
                 } else {
                   entities.accounts.push(id);
                 }
               });
             }
-
-            // Emails depuis personDetails ou companyDetails
-            if (payload.metadata.personDetails?.email) {
-              entities.emails.push(payload.metadata.personDetails.email);
-            }
-
-            // Adresses
-            if (payload.metadata.personDetails?.physicalAddress) {
-              entities.addresses.push(payload.metadata.personDetails.physicalAddress);
-            }
-            if (payload.metadata.companyDetails?.headquartersAddress) {
-              entities.addresses.push(payload.metadata.companyDetails.headquartersAddress);
-            }
-            if (payload.metadata.companyDetails?.operationalAddresses && Array.isArray(payload.metadata.companyDetails.operationalAddresses)) {
-              entities.addresses.push(...payload.metadata.companyDetails.operationalAddresses.filter(Boolean));
-            }
-
-            // Noms/Aliases
-            if (payload.metadata.aliases && Array.isArray(payload.metadata.aliases)) {
-              entities.names.push(...payload.metadata.aliases.filter(Boolean));
-            }
-
-            // Website
-            if (payload.metadata.companyDetails?.website) {
-              entities.urls.push(payload.metadata.companyDetails.website);
-            }
           }
 
-          // Label principal de l'entité
+          // Sources (peuvent contenir URLs, noms de plateformes, etc.)
+          if (finding.sources && Array.isArray(finding.sources)) {
+            finding.sources.forEach((source: any) => {
+              if (source.url) entities.urls.push(source.url);
+              if (source.platform) entities.names.push(source.platform);
+            });
+          }
+        });
+      };
+
+      // Extraire selon le type de module
+      switch (module.type) {
+        case "entities":
+          // Module "Entités concernées" - contient des findings
+          extractFromFindings(payload.findings || []);
+          
+          // Si le module a une entité liée, extraire son label
+          if (module.entity && module.entity.label) {
+            entities.names.push(module.entity.label);
+          }
+          break;
+
+        case "entity_overview":
+          // Vue d'ensemble d'une entité - extraction complète
+          extractFromFindings(payload.findings || []);
+          
+          // Context peut contenir des informations
+          if (payload.context) {
+            const phoneMatches = payload.context.match(/\+?[\d\s\-()]{10,}/g);
+            if (phoneMatches) entities.phones.push(...phoneMatches);
+            
+            const emailMatches = payload.context.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g);
+            if (emailMatches) entities.emails.push(...emailMatches);
+          }
+
+          // Label de l'entité
           if (payload.label) {
             entities.names.push(payload.label);
           }
           break;
 
         case "identifier_lookup":
-          // Parcourir les items de recherche
-          if (payload.items && Array.isArray(payload.items)) {
-            payload.items.forEach((item: any) => {
-              if (item.type === "PHONE" && item.value) entities.phones.push(item.value);
-              if (item.type === "EMAIL" && item.value) entities.emails.push(item.value);
-              if (item.type === "NAME" && item.value) entities.names.push(item.value);
-              if (item.type === "ADDRESS" && item.value) entities.addresses.push(item.value);
-              if (item.type === "URL" && item.value) entities.urls.push(item.value);
-              if (item.type === "ACCOUNT" && item.value) entities.accounts.push(item.value);
+          // Recherche d'identifiant - extraire la valeur cherchée
+          if (payload.identifierValue) {
+            const value = payload.identifierValue;
+            const type = payload.identifierType;
+            
+            // Ajouter le type d'identifiant aux métadonnées
+            if (type) {
+              entities.identifierTypes.push(type);
+            }
+
+            switch (type) {
+              case "phone":
+                entities.phones.push(value);
+                break;
+              case "email":
+                entities.emails.push(value);
+                break;
+              case "username":
+              case "alias":
+                entities.accounts.push(value);
+                entities.aliases.push(value); // Aussi dans aliases
+                break;
+              case "rrn":
+                entities.accounts.push(value);
+                break;
+              default:
+                // Détecter automatiquement
+                if (/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(value)) {
+                  entities.emails.push(value);
+                } else if (/^\+?[\d\s\-()]{10,}$/.test(value)) {
+                  entities.phones.push(value);
+                } else {
+                  entities.accounts.push(value);
+                }
+            }
+          }
+
+          // Findings
+          extractFromFindings(payload.findings || []);
+          break;
+
+        case "platform_analysis":
+          // Analyse de plateforme - extraction complète
+          if (payload.platform) {
+            entities.names.push(payload.platform);
+            entities.platforms.push(payload.platform); // Aussi dans platforms dédiés
+          }
+
+          if (payload.platformUrl) {
+            entities.urls.push(payload.platformUrl);
+          }
+
+          // Findings (profils, comptes, etc.)
+          extractFromFindings(payload.findings || []);
+
+          // Données spécifiques plateforme (si présentes)
+          if (payload.username) {
+            entities.accounts.push(payload.username);
+            entities.aliases.push(payload.username); // Aussi dans aliases
+          }
+          if (payload.handle) {
+            entities.accounts.push(payload.handle);
+            entities.aliases.push(payload.handle); // Aussi dans aliases
+          }
+          if (payload.profileUrl) entities.urls.push(payload.profileUrl);
+          if (payload.email) entities.emails.push(payload.email);
+          if (payload.phone) entities.phones.push(payload.phone);
+          if (payload.fullName) entities.names.push(payload.fullName);
+          if (payload.realName) entities.names.push(payload.realName);
+          if (payload.location) entities.addresses.push(payload.location);
+
+          // Tableaux
+          if (payload.phoneNumbers && Array.isArray(payload.phoneNumbers)) {
+            entities.phones.push(...payload.phoneNumbers.map((p: any) => 
+              typeof p === 'string' ? p : p.number || p.value
+            ).filter(Boolean));
+          }
+
+          if (payload.emails && Array.isArray(payload.emails)) {
+            entities.emails.push(...payload.emails.map((e: any) => 
+              typeof e === 'string' ? e : e.email || e.value
+            ).filter(Boolean));
+          }
+
+          if (payload.names && Array.isArray(payload.names)) {
+            entities.names.push(...payload.names.map((n: any) => 
+              typeof n === 'string' ? n : n.name || n.value
+            ).filter(Boolean));
+          }
+
+          if (payload.addresses && Array.isArray(payload.addresses)) {
+            entities.addresses.push(...payload.addresses.map((a: any) => 
+              typeof a === 'string' ? a : a.address || a.value
+            ).filter(Boolean));
+          }
+
+          if (payload.urls && Array.isArray(payload.urls)) {
+            entities.urls.push(...payload.urls.map((u: any) => 
+              typeof u === 'string' ? u : u.url || u.value
+            ).filter(Boolean));
+          }
+
+          if (payload.accounts && Array.isArray(payload.accounts)) {
+            entities.accounts.push(...payload.accounts.map((a: any) => 
+              typeof a === 'string' ? a : a.username || a.handle || a.account || a.value
+            ).filter(Boolean));
+          }
+          break;
+
+        case "research_summary":
+          // Résumé des recherches
+          if (payload.summary) {
+            // Extraire identifiants du résumé
+            const phoneMatches = payload.summary.match(/\+?[\d\s\-()]{10,}/g);
+            if (phoneMatches) entities.phones.push(...phoneMatches);
+            
+            const emailMatches = payload.summary.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g);
+            if (emailMatches) entities.emails.push(...emailMatches);
+
+            const urlMatches = payload.summary.match(/https?:\/\/[^\s"<>]+/g);
+            if (urlMatches) entities.urls.push(...urlMatches);
+          }
+
+          // Éléments non trouvés (peuvent être des identifiants cherchés)
+          if (payload.notFound && Array.isArray(payload.notFound)) {
+            payload.notFound.forEach((item: string) => {
+              if (!item) return;
+              
+              if (/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(item)) {
+                entities.emails.push(item);
+              } else if (/^\+?[\d\s\-()]{10,}$/.test(item)) {
+                entities.phones.push(item);
+              } else if (/^https?:\/\//i.test(item)) {
+                entities.urls.push(item);
+              } else {
+                entities.accounts.push(item);
+              }
             });
           }
           break;
 
+        case "media_gallery":
+          // Galerie média - extraire des captions et sources
+          if (payload.items && Array.isArray(payload.items)) {
+            payload.items.forEach((item: any) => {
+              if (item.caption) {
+                // Extraire des identifiants des captions
+                const phoneMatches = item.caption.match(/\+?[\d\s\-()]{10,}/g);
+                if (phoneMatches) entities.phones.push(...phoneMatches);
+                
+                const emailMatches = item.caption.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g);
+                if (emailMatches) entities.emails.push(...emailMatches);
+              }
+              
+              if (item.source) {
+                if (/^https?:\/\//i.test(item.source)) {
+                  entities.urls.push(item.source);
+                } else {
+                  entities.names.push(item.source);
+                }
+              }
+            });
+          }
+          break;
+
+        case "data_retention":
+          // Données sauvegardées - datasets
+          if (payload.datasets && Array.isArray(payload.datasets)) {
+            payload.datasets.forEach((dataset: any) => {
+              if (dataset.label) entities.names.push(dataset.label);
+              if (dataset.location) {
+                if (/^https?:\/\//i.test(dataset.location)) {
+                  entities.urls.push(dataset.location);
+                } else {
+                  entities.addresses.push(dataset.location);
+                }
+              }
+            });
+          }
+          break;
+
+        case "investigation_leads":
+          // Pistes d'enquête - plateformes et requisitions
+          if (payload.leads && Array.isArray(payload.leads)) {
+            payload.leads.forEach((lead: any) => {
+              if (lead.platform) entities.names.push(lead.platform);
+              if (lead.legalBasis) {
+                // Peut contenir des références
+                const urlMatches = lead.legalBasis.match(/https?:\/\/[^\s"<>]+/g);
+                if (urlMatches) entities.urls.push(...urlMatches);
+              }
+            });
+          }
+          break;
+
+        case "sign_off":
+          // Signature - informations de l'officier
+          if (payload.officer) {
+            if (payload.officer.name) entities.names.push(payload.officer.name);
+            if (payload.officer.rank) entities.names.push(payload.officer.rank);
+            if (payload.officer.unit) entities.names.push(payload.officer.unit);
+            if (payload.officer.badgeNumber) entities.accounts.push(payload.officer.badgeNumber);
+          }
+          break;
+
+        case "summary":
+        case "objectives":
+        case "conclusions":
+          // Modules textuels - extraction générique
+          const textContent = payload.content || 
+                             (Array.isArray(payload.objectives) ? payload.objectives.join(' ') : '') ||
+                             (Array.isArray(payload.statements) ? payload.statements.join(' ') : '');
+
+          if (textContent) {
+            const phoneMatches = textContent.match(/\+?[\d\s\-()]{10,}/g);
+            if (phoneMatches) entities.phones.push(...phoneMatches);
+            
+            const emailMatches = textContent.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g);
+            if (emailMatches) entities.emails.push(...emailMatches);
+
+            const urlMatches = textContent.match(/https?:\/\/[^\s"<>]+/g);
+            if (urlMatches) entities.urls.push(...urlMatches);
+          }
+          break;
+
         default:
-          // Recherche générique dans le payload
+          // Pour les modules non reconnus, recherche générique dans le payload
           const payloadStr = JSON.stringify(payload).toLowerCase();
           
           // Pattern téléphone international
@@ -228,16 +502,36 @@ export class SearchService {
           if (urls) entities.urls.push(...urls);
           break;
       }
+
+      // Extraction depuis les richTextBlocks (nouveauté v2.1)
+      if (payload.richTextBlocks && Array.isArray(payload.richTextBlocks)) {
+        payload.richTextBlocks.forEach((block: any) => {
+          if (!block.content) return;
+          
+          const phoneMatches = block.content.match(/\+?[\d\s\-()]{10,}/g);
+          if (phoneMatches) entities.phones.push(...phoneMatches);
+          
+          const emailMatches = block.content.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g);
+          if (emailMatches) entities.emails.push(...emailMatches);
+
+          const urlMatches = block.content.match(/https?:\/\/[^\s"<>]+/g);
+          if (urlMatches) entities.urls.push(...urlMatches);
+        });
+      }
     });
 
     // Dédupliquer et nettoyer
     return {
-      phones: [...new Set(entities.phones.filter(Boolean))],
-      emails: [...new Set(entities.emails.filter(Boolean))],
-      names: [...new Set(entities.names.filter(Boolean))],
-      addresses: [...new Set(entities.addresses.filter(Boolean))],
-      urls: [...new Set(entities.urls.filter(Boolean))],
-      accounts: [...new Set(entities.accounts.filter(Boolean))],
+      phones: [...new Set(entities.phones.filter(Boolean).map(p => p.trim()))],
+      emails: [...new Set(entities.emails.filter(Boolean).map(e => e.trim().toLowerCase()))],
+      names: [...new Set(entities.names.filter(Boolean).map(n => n.trim()))],
+      addresses: [...new Set(entities.addresses.filter(Boolean).map(a => a.trim()))],
+      urls: [...new Set(entities.urls.filter(Boolean).map(u => u.trim()))],
+      accounts: [...new Set(entities.accounts.filter(Boolean).map(a => a.trim()))],
+      platforms: [...new Set(entities.platforms.filter(Boolean).map(p => p.trim()))],
+      companies: [...new Set(entities.companies.filter(Boolean).map(c => c.trim()))],
+      aliases: [...new Set(entities.aliases.filter(Boolean).map(a => a.trim()))],
+      identifierTypes: [...new Set(entities.identifierTypes.filter(Boolean).map(t => t.trim()))],
     };
   }
 
@@ -284,6 +578,11 @@ export class SearchService {
           "entities.addresses",
           "entities.urls",
           "entities.accounts",
+          // Métadonnées supplémentaires
+          "metadata.platforms",
+          "metadata.companies",
+          "metadata.aliases",
+          "metadata.identifierTypes",
         ],
         filterableAttributes: [
           "status",
@@ -299,6 +598,11 @@ export class SearchService {
           "entities.addresses",
           "entities.urls",
           "entities.accounts",
+          // Métadonnées (pour filtrer)
+          "metadata.platforms",
+          "metadata.companies",
+          "metadata.aliases",
+          "metadata.identifierTypes",
         ],
         sortableAttributes: ["createdAt", "updatedAt", "issuedAt", "title"],
         rankingRules: [
@@ -382,7 +686,7 @@ export class SearchService {
         .join("\n\n");
 
       // Extraire les entités des modules
-      const entities = this.extractEntities(report.modules);
+      const extractedData = this.extractEntities(report.modules);
 
       // Créer l'objet indexable
       const searchableReport: SearchableReport = {
@@ -406,7 +710,20 @@ export class SearchService {
         updatedAt: report.updatedAt.toISOString(),
         modulesCount: report._count.modules,
         modulesContent,
-        entities,
+        entities: {
+          phones: extractedData.phones,
+          emails: extractedData.emails,
+          names: extractedData.names,
+          addresses: extractedData.addresses,
+          urls: extractedData.urls,
+          accounts: extractedData.accounts,
+        },
+        metadata: {
+          platforms: extractedData.platforms,
+          companies: extractedData.companies,
+          aliases: extractedData.aliases,
+          identifierTypes: extractedData.identifierTypes,
+        },
         issuedAt: report.issuedAt?.toISOString(),
       };
 
@@ -486,7 +803,7 @@ export class SearchService {
           })
           .join("\n\n");
 
-        const entities = this.extractEntities(report.modules);
+        const extractedData = this.extractEntities(report.modules);
 
         return {
           id: report.id,
@@ -509,7 +826,20 @@ export class SearchService {
           updatedAt: report.updatedAt.toISOString(),
           modulesCount: report._count.modules,
           modulesContent,
-          entities,
+          entities: {
+            phones: extractedData.phones,
+            emails: extractedData.emails,
+            names: extractedData.names,
+            addresses: extractedData.addresses,
+            urls: extractedData.urls,
+            accounts: extractedData.accounts,
+          },
+          metadata: {
+            platforms: extractedData.platforms,
+            companies: extractedData.companies,
+            aliases: extractedData.aliases,
+            identifierTypes: extractedData.identifierTypes,
+          },
           issuedAt: report.issuedAt?.toISOString(),
         };
       });
@@ -600,6 +930,160 @@ export class SearchService {
       };
     } catch (error) {
       logger.error({ err: error }, "❌ Erreur récupération stats");
+      throw error;
+    }
+  }
+
+  /**
+   * Extraire toutes les données des rapports pour affichage
+   */
+  static async getExtractedData(): Promise<{
+    phones: Array<{ value: string; reports: string[]; count: number }>;
+    emails: Array<{ value: string; reports: string[]; count: number }>;
+    names: Array<{ value: string; reports: string[]; count: number }>;
+    addresses: Array<{ value: string; reports: string[]; count: number }>;
+    urls: Array<{ value: string; reports: string[]; count: number }>;
+    accounts: Array<{ value: string; reports: string[]; count: number }>;
+    platforms: Array<{ value: string; reports: string[]; count: number }>;
+    companies: Array<{ value: string; reports: string[]; count: number }>;
+    aliases: Array<{ value: string; reports: string[]; count: number }>;
+    identifierTypes: Array<{ value: string; reports: string[]; count: number }>;
+    stats: {
+      totalPhones: number;
+      totalEmails: number;
+      totalNames: number;
+      totalAddresses: number;
+      totalUrls: number;
+      totalAccounts: number;
+      totalPlatforms: number;
+      totalCompanies: number;
+      totalAliases: number;
+      totalIdentifierTypes: number;
+      totalReports: number;
+    };
+  }> {
+    try {
+      // Récupérer tous les rapports avec leurs modules
+      const reports: any[] = await prisma.report.findMany({
+        select: {
+          id: true,
+          title: true,
+          caseNumber: true,
+          modules: {
+            select: {
+              type: true,
+              payload: true,
+            },
+          },
+        },
+      });
+
+      // Maps pour agréger les données avec leurs sources
+      const phonesMap = new Map<string, Set<string>>();
+      const emailsMap = new Map<string, Set<string>>();
+      const namesMap = new Map<string, Set<string>>();
+      const addressesMap = new Map<string, Set<string>>();
+      const urlsMap = new Map<string, Set<string>>();
+      const accountsMap = new Map<string, Set<string>>();
+      const platformsMap = new Map<string, Set<string>>();
+      const companiesMap = new Map<string, Set<string>>();
+      const aliasesMap = new Map<string, Set<string>>();
+      const identifierTypesMap = new Map<string, Set<string>>();
+
+      // Extraire les données de chaque rapport
+      reports.forEach((report) => {
+        const reportId = `${report.caseNumber || report.id}`;
+        const extractedData = this.extractEntities(report.modules);
+
+        // Agréger les données
+        extractedData.phones.forEach((phone) => {
+          if (!phonesMap.has(phone)) phonesMap.set(phone, new Set());
+          phonesMap.get(phone)!.add(reportId);
+        });
+
+        extractedData.emails.forEach((email) => {
+          if (!emailsMap.has(email)) emailsMap.set(email, new Set());
+          emailsMap.get(email)!.add(reportId);
+        });
+
+        extractedData.names.forEach((name) => {
+          if (!namesMap.has(name)) namesMap.set(name, new Set());
+          namesMap.get(name)!.add(reportId);
+        });
+
+        extractedData.addresses.forEach((address) => {
+          if (!addressesMap.has(address)) addressesMap.set(address, new Set());
+          addressesMap.get(address)!.add(reportId);
+        });
+
+        extractedData.urls.forEach((url) => {
+          if (!urlsMap.has(url)) urlsMap.set(url, new Set());
+          urlsMap.get(url)!.add(reportId);
+        });
+
+        extractedData.accounts.forEach((account) => {
+          if (!accountsMap.has(account)) accountsMap.set(account, new Set());
+          accountsMap.get(account)!.add(reportId);
+        });
+
+        extractedData.platforms.forEach((platform) => {
+          if (!platformsMap.has(platform)) platformsMap.set(platform, new Set());
+          platformsMap.get(platform)!.add(reportId);
+        });
+
+        extractedData.companies.forEach((company) => {
+          if (!companiesMap.has(company)) companiesMap.set(company, new Set());
+          companiesMap.get(company)!.add(reportId);
+        });
+
+        extractedData.aliases.forEach((alias) => {
+          if (!aliasesMap.has(alias)) aliasesMap.set(alias, new Set());
+          aliasesMap.get(alias)!.add(reportId);
+        });
+
+        extractedData.identifierTypes.forEach((type) => {
+          if (!identifierTypesMap.has(type)) identifierTypesMap.set(type, new Set());
+          identifierTypesMap.get(type)!.add(reportId);
+        });
+      });
+
+      // Convertir les Maps en tableaux triés par fréquence
+      const toArray = (map: Map<string, Set<string>>) =>
+        Array.from(map.entries())
+          .map(([value, reportIds]) => ({
+            value,
+            reports: Array.from(reportIds),
+            count: reportIds.size,
+          }))
+          .sort((a, b) => b.count - a.count);
+
+      return {
+        phones: toArray(phonesMap),
+        emails: toArray(emailsMap),
+        names: toArray(namesMap),
+        addresses: toArray(addressesMap),
+        urls: toArray(urlsMap),
+        accounts: toArray(accountsMap),
+        platforms: toArray(platformsMap),
+        companies: toArray(companiesMap),
+        aliases: toArray(aliasesMap),
+        identifierTypes: toArray(identifierTypesMap),
+        stats: {
+          totalPhones: phonesMap.size,
+          totalEmails: emailsMap.size,
+          totalNames: namesMap.size,
+          totalAddresses: addressesMap.size,
+          totalUrls: urlsMap.size,
+          totalAccounts: accountsMap.size,
+          totalPlatforms: platformsMap.size,
+          totalCompanies: companiesMap.size,
+          totalAliases: aliasesMap.size,
+          totalIdentifierTypes: identifierTypesMap.size,
+          totalReports: reports.length,
+        },
+      };
+    } catch (error) {
+      logger.error({ err: error }, "❌ Erreur extraction données");
       throw error;
     }
   }

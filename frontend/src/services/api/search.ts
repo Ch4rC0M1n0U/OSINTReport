@@ -94,6 +94,44 @@ export interface IndexStats {
 }
 
 /**
+ * Donnée extraite avec ses sources
+ */
+export interface ExtractedItem {
+  value: string;
+  reports: string[];
+  count: number;
+}
+
+/**
+ * Données extraites des rapports
+ */
+export interface ExtractedData {
+  phones: ExtractedItem[];
+  emails: ExtractedItem[];
+  names: ExtractedItem[];
+  addresses: ExtractedItem[];
+  urls: ExtractedItem[];
+  accounts: ExtractedItem[];
+  platforms: ExtractedItem[];
+  companies: ExtractedItem[];
+  aliases: ExtractedItem[];
+  identifierTypes: ExtractedItem[];
+  stats: {
+    totalPhones: number;
+    totalEmails: number;
+    totalNames: number;
+    totalAddresses: number;
+    totalUrls: number;
+    totalAccounts: number;
+    totalPlatforms: number;
+    totalCompanies: number;
+    totalAliases: number;
+    totalIdentifierTypes: number;
+    totalReports: number;
+  };
+}
+
+/**
  * Service de recherche Meilisearch
  */
 class SearchService {
@@ -142,6 +180,15 @@ class SearchService {
    */
   async getStats(): Promise<IndexStats> {
     const { data } = await this.client.get<IndexStats>("/search/stats");
+    return data;
+  }
+
+  /**
+   * Obtenir toutes les données extraites des rapports
+   * @returns Données extraites agrégées
+   */
+  async getExtractedData(): Promise<ExtractedData> {
+    const { data } = await this.client.get<ExtractedData>("/search/extracted");
     return data;
   }
 }

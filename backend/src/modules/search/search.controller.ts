@@ -94,4 +94,18 @@ export class SearchController {
       next(error);
     }
   }
+
+  /**
+   * Extraire toutes les données des rapports
+   */
+  static async getExtractedData(req: Request, res: Response, next: NextFunction) {
+    try {
+      const data = await SearchService.getExtractedData();
+
+      res.json(data);
+    } catch (error) {
+      logger.error({ err: error }, "Erreur extraction données");
+      next(error);
+    }
+  }
 }

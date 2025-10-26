@@ -55,4 +55,15 @@ router.get(
   SearchController.getStats
 );
 
+/**
+ * @route GET /search/extracted
+ * @desc Obtenir toutes les données extraites des rapports
+ * @access Private (REPORTS_READ)
+ */
+router.get(
+  "/extracted",
+  requirePermissions(PermissionCode.REPORTS_READ),
+  SearchController.getExtractedData
+);
+
 export default router;
