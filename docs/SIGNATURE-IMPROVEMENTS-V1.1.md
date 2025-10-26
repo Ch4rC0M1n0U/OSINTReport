@@ -8,20 +8,22 @@
 
 **Cause** : Le canvas avait une taille CSS responsive (`w-full`) mais des dimensions internes fixes, créant un décalage entre les coordonnées de la souris et les coordonnées du canvas.
 
-**Solution** : 
+**Solution** :
+
 - Ajout d'une fonction `getCanvasCoordinates()` qui calcule le ratio de scale entre la taille affichée et la taille interne du canvas
 - Application du facteur de scale (scaleX, scaleY) aux coordonnées de la souris/touch
 - Correction appliquée pour la souris ET le tactile
 
 **Code corrigé** :
+
 ```typescript
 function getCanvasCoordinates(e: MouseEvent | TouchEvent) {
   if (!canvas.value) return { x: 0, y: 0 };
-  
+
   const rect = canvas.value.getBoundingClientRect();
   const scaleX = canvas.value.width / rect.width;
   const scaleY = canvas.value.height / rect.height;
-  
+
   // ... calcul des coordonnées avec scale
   return { x: clientX * scaleX, y: clientY * scaleY };
 }
@@ -32,6 +34,7 @@ function getCanvasCoordinates(e: MouseEvent | TouchEvent) {
 **Problème** : La signature n'était visible que dans la page de profil.
 
 **Solution** :
+
 - Ajout d'une section dans le menu déroulant du profil (DashboardPage.vue)
 - Affichage conditionnel avec `v-if="auth.user.signatureUrl"`
 - Utilisation du composant de protection `ProtectedSignature`
@@ -45,6 +48,7 @@ function getCanvasCoordinates(e: MouseEvent | TouchEvent) {
 **Solution** : Création du composant `ProtectedSignature.vue` avec multiples couches de protection :
 
 #### Protections CSS
+
 - `pointer-events: none` sur l'image
 - `user-select: none` (tous navigateurs)
 - `-webkit-user-drag: none` (anti drag & drop)
@@ -52,6 +56,7 @@ function getCanvasCoordinates(e: MouseEvent | TouchEvent) {
 - Curseur `not-allowed` pour indiquer la protection
 
 #### Protections JavaScript
+
 - Détection des raccourcis clavier :
   - `PrintScreen` (Impr écran)
   - `Ctrl+Shift+S` (Firefox screenshot)
@@ -62,6 +67,7 @@ function getCanvasCoordinates(e: MouseEvent | TouchEvent) {
 - `@selectstart.prevent` (bloque sélection)
 
 #### Protections visuelles
+
 - Filigrane "PROTÉGÉ" en arrière-plan (opacity: 0.03)
 - Badge "🔒 Signature protégée" au survol
 - Dégradé de fond pour indiquer la zone protégée
@@ -69,11 +75,13 @@ function getCanvasCoordinates(e: MouseEvent | TouchEvent) {
 ## 📁 Fichiers modifiés
 
 ### Nouveaux fichiers
+
 ```
 frontend/src/components/ProtectedSignature.vue (NOUVEAU)
 ```
 
 ### Fichiers modifiés
+
 ```
 frontend/src/components/SignaturePad.vue
 frontend/src/pages/ProfilePage.vue
@@ -85,19 +93,19 @@ docs/USER-GUIDE-SIGNATURE.md
 ## 🎨 Composant ProtectedSignature
 
 ### Props
+
 - `src` (string, requis) - URL de l'image de signature
 - `alt` (string, optionnel) - Texte alternatif, défaut: "Signature"
 - `maxHeight` (string, optionnel) - Hauteur max, défaut: "auto"
 
 ### Utilisation
+
 ```vue
-<ProtectedSignature 
-  :src="user.signatureUrl"
-  max-height="200px"
-/>
+<ProtectedSignature :src="user.signatureUrl" max-height="200px" />
 ```
 
 ### Fonctionnalités
+
 1. **Overlay de protection** - Couche transparente bloquant toutes les interactions
 2. **Détection des captures** - EventListener sur les raccourcis clavier
 3. **Blocage des interactions** - Clic droit, glisser-déposer, sélection
@@ -108,22 +116,26 @@ docs/USER-GUIDE-SIGNATURE.md
 ## 🔒 Niveaux de protection
 
 ### Niveau 1 - CSS (Base)
+
 - Désactivation du drag & drop
 - Désactivation de la sélection
 - Cursor not-allowed
 
 ### Niveau 2 - Events (Intermédiaire)
+
 - Blocage du clic droit
 - Blocage du dragstart
 - Blocage du selectstart
 
 ### Niveau 3 - JavaScript (Avancé)
+
 - Détection PrintScreen
 - Détection outils de capture
 - Alerts utilisateur
 - Prevention des events
 
 ### Niveau 4 - Visuel (Dissuasion)
+
 - Filigrane "PROTÉGÉ"
 - Badge de sécurité
 - Gradient de fond
@@ -131,6 +143,7 @@ docs/USER-GUIDE-SIGNATURE.md
 ## ⚠️ Limites connues
 
 Les protections sont **dissuasives** mais pas infaillibles :
+
 - ✅ Empêche 90% des utilisateurs moyens
 - ✅ Rend difficile les captures accidentelles
 - ✅ Dissuade les tentatives de vol
@@ -139,6 +152,7 @@ Les protections sont **dissuasives** mais pas infaillibles :
 - ⚠️ Capture d'écran physique (photo) reste possible
 
 **Recommandation** : Ces protections sont adaptées pour un usage interne et professionnel. Pour une sécurité absolue, envisager :
+
 - Watermarking dynamique avec ID utilisateur
 - Génération de signatures temporaires avec expiration
 - Chiffrement côté client
@@ -147,6 +161,7 @@ Les protections sont **dissuasives** mais pas infaillibles :
 ## 📊 Tests effectués
 
 ### Navigateurs testés
+
 - ✅ Chrome/Edge (Desktop)
 - ✅ Firefox (Desktop)
 - ✅ Safari (Desktop)
@@ -154,6 +169,7 @@ Les protections sont **dissuasives** mais pas infaillibles :
 - ✅ Chrome Mobile (Android)
 
 ### Protections testées
+
 - ✅ Clic droit bloqué
 - ✅ Glisser-déposer bloqué
 - ✅ Sélection bloquée
@@ -166,6 +182,7 @@ Les protections sont **dissuasives** mais pas infaillibles :
 ## 📚 Documentation mise à jour
 
 1. **FEATURE-SIGNATURE-MANUSCRITE.md**
+
    - Section "Protection et Sécurité Avancée" ajoutée
    - Liste complète des protections
    - Description du composant ProtectedSignature
@@ -181,6 +198,7 @@ Les protections sont **dissuasives** mais pas infaillibles :
 Aucune modification backend ou base de données requise.
 
 **Frontend uniquement** :
+
 1. Redémarrer le serveur de développement
 2. Vider le cache navigateur si nécessaire
 3. Tester le dessin de signature (pas de décalage)

@@ -5,6 +5,7 @@
 Cette fonctionnalité permet aux utilisateurs d'ajouter une signature manuscrite à leur profil, qui sera utilisée pour signer les rapports OSINT générés.
 
 ## Date de livraison
+
 26 octobre 2025
 
 ## Modifications apportées
@@ -12,6 +13,7 @@ Cette fonctionnalité permet aux utilisateurs d'ajouter une signature manuscrite
 ### 1. Base de données (Backend)
 
 #### Schéma Prisma
+
 - **Fichier modifié** : `backend/prisma/schema.prisma`
 - **Changement** : Ajout du champ `signatureUrl` (String?) au modèle `User`
 - **Migration** : `20251026075057_add_signature_to_user`
@@ -28,6 +30,7 @@ model User {
 ### 2. API Backend
 
 #### Routes ajoutées
+
 - **POST** `/users/me/signature` - Upload d'une nouvelle signature
   - Accepte un fichier image (PNG/JPEG)
   - Traite l'image (redimensionnement max 600x200px, fond transparent)
@@ -35,18 +38,21 @@ model User {
   - Retourne l'utilisateur mis à jour avec le nouveau `signatureUrl`
 
 #### Contrôleur mis à jour
+
 - **Fichier** : `backend/src/modules/users/user.controller.ts`
 - **Nouvelles méthodes** :
   - `uploadSignature()` - Gère l'upload et le traitement de la signature
   - Met à jour `updateProfile()` pour accepter `signatureUrl`
 
 #### Router mis à jour
+
 - **Fichier** : `backend/src/modules/users/user.router.ts`
 - Nouvelle route configurée avec multer pour l'upload de fichiers
 
 ### 3. Frontend (Vue.js)
 
 #### Nouveau composant : SignaturePad
+
 - **Fichier** : `frontend/src/components/SignaturePad.vue`
 - **Fonctionnalités** :
   - Canvas HTML5 pour dessiner
@@ -57,14 +63,17 @@ model User {
   - Responsive et accessible
 
 **Props** :
+
 - `width` (number, optionnel) - Largeur du canvas (défaut: 600)
 - `height` (number, optionnel) - Hauteur du canvas (défaut: 200)
 
 **Events** :
+
 - `@save` - Émis avec le data URL de la signature quand l'utilisateur enregistre
 - `@cancel` - Émis quand l'utilisateur annule
 
 #### Nouveau composant : ProtectedSignature
+
 - **Fichier** : `frontend/src/components/ProtectedSignature.vue`
 - **Fonctionnalités** :
   - **Protection contre les captures d'écran** (Print Screen, Windows Snip, etc.)
@@ -76,11 +85,13 @@ model User {
   - Overlay transparent pour bloquer les interactions
 
 **Props** :
+
 - `src` (string, requis) - URL de la signature
 - `alt` (string, optionnel) - Texte alternatif
 - `maxHeight` (string, optionnel) - Hauteur maximale de l'affichage
 
 #### Page de profil mise à jour
+
 - **Fichier** : `frontend/src/pages/ProfilePage.vue`
 - **Ajouts** :
   - Nouvelle section "Signature manuscrite"
@@ -91,6 +102,7 @@ model User {
   - Utilisation du composant `ProtectedSignature`
 
 #### Menu utilisateur mis à jour
+
 - **Fichier** : `frontend/src/pages/DashboardPage.vue`
 - **Ajouts** :
   - **Affichage de la signature dans le menu déroulant du profil**
@@ -98,12 +110,14 @@ model User {
   - Signature visible uniquement si définie
 
 #### Store Auth mis à jour
+
 - **Fichier** : `frontend/src/stores/auth.ts`
 - **Changement** : Ajout de `signatureUrl: string | null` à l'interface `UserInfo`
 
 ### 4. Stockage des fichiers
 
 #### Nouveau dossier
+
 - **Chemin** : `frontend/public/images/signatures/`
 - **Contenu** : Images PNG des signatures des utilisateurs
 - **Nommage** : `signature-{userId}-{random}.png`
@@ -111,6 +125,7 @@ model User {
 ### 5. Protection et Sécurité Avancée
 
 #### Protections contre les captures et vols
+
 - ✅ **Détection des raccourcis clavier** : Print Screen, Ctrl+Shift+S, Win+Shift+S
 - ✅ **Blocage du clic droit** : Menu contextuel désactivé
 - ✅ **Empêche le glisser-déposer** : Impossible de drag & drop l'image
@@ -121,6 +136,7 @@ model User {
 - ✅ **Alert utilisateur** : Message si tentative de capture d'écran détectée
 
 #### Protections serveur
+
 - ✅ Authentification requise pour toutes les opérations
 - ✅ Validation des types de fichiers (PNG/JPEG uniquement)
 - ✅ Limite de taille : 5MB
@@ -157,6 +173,7 @@ model User {
 ## Traitement d'image
 
 Le backend utilise Sharp pour :
+
 - Redimensionner la signature (max 600x200px, préserve le ratio)
 - Maintenir le fond transparent
 - Convertir en PNG optimisé
@@ -165,11 +182,13 @@ Le backend utilise Sharp pour :
 ## Intégration future avec les rapports
 
 La signature stockée dans `user.signatureUrl` pourra être utilisée dans :
+
 - Les rapports PDF générés
 - Les exports de documents
 - Les validations officielles
 
 Format d'utilisation recommandé :
+
 ```typescript
 // Dans la génération de rapport
 if (user.signatureUrl) {
@@ -200,10 +219,12 @@ if (user.signatureUrl) {
 ## Dépendances
 
 ### Backend
+
 - `sharp` - Traitement d'image (déjà installé)
 - `multer` - Upload de fichiers (déjà installé)
 
 ### Frontend
+
 - Canvas API (natif)
 - `@hugeicons/vue` - Icônes (déjà installé)
 
@@ -225,4 +246,5 @@ npx prisma generate
 - ✅ Accessible au clavier
 
 ## Auteur
+
 Implémenté le 26 octobre 2025
