@@ -4,68 +4,58 @@
     <div v-if="!isEditing" class="space-y-3">
       <div class="flex items-center justify-between">
         <div class="flex items-center gap-3">
-          <span class="text-lg font-semibold">✍️ Validation finale</span>
-          <!-- Badge "Verrouillé" si validé -->
-          <span 
-            v-if="isLocked" 
-            class="badge badge-success gap-2"
-            title="Ce rapport a été validé et ne peut plus être modifié sans permissions administrateur"
-          >
-            🔒 Validé
-          </span>
+          <span class="text-lg font-semibold">✍️ Signature du rédacteur</span>
         </div>
         <button
-          v-if="!readonly && !isLocked"
+          v-if="!readonly"
           type="button"
           class="btn btn-sm btn-primary"
           @click="startEditing"
         >
-          ✏️ Modifier
+          ✏️ {{ hasSignature ? 'Modifier' : 'Signer le rapport' }}
         </button>
-        <!-- Message si verrouillé -->
-        <div 
-          v-else-if="isLocked" 
-          class="tooltip tooltip-left" 
-          data-tip="Modification restreinte : rapport validé"
-        >
-          <button
-            type="button"
-            class="btn btn-sm btn-disabled"
-            disabled
-          >
-            🔒 Verrouillé
-          </button>
-        </div>
       </div>
 
       <div class="card bg-base-200 shadow-sm">
         <div class="card-body">
           <!-- Date -->
           <div class="mb-3">
-            <span class="text-sm opacity-70">Date de validation:</span>
+            <span class="text-sm opacity-70">Date de signature:</span>
             <div class="text-lg font-semibold">
-              {{ modelValue.date ? new Date(modelValue.date).toLocaleDateString('fr-FR') : 'Non définie' }}
+              {{ modelValue.date ? new Date(modelValue.date).toLocaleDateString('fr-FR') : 'Non signé' }}
             </div>
           </div>
 
-          <!-- Officier -->
-          <div class="divider my-2"></div>
-          <div class="grid grid-cols-2 gap-4">
+          <!-- Informations du rédacteur -->
+          <div v-if="modelValue.officer" class="divider my-2"></div>
+          <div v-if="modelValue.officer" class="grid grid-cols-2 gap-4">
             <div>
               <span class="text-sm opacity-70">Nom:</span>
-              <div class="font-medium">{{ modelValue.officer?.name || '—' }}</div>
+              <div class="font-medium">{{ modelValue.officer.name || '—' }}</div>
             </div>
             <div>
               <span class="text-sm opacity-70">Grade:</span>
-              <div class="font-medium">{{ modelValue.officer?.rank || '—' }}</div>
+              <div class="font-medium">{{ modelValue.officer.rank || '—' }}</div>
             </div>
             <div>
               <span class="text-sm opacity-70">Unité:</span>
-              <div class="font-medium">{{ modelValue.officer?.unit || '—' }}</div>
+              <div class="font-medium">{{ modelValue.officer.unit || '—' }}</div>
             </div>
-            <div v-if="modelValue.officer?.badgeNumber">
+            <div v-if="modelValue.officer.badgeNumber">
               <span class="text-sm opacity-70">Matricule:</span>
               <div class="font-medium font-mono">{{ modelValue.officer.badgeNumber }}</div>
+            </div>
+          </div>
+
+          <!-- Signature manuscrite -->
+          <div v-if="currentUserSignatureUrl" class="mt-4 pt-4 border-t border-base-300">
+            <span class="text-sm opacity-70">Signature manuscrite:</span>
+            <div class="mt-2 inline-block max-w-md w-full bg-base-100 p-4 rounded-lg">
+              <ProtectedSignature 
+                :src="currentUserSignatureUrl"
+                alt="Signature du rédacteur"
+                class="max-h-32"
+              />
             </div>
           </div>
 
@@ -81,26 +71,27 @@
     <!-- Mode édition -->
     <div v-else class="space-y-4">
       <div class="flex items-center justify-between">
-        <h4 class="font-semibold">✏️ Modification de la validation</h4>
+        <h4 class="font-semibold">✏️ {{ hasSignature ? 'Modification' : 'Signature' }} du rapport</h4>
         <div class="flex gap-2">
           <button type="button" class="btn btn-sm btn-ghost" @click="cancelEditing">
             Annuler
           </button>
           <button type="button" class="btn btn-sm btn-primary" @click="saveChanges">
-            💾 Enregistrer
+            💾 Signer et enregistrer
           </button>
         </div>
       </div>
 
-      <!-- Avertissement verrouillage automatique -->
-      <div class="alert alert-warning shadow-lg">
+      <!-- Avertissement -->
+      <div class="alert alert-info shadow-lg">
         <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current flex-shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
         </svg>
         <div>
-          <h3 class="font-bold">⚠️ Attention : Verrouillage automatique</h3>
+          <h3 class="font-bold">ℹ️ Signature du rapport</h3>
           <div class="text-sm">
-            Une fois la date ET l'officier validant renseignés, ce rapport sera automatiquement <strong>verrouillé</strong> et ne pourra plus être modifié sans permissions administrateur.
+            Vos informations de profil (nom, grade, unité, matricule) et votre signature manuscrite seront automatiquement utilisées.
+            Assurez-vous que votre profil est à jour avant de signer.
           </div>
         </div>
       </div>
@@ -110,7 +101,7 @@
           <!-- Date -->
           <div class="form-control">
             <label class="label">
-              <span class="label-text">Date de validation</span>
+              <span class="label-text">Date de signature</span>
             </label>
             <input
               v-model="editedDate"
@@ -119,8 +110,8 @@
             />
           </div>
 
-          <!-- Officier -->
-          <div class="divider">Informations de l'officier</div>
+          <!-- Aperçu des informations (lecture seule) -->
+          <div class="divider">Vos informations (depuis votre profil)</div>
           
           <div class="grid grid-cols-2 gap-3">
             <div class="form-control">
@@ -128,10 +119,11 @@
                 <span class="label-text">Nom complet</span>
               </label>
               <input
-                v-model="editedOfficer.name"
+                :value="userFullName"
                 type="text"
-                placeholder="Ex: Jean Dupont"
                 class="input input-bordered"
+                disabled
+                readonly
               />
             </div>
 
@@ -140,42 +132,68 @@
                 <span class="label-text">Grade</span>
               </label>
               <input
-                v-model="editedOfficer.rank"
+                :value="authStore.user?.grade || 'Non renseigné'"
                 type="text"
-                placeholder="Ex: Inspecteur Principal"
                 class="input input-bordered"
+                disabled
+                readonly
               />
             </div>
 
             <div class="form-control">
               <label class="label">
-                <span class="label-text">Unité</span>
+                <span class="label-text">Matricule</span>
               </label>
               <input
-                v-model="editedOfficer.unit"
+                :value="authStore.user?.matricule || 'Non renseigné'"
                 type="text"
-                placeholder="Ex: Brigade Cyber"
                 class="input input-bordered"
+                disabled
+                readonly
               />
             </div>
 
             <div class="form-control">
               <label class="label">
-                <span class="label-text">Matricule (optionnel)</span>
+                <span class="label-text">Unité / Service</span>
               </label>
               <input
-                v-model="editedOfficer.badgeNumber"
+                :value="authStore.user?.unit || 'Non renseigné'"
                 type="text"
-                placeholder="Ex: 12345"
                 class="input input-bordered"
+                disabled
+                readonly
               />
+            </div>
+          </div>
+
+          <!-- Aperçu de la signature -->
+          <div v-if="currentUserSignatureUrl" class="mt-4">
+            <label class="label">
+              <span class="label-text">Votre signature manuscrite</span>
+            </label>
+            <div class="inline-block max-w-md w-full bg-base-100 p-4 rounded-lg border border-base-300">
+              <ProtectedSignature 
+                :src="currentUserSignatureUrl"
+                alt="Votre signature"
+                class="max-h-32"
+              />
+            </div>
+          </div>
+          <div v-else class="alert alert-warning mt-4">
+            <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current flex-shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+            <div>
+              <span class="font-bold">Aucune signature manuscrite</span>
+              <span class="text-sm">Ajoutez votre signature dans votre profil avant de signer le rapport.</span>
             </div>
           </div>
 
           <!-- Notes additionnelles -->
           <div class="form-control mt-4">
             <label class="label">
-              <span class="label-text">Notes additionnelles</span>
+              <span class="label-text">Notes additionnelles (optionnel)</span>
             </label>
             <textarea
               v-model="editedNotes"
@@ -192,7 +210,9 @@
 
 <script setup lang="ts">
 import { ref, watch, computed } from 'vue';
-import type { SignOffPayload, Officer } from '@/services/api/reports';
+import { useAuthStore } from '@/stores/auth';
+import type { SignOffPayload } from '@/services/api/reports';
+import ProtectedSignature from '@/components/ProtectedSignature.vue';
 
 const props = withDefaults(
   defineProps<{
@@ -208,29 +228,31 @@ const emit = defineEmits<{
   (e: 'update:modelValue', value: SignOffPayload): void;
 }>();
 
+const authStore = useAuthStore();
 const isEditing = ref(false);
-const editedDate = ref(props.modelValue.date || '');
-const editedOfficer = ref<Officer>(props.modelValue.officer || { name: '', rank: '', unit: '' });
+const editedDate = ref(props.modelValue.date || new Date().toISOString().split('T')[0]);
 const editedNotes = ref(props.modelValue.additionalNotes || '');
 
-/**
- * Le rapport est verrouillé si :
- * - Une date de validation est définie
- * - ET un officier avec nom et grade est défini
- * Cette règle garantit que seul un rapport complètement validé est verrouillé.
- */
-const isLocked = computed(() => {
-  const hasDate = !!props.modelValue.date;
-  const hasOfficer = !!(props.modelValue.officer?.name && props.modelValue.officer?.rank);
-  return hasDate && hasOfficer;
+const userFullName = computed(() => {
+  if (authStore.user) {
+    return `${authStore.user.firstName} ${authStore.user.lastName}`;
+  }
+  return 'Non renseigné';
+});
+
+const currentUserSignatureUrl = computed(() => {
+  return authStore.user?.signatureUrl || null;
+});
+
+const hasSignature = computed(() => {
+  return !!(props.modelValue.date && props.modelValue.officer?.name);
 });
 
 watch(
   () => props.modelValue,
   (newValue) => {
     if (!isEditing.value) {
-      editedDate.value = newValue.date || '';
-      editedOfficer.value = newValue.officer || { name: '', rank: '', unit: '' };
+      editedDate.value = newValue.date || new Date().toISOString().split('T')[0];
       editedNotes.value = newValue.additionalNotes || '';
     }
   },
@@ -238,8 +260,7 @@ watch(
 );
 
 function startEditing() {
-  editedDate.value = props.modelValue.date || '';
-  editedOfficer.value = JSON.parse(JSON.stringify(props.modelValue.officer || { name: '', rank: '', unit: '' }));
+  editedDate.value = props.modelValue.date || new Date().toISOString().split('T')[0];
   editedNotes.value = props.modelValue.additionalNotes || '';
   isEditing.value = true;
 }
@@ -249,9 +270,17 @@ function cancelEditing() {
 }
 
 function saveChanges() {
+  // Construire l'objet officer avec les données du profil utilisateur
+  const officer = {
+    name: userFullName.value,
+    rank: authStore.user?.grade || '',
+    unit: authStore.user?.unit || '',
+    badgeNumber: authStore.user?.matricule || undefined,
+  };
+
   emit('update:modelValue', {
     date: editedDate.value,
-    officer: editedOfficer.value,
+    officer: officer,
     additionalNotes: editedNotes.value || undefined
   });
   isEditing.value = false;

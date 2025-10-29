@@ -14,6 +14,7 @@ export type AuthenticatedUser = {
   email: string;
   phone: string | null;
   grade: string | null;
+  unit: string | null;
   avatarUrl: string | null;
   signatureUrl: string | null;
   timezone: string | null;
@@ -39,6 +40,7 @@ async function getUserWithRoleByEmail(email: string) {
       email: true,
       phone: true,
       grade: true,
+      unit: true,
       avatarUrl: true,
       signatureUrl: true,
       timezone: true,
@@ -73,6 +75,7 @@ function buildAuthenticatedUser(user: UserWithRole): AuthenticatedUser {
     email: user.email,
     phone: user.phone,
     grade: user.grade,
+    unit: user.unit,
     avatarUrl: user.avatarUrl,
     signatureUrl: user.signatureUrl,
     timezone: user.timezone,

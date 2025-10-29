@@ -38,6 +38,7 @@ model User {
   email        String     @unique
   phone        String?
   grade        String?
+  unit         String?    // Unité/Service de l'utilisateur
   passwordHash String
   avatarUrl    String?
   signatureUrl String?
@@ -55,6 +56,7 @@ model User {
   role                Role                 @relation(fields: [roleId], references: [id])
   sessions            UserSession[]
   reports             Report[]             @relation("ReportOwner")
+  validatedReports    Report[]             @relation("ReportValidator")
   reportVersions      ReportVersion[]      @relation("ReportVersionAuthor")
   auditLogs           AuditLog[]           @relation("AuditLogActor")
   passwordResetTokens PasswordResetToken[]
@@ -126,10 +128,18 @@ model Report {
   classification       String? // PUBLIC, RESTRICTED, CONFIDENTIAL, SECRET
   keywords             String[] // Mots-clés pour recherche
 
+  // Validation officier
+  validatedAt          DateTime? // Date de validation par l'officier
+  validatedById        String?   // ID de l'officier qui a validé
+  validatorSignatureUrl String?  // URL de la signature de l'officier validateur
+  validatorNotes       String?   // Notes de l'officier validateur
+  isLocked             Boolean   @default(false) // Rapport verrouillé après validation
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   owner       User               @relation("ReportOwner", fields: [ownerId], references: [id])
+  validator   User?              @relation("ReportValidator", fields: [validatedById], references: [id])
   modules     ReportModule[]
   attachments ReportAttachment[]
   versions    ReportVersion[]
@@ -145,6 +155,7 @@ model Report {
   @@index([status])
   @@index([ownerId])
   @@index([issuedAt])
+  @@index([validatedById])
 }
 
 model ReportVersion {

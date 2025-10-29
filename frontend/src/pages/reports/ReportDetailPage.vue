@@ -14,6 +14,7 @@ import { useAuthStore } from "@/stores/auth";
 import EntitySelector from "@/components/reports/EntitySelector.vue";
 import EntityDialog from "@/components/reports/EntityDialog.vue";
 import CorrelationAlert from "@/components/reports/CorrelationAlert.vue";
+import OfficerValidationModal from "@/components/reports/OfficerValidationModal.vue";
 import VueDraggable from "vuedraggable";
 import ModalDialog from "@/components/shared/ModalDialog.vue";
 import { useModal } from "@/composables/useModal";
@@ -56,6 +57,7 @@ const showEntityDialog = ref(false);
 const showStatsModal = ref(false);
 const showCorrelationsModal = ref(false);
 const showEditInfoDialog = ref(false);
+const showOfficerValidationModal = ref(false);
 const exportingPDF = ref(false);
 const showArticleDetailModal = ref(false);
 const selectedArticle = ref<LegalArticle | null>(null);
@@ -545,7 +547,8 @@ function getClassificationInfo(classif: string) {
 </script>
 
 <template>
-  <div class="space-y-6">
+  <div>
+    <div class="space-y-6">
     <!-- En-tête -->
     <div class="bg-base-200 border-l-4 border-primary p-6">
       <div class="flex items-start justify-between">
@@ -556,12 +559,14 @@ function getClassificationInfo(classif: string) {
           >
             ← Retour
           </button>
-          <h2 v-if="report" class="text-3xl font-bold mb-4">
-            {{ report.title }}
-          </h2>
+          <div class="flex items-center justify-between mb-4">
+            <h2 v-if="report" class="text-3xl font-bold">
+              {{ report.title }}
+            </h2>
+          </div>
           
           <!-- Métadonnées du rapport -->
-          <div v-if="report" class="grid grid-cols-1 md:grid-cols-4 gap-3">
+          <div v-if="report" class="grid grid-cols-1 md:grid-cols-5 gap-3">
             <!-- Statut -->
             <div class="flex items-center gap-2">
               <div class="w-1 h-8 rounded-sm" :class="statusColors[report.status].replace('badge-', 'bg-')"></div>
@@ -599,6 +604,24 @@ function getClassificationInfo(classif: string) {
                 <div class="font-semibold">
                   {{ getClassificationInfo(report.classification).icon }} {{ getClassificationInfo(report.classification).label }}
                 </div>
+              </div>
+            </div>
+
+            <!-- Validation -->
+            <div class="flex items-center gap-2">
+              <div class="w-1 h-8 rounded-sm" :class="report.isLocked ? 'bg-success' : 'bg-warning'"></div>
+              <div class="flex-1">
+                <div class="text-xs text-base-content/60 uppercase tracking-wider">Validation</div>
+                <button
+                  type="button"
+                  class="btn btn-xs gap-1 mt-1"
+                  :class="report.isLocked ? 'btn-success' : 'btn-warning'"
+                  @click="showOfficerValidationModal = true"
+                >
+                  <span v-if="report.isLocked">🔒</span>
+                  <span v-else>🔓</span>
+                  {{ report.isLocked ? 'Validé' : 'Valider' }}
+                </button>
               </div>
             </div>
           </div>
@@ -1154,6 +1177,16 @@ function getClassificationInfo(classif: string) {
       :is-confirm="modal.config.value.type === 'confirm' || modal.config.value.type === 'error'"
       @confirm="modal.handleConfirm"
       @cancel="modal.handleCancel"
+    />
+    </div>
+
+    <!-- Modal de validation officier -->
+    <OfficerValidationModal
+      :show="showOfficerValidationModal"
+      :report="report"
+      :is-admin="isAdmin"
+      @close="showOfficerValidationModal = false"
+      @validated="loadReport"
     />
   </div>
 </template>

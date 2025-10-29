@@ -17,6 +17,7 @@ import {
   createResearchRecordSchema,
   updateResearchRecordSchema,
   validateModulePayload, // Nouveau import pour validation des payloads
+  validateReportSchema,
 } from "@modules/reports/report.validation";
 
 export class ReportController {
@@ -64,7 +65,7 @@ export class ReportController {
   static async update(req: Request, res: Response, next: NextFunction) {
     try {
       const payload = updateReportSchema.parse(req.body);
-      const report = await ReportService.updateReport(req.params.reportId, payload);
+      const report = await ReportService.updateReport(req.params.reportId, payload, req.user?.id);
       res.json({ report });
     } catch (error) {
       next(error);
@@ -327,6 +328,33 @@ export class ReportController {
     try {
       const types = await ResearchRecordService.listResearchTypes();
       res.json({ types });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  // Validation par l'officier
+  static async validateReport(req: Request, res: Response, next: NextFunction) {
+    try {
+      const payload = validateReportSchema.parse(req.body);
+      if (!req.user) {
+        throw new Error("Utilisateur non authentifié");
+      }
+      const report = await ReportService.validateReport(
+        req.params.reportId,
+        req.user.id,
+        payload.validatorNotes
+      );
+      res.json({ report });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async removeValidation(req: Request, res: Response, next: NextFunction) {
+    try {
+      const report = await ReportService.removeValidation(req.params.reportId);
+      res.json({ report });
     } catch (error) {
       next(error);
     }

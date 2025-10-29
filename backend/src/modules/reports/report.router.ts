@@ -103,6 +103,19 @@ reportRouter.get(
   (req, res, next) => ReportController.getStats(req, res, next)
 );
 
+// Validation par l'officier
+reportRouter.post(
+  "/:reportId/validate",
+  requirePermissions(PermissionCode.REPORTS_WRITE),
+  (req, res, next) => ReportController.validateReport(req, res, next)
+);
+
+reportRouter.delete(
+  "/:reportId/validate",
+  requirePermissions(PermissionCode.ADMIN),
+  (req, res, next) => ReportController.removeValidation(req, res, next)
+);
+
 // Routes pour les enregistrements de recherche (research records)
 reportRouter.post(
   "/modules/:moduleId/research-records",

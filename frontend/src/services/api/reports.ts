@@ -19,6 +19,21 @@ export interface Report {
     firstName: string;
     lastName: string;
   };
+  // Champs de validation par l'officier
+  validatedAt?: string | null;
+  validatedById?: string | null;
+  validatorSignatureUrl?: string | null;
+  validatorNotes?: string | null;
+  isLocked?: boolean;
+  validator?: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+    grade?: string;
+    unit?: string;
+    matricule?: string;
+  };
   _count?: {
     modules: number;
     entities: number;
@@ -448,6 +463,22 @@ export const reportsApi = {
 
   async reorderModules(reportId: string, moduleIds: string[]) {
     await api.post(`/reports/${reportId}/modules/reorder`, { moduleIds });
+  },
+
+  // Validation par l'officier
+  async validateReport(reportId: string, validatorNotes?: string) {
+    const response = await api.post<{ report: Report }>(
+      `/reports/${reportId}/validate`,
+      { validatorNotes }
+    );
+    return response.data.report;
+  },
+
+  async removeValidation(reportId: string) {
+    const response = await api.delete<{ report: Report }>(
+      `/reports/${reportId}/validate`
+    );
+    return response.data.report;
   },
 
   // Export PDF

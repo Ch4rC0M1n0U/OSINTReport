@@ -10,6 +10,7 @@ declare global {
       email: string;
       phone: string | null;
       grade: string | null;
+      unit: string | null;
       avatarUrl: string | null;
       signatureUrl: string | null;
       timezone: string | null;

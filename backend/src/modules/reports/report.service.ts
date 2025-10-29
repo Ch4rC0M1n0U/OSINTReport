@@ -74,7 +74,12 @@ export class ReportService {
         },
         skip: offset,
         take: limit,
-        include: {
+        select: {
+          id: true,
+          title: true,
+          status: true,
+          issuedAt: true,
+          isLocked: true,
           owner: {
             select: {
               id: true,
@@ -279,6 +284,17 @@ export class ReportService {
             email: true,
           },
         },
+        validator: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            email: true,
+            grade: true,
+            unit: true,
+            matricule: true,
+          },
+        },
         modules: {
           orderBy: { position: "asc" },
           include: {
@@ -321,10 +337,45 @@ export class ReportService {
     };
   }
 
-  static async updateReport(reportId: string, input: UpdateReportInput) {
-    const report = await prisma.report.findUnique({ where: { id: reportId } });
+  static async updateReport(reportId: string, input: UpdateReportInput, userId?: string) {
+    const report = await prisma.report.findUnique({ 
+      where: { id: reportId },
+      select: {
+        id: true,
+        title: true,
+        caseNumber: true,
+        reportNumber: true,
+        purpose: true,
+        summary: true,
+        relatedCases: true,
+        requestingService: true,
+        reportingUnit: true,
+        reportingOfficer: true,
+        reportingRank: true,
+        issuedAt: true,
+        status: true,
+        dateRangeStart: true,
+        dateRangeEnd: true,
+        investigationContext: true,
+        urgencyLevel: true,
+        classification: true,
+        legalBasis: true,
+        keywords: true,
+        isLocked: true,
+        ownerId: true,
+        validatedById: true,
+      }
+    });
     if (!report) {
       throw createError(404, "Rapport introuvable");
+    }
+
+    // Vérifier si le rapport est verrouillé
+    if (report.isLocked && userId) {
+      // Seul le rédacteur original ou le validateur peuvent modifier un rapport verrouillé
+      if (report.ownerId !== userId && report.validatedById !== userId) {
+        throw createError(403, "Ce rapport est verrouillé et ne peut être modifié que par son rédacteur ou le validateur");
+      }
     }
 
     const data = {
@@ -523,10 +574,19 @@ export class ReportService {
   }
 
   private static async ensureReportExists(reportId: string) {
-    const exists = await prisma.report.findUnique({ where: { id: reportId }, select: { id: true } });
-    if (!exists) {
+    const report = await prisma.report.findUnique({ 
+      where: { id: reportId }, 
+      select: { 
+        id: true, 
+        isLocked: true,
+        ownerId: true,
+        validatedById: true,
+      } 
+    });
+    if (!report) {
       throw createError(404, "Rapport introuvable");
     }
+    return report;
   }
 
   /**
@@ -701,5 +761,102 @@ export class ReportService {
       attachments: attachmentsCount,
       correlations: correlationsCount,
     };
+  }
+
+  /**
+   * Valide un rapport (par un officier)
+   * Récupère automatiquement la signature de l'officier depuis son profil
+   */
+  static async validateReport(reportId: string, validatorId: string, notes?: string) {
+    const report = await this.ensureReportExists(reportId);
+
+    // Vérifier que le rapport n'est pas déjà verrouillé
+    if (report.isLocked) {
+      throw createError(403, "Le rapport est déjà verrouillé et ne peut plus être modifié");
+    }
+
+    // Récupérer les informations de l'officier validateur
+    const validator = await prisma.user.findUnique({
+      where: { id: validatorId },
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        signatureUrl: true,
+      },
+    });
+
+    if (!validator) {
+      throw createError(404, "Officier validateur non trouvé");
+    }
+
+    // Mettre à jour le rapport avec la validation
+    const updatedReport = await prisma.report.update({
+      where: { id: reportId },
+      data: {
+        validatedAt: new Date(),
+        validatedById: validatorId,
+        validatorSignatureUrl: validator.signatureUrl,
+        validatorNotes: notes || null,
+        isLocked: true, // Verrouiller le rapport
+      },
+      include: {
+        owner: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            email: true,
+          },
+        },
+        validator: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            email: true,
+            grade: true,
+            unit: true,
+            matricule: true,
+          },
+        },
+      },
+    });
+
+    logger.info(`Rapport ${reportId} validé par l'officier ${validatorId}`);
+
+    return updatedReport;
+  }
+
+  /**
+   * Supprime la validation d'un rapport (admin uniquement)
+   */
+  static async removeValidation(reportId: string) {
+    await this.ensureReportExists(reportId);
+
+    const updatedReport = await prisma.report.update({
+      where: { id: reportId },
+      data: {
+        validatedAt: null,
+        validatedById: null,
+        validatorSignatureUrl: null,
+        validatorNotes: null,
+        isLocked: false,
+      },
+      include: {
+        owner: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            email: true,
+          },
+        },
+      },
+    });
+
+    logger.info(`Validation du rapport ${reportId} supprimée`);
+
+    return updatedReport;
   }
 }

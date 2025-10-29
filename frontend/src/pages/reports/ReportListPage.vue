@@ -156,8 +156,17 @@ function handlePageChange(direction: 1 | -1) {
                       'bg-base-300': report.status === 'ARCHIVED'
                     }"
                   ></div>
-                  <div>
-                    <div class="font-medium text-sm">{{ report.status }}</div>
+                  <div class="flex flex-col gap-1">
+                    <div class="flex items-center gap-2">
+                      <div class="font-medium text-sm">{{ report.status }}</div>
+                      <span 
+                        v-if="report.isLocked" 
+                        class="text-success text-lg" 
+                        title="Rapport validé et verrouillé"
+                      >
+                        🔒
+                      </span>
+                    </div>
                   </div>
                 </div>
               </div>

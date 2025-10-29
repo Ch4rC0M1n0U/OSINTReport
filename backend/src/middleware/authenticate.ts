@@ -24,6 +24,7 @@ export async function requireAuth(req: Request, _res: Response, next: NextFuncti
       email: user.email,
       phone: user.phone,
       grade: user.grade,
+      unit: user.unit,
       avatarUrl: user.avatarUrl,
       signatureUrl: user.signatureUrl,
       timezone: user.timezone,

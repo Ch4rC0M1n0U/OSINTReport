@@ -49,6 +49,12 @@ export const updateReportSchema = createReportSchema.partial().extend({
 });
 export type UpdateReportInput = z.infer<typeof updateReportSchema>;
 
+// Schéma pour la validation par l'officier
+export const validateReportSchema = z.object({
+  validatorNotes: z.string().optional(),
+});
+export type ValidateReportInput = z.infer<typeof validateReportSchema>;
+
 export const modulePayloadSchema = z.record(z.string(), z.any()).optional();
 
 // ============================================================================

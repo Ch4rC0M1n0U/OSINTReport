@@ -34,6 +34,7 @@ const profileForm = reactive({
   email: "",
   phone: "",
   grade: "",
+  unit: "",
   avatarUrl: "",
   signatureUrl: "",
 });
@@ -91,9 +92,10 @@ onMounted(() => {
     profileForm.firstName = authStore.user.firstName;
     profileForm.lastName = authStore.user.lastName;
     profileForm.matricule = authStore.user.matricule || "";
-    profileForm.email = authStore.user.email;
+    profileForm.email = authStore.user.email || "";
     profileForm.phone = authStore.user.phone || "";
     profileForm.grade = authStore.user.grade || "";
+    profileForm.unit = authStore.user.unit || "";
     profileForm.avatarUrl = authStore.user.avatarUrl || "";
     profileForm.signatureUrl = authStore.user.signatureUrl || "";
     
@@ -116,6 +118,7 @@ async function handleProfileUpdate() {
       email: profileForm.email,
       phone: profileForm.phone || null,
       grade: profileForm.grade || null,
+      unit: profileForm.unit || null,
       avatarUrl: profileForm.avatarUrl || null,
     });
 
@@ -524,6 +527,22 @@ async function removeSignature() {
                 </select>
                 <div class="label">
                   <span class="label-text-alt text-base-content/50">Utilisé pour la signature des rapports</span>
+                </div>
+              </label>
+
+              <!-- Unité/Service -->
+              <label class="form-control">
+                <div class="label">
+                  <span class="label-text font-medium">Unité / Service</span>
+                </div>
+                <input
+                  v-model="profileForm.unit"
+                  type="text"
+                  placeholder="Ex: DR5 - OSINT - BRUXELLES"
+                  class="input input-bordered"
+                />
+                <div class="label">
+                  <span class="label-text-alt text-base-content/50">Votre unité ou service d'affectation</span>
                 </div>
               </label>
             </div>

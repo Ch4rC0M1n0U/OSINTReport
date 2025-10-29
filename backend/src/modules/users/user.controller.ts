@@ -201,7 +201,7 @@ export class UserController {
 
   static async updateProfile(req: Request, res: Response) {
     const userId = req.user!.id;
-    const { firstName, lastName, matricule, email, phone, grade, avatarUrl, signatureUrl, timezone, dateFormat, firstDayOfWeek } = req.body;
+    const { firstName, lastName, matricule, email, phone, grade, unit, avatarUrl, signatureUrl, timezone, dateFormat, firstDayOfWeek } = req.body;
 
     // Check if email is already used by another user
     if (email) {
@@ -332,6 +332,7 @@ export class UserController {
         ...(email && { email: email.toLowerCase() }),
         ...(phone !== undefined && { phone: phone || null }),
         ...(grade !== undefined && { grade: grade || null }),
+        ...(unit !== undefined && { unit: unit || null }),
         ...(finalAvatarUrl !== undefined && { avatarUrl: finalAvatarUrl }),
         ...(signatureUrl !== undefined && { signatureUrl: signatureUrl || null }),
         ...(timezone !== undefined && { timezone: timezone || null }),

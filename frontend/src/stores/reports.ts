@@ -8,6 +8,7 @@ export interface ReportSummary {
   title: string;
   status: string;
   issuedAt: string | null;
+  isLocked?: boolean;
   owner: {
     firstName: string;
     lastName: string;
@@ -54,6 +55,7 @@ export const useReportsStore = defineStore("reports", () => {
         title: report.title,
         status: report.status,
         issuedAt: report.issuedAt || null,
+        isLocked: report.isLocked || false,
         owner: report.owner,
       }));
       total.value = response.total;
