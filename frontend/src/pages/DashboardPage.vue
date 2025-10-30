@@ -24,6 +24,7 @@ import {
   ArrowDown01Icon,
   Add01Icon,
   ViewIcon,
+  FileScriptIcon,
 } from "@hugeicons/core-free-icons";
 
 const auth = useAuthStore();
@@ -138,6 +139,13 @@ const adminNavigation = computed(() => {
       label: "Gestion de la recherche",
       to: { name: "admin.search" },
       icon: SearchingIcon,
+      visible: canAccessAdmin.value,
+      badge: undefined,
+    },
+    {
+      label: "Logs d'audit",
+      to: { name: "admin.audit-logs" },
+      icon: FileScriptIcon,
       visible: canAccessAdmin.value,
       badge: undefined,
     },

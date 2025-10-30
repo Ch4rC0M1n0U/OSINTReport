@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from "express";
 import { PDFService } from "./pdf.service";
 import { logger } from "@/config/logger";
 import { prisma } from "@/config/prisma";
+import { AuditService, AuditAction, AuditResource } from "@modules/audit/audit.service";
 
 export class PDFController {
   /**
@@ -49,6 +50,19 @@ export class PDFController {
         officerRank: req.user?.grade || "Agent",
       });
       logger.info({ reportId, size: pdfBuffer.length }, "✅ PDF généré avec succès");
+
+      // Logger l'export PDF
+      await AuditService.logFromRequest(
+        req,
+        AuditAction.REPORT_EXPORT_PDF,
+        AuditResource.REPORT,
+        reportId,
+        {
+          title: report.title,
+          caseNumber: report.caseNumber,
+          withWatermark: watermark === "true",
+        }
+      );
 
       // Générer le nom de fichier
       const filename = PDFService.generateFilename({

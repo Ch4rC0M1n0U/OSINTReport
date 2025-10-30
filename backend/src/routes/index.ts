@@ -12,6 +12,7 @@ import { mediaRouter } from "@modules/media/media.router";
 import settingsRouter from "@modules/settings/settings.router";
 import aiRouter from "@modules/ai/ai.router";
 import cronRouter from "@modules/cron/cron.router";
+import auditRouter from "@modules/audit/audit.router";
 
 const router = Router();
 
@@ -35,5 +36,6 @@ router.use("/search", searchRouter);
 router.use("/media", mediaRouter);
 router.use("/ai", aiRouter);
 router.use("/cron", cronRouter);
+router.use("/audit-logs", auditRouter);
 
 export { router };

@@ -21,6 +21,7 @@ import SmtpSettingsPage from "@/pages/admin/SmtpSettingsPage.vue";
 import SystemSettingsPage from "@/pages/admin/SystemSettingsPage.vue";
 import AISettingsPage from "@/pages/admin/AISettingsPage.vue";
 import SearchManagementPage from "@/pages/admin/SearchManagementPage.vue";
+import AuditLogsPage from "@/pages/admin/AuditLogsPage.vue";
 import EntitiesPage from "@/pages/EntitiesPage.vue";
 import { useAuthStore } from "@/stores/auth";
 import { useSystemSettings } from "@/composables/useSystemSettings";
@@ -190,6 +191,15 @@ const router = createRouter({
           path: "admin/search",
           name: "admin.search",
           component: SearchManagementPage,
+          meta: {
+            requiresAuth: true,
+            permissions: ["system:admin"],
+          },
+        },
+        {
+          path: "admin/audit-logs",
+          name: "admin.audit-logs",
+          component: AuditLogsPage,
           meta: {
             requiresAuth: true,
             permissions: ["system:admin"],

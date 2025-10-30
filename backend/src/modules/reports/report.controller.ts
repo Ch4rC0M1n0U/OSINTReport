@@ -19,6 +19,7 @@ import {
   validateModulePayload, // Nouveau import pour validation des payloads
   validateReportSchema,
 } from "@modules/reports/report.validation";
+import { AuditService, AuditAction, AuditResource } from "@modules/audit/audit.service";
 
 export class ReportController {
   static async dashboard(_req: Request, res: Response, next: NextFunction) {
@@ -47,6 +48,19 @@ export class ReportController {
         throw new Error("Utilisateur non authentifié");
       }
       const report = await ReportService.createReport(payload, req.user.id);
+
+      // Logger la création du rapport
+      await AuditService.logFromRequest(
+        req,
+        AuditAction.REPORT_CREATE,
+        AuditResource.REPORT,
+        report.id,
+        {
+          title: report.title,
+          caseNumber: report.caseNumber,
+        }
+      );
+
       res.status(201).json({ report });
     } catch (error) {
       next(error);
@@ -66,6 +80,19 @@ export class ReportController {
     try {
       const payload = updateReportSchema.parse(req.body);
       const report = await ReportService.updateReport(req.params.reportId, payload, req.user?.id);
+
+      // Logger la modification du rapport
+      await AuditService.logFromRequest(
+        req,
+        AuditAction.REPORT_UPDATE,
+        AuditResource.REPORT,
+        report.id,
+        {
+          title: report.title,
+          updatedFields: Object.keys(payload),
+        }
+      );
+
       res.json({ report });
     } catch (error) {
       next(error);
@@ -74,7 +101,25 @@ export class ReportController {
 
   static async delete(req: Request, res: Response, next: NextFunction) {
     try {
-      await ReportService.deleteReport(req.params.reportId);
+      const reportId = req.params.reportId;
+      
+      // Récupérer le titre avant suppression pour le log
+      const report = await ReportService.getReport(reportId);
+      
+      await ReportService.deleteReport(reportId);
+
+      // Logger la suppression du rapport
+      await AuditService.logFromRequest(
+        req,
+        AuditAction.REPORT_DELETE,
+        AuditResource.REPORT,
+        reportId,
+        {
+          title: report.title,
+          caseNumber: report.caseNumber,
+        }
+      );
+
       res.status(204).send();
     } catch (error) {
       next(error);
@@ -163,7 +208,31 @@ export class ReportController {
   static async updateStatus(req: Request, res: Response, next: NextFunction) {
     try {
       const payload = updateReportStatusSchema.parse(req.body);
+      
+      // Récupérer le rapport avant modification pour connaître l'ancien statut
+      const reportBefore = await ReportService.getReport(req.params.reportId);
+      const oldStatus = reportBefore.status;
+      
       const report = await ReportService.updateStatus(req.params.reportId, payload.status);
+
+      // Logger le changement de statut
+      const statusAction = payload.status === 'PUBLISHED' ? 'published' : 
+                          payload.status === 'ARCHIVED' ? 'archived' : 'draft';
+      
+      await AuditService.logFromRequest(
+        req,
+        AuditAction.REPORT_UPDATE,
+        AuditResource.REPORT,
+        report.id,
+        {
+          title: report.title,
+          caseNumber: report.caseNumber,
+          action: `status_changed_${statusAction}`,
+          oldStatus: oldStatus,
+          newStatus: payload.status,
+        }
+      );
+
       res.json({ report });
     } catch (error) {
       next(error);
@@ -175,7 +244,28 @@ export class ReportController {
       if (!req.user) {
         throw new Error("Utilisateur non authentifié");
       }
+      
+      // Récupérer le rapport original
+      const originalReport = await ReportService.getReport(req.params.reportId);
+      
       const report = await ReportService.duplicate(req.params.reportId, req.user.id);
+
+      // Logger la duplication
+      await AuditService.logFromRequest(
+        req,
+        AuditAction.REPORT_CREATE,
+        AuditResource.REPORT,
+        report.id,
+        {
+          title: report.title,
+          caseNumber: report.caseNumber,
+          action: 'duplicated',
+          originalReportId: originalReport.id,
+          originalTitle: originalReport.title,
+          originalCaseNumber: originalReport.caseNumber,
+        }
+      );
+
       res.status(201).json({ report });
     } catch (error) {
       next(error);
@@ -345,6 +435,22 @@ export class ReportController {
         req.user.id,
         payload.validatorNotes
       );
+
+      // Logger la validation du rapport
+      await AuditService.logFromRequest(
+        req,
+        AuditAction.REPORT_VALIDATE,
+        AuditResource.REPORT,
+        report.id,
+        {
+          title: report.title,
+          caseNumber: report.caseNumber,
+          validatorName: `${req.user.firstName} ${req.user.lastName}`,
+          validatorGrade: req.user.grade,
+          hasNotes: !!payload.validatorNotes,
+        }
+      );
+
       res.json({ report });
     } catch (error) {
       next(error);
@@ -353,7 +459,28 @@ export class ReportController {
 
   static async removeValidation(req: Request, res: Response, next: NextFunction) {
     try {
-      const report = await ReportService.removeValidation(req.params.reportId);
+      const reportId = req.params.reportId;
+      
+      // Récupérer les infos du rapport avant suppression de validation
+      const reportBefore = await ReportService.getReport(reportId);
+      
+      const report = await ReportService.removeValidation(reportId);
+
+      // Logger la suppression de validation
+      await AuditService.logFromRequest(
+        req,
+        AuditAction.REPORT_UPDATE,
+        AuditResource.REPORT,
+        report.id,
+        {
+          title: report.title,
+          action: 'validation_removed',
+          previousValidator: reportBefore.validator ? 
+            `${reportBefore.validator.firstName} ${reportBefore.validator.lastName}` : 
+            null,
+        }
+      );
+
       res.json({ report });
     } catch (error) {
       next(error);

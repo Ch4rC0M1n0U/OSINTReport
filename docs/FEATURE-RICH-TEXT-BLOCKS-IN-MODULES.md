@@ -60,11 +60,21 @@ export function useRichTextBlocks(
 ) {
   const richTextBlocks = ref<RichTextBlock[]>(initialBlocks);
 
-  function addRichTextBlock() { /* ... */ }
-  function deleteBlock(index: number) { /* ... */ }
-  function moveBlockUp(index: number) { /* ... */ }
-  function moveBlockDown(index: number) { /* ... */ }
-  function setBlocks(blocks: RichTextBlock[]) { /* ... */ }
+  function addRichTextBlock() {
+    /* ... */
+  }
+  function deleteBlock(index: number) {
+    /* ... */
+  }
+  function moveBlockUp(index: number) {
+    /* ... */
+  }
+  function moveBlockDown(index: number) {
+    /* ... */
+  }
+  function setBlocks(blocks: RichTextBlock[]) {
+    /* ... */
+  }
 
   return {
     richTextBlocks,
@@ -82,12 +92,14 @@ export function useRichTextBlocks(
 **Fichier :** `frontend/src/components/shared/RichTextBlockList.vue`
 
 Composant réutilisable qui affiche une liste de blocs de texte riche avec :
+
 - Titre optionnel pour chaque bloc
 - Boutons de déplacement (↑/↓)
 - Bouton de suppression
 - Éditeur WYSIWYG avec insertion d'entités
 
 **Props :**
+
 - `blocks`: RichTextBlock[]
 - `readonly?`: boolean
 - `placeholder?`: string
@@ -96,6 +108,7 @@ Composant réutilisable qui affiche une liste de blocs de texte riche avec :
 - `findings?`: Finding[]
 
 **Events :**
+
 - `update`: Émis lors de modification
 - `delete`: Émis lors de suppression (index)
 - `move-up`: Émis pour déplacer vers le haut (index)
@@ -106,6 +119,7 @@ Composant réutilisable qui affiche une liste de blocs de texte riche avec :
 #### ✅ DataRetentionModule.vue
 
 **Changements :**
+
 1. Import des composables et composants
 2. Ajout du bouton "Ajouter un texte" dans l'en-tête
 3. Badge montrant le nombre de blocs de texte
@@ -113,6 +127,7 @@ Composant réutilisable qui affiche une liste de blocs de texte riche avec :
 5. Gestion des blocs dans `emitUpdate()` et `saveChanges()`
 
 **Template - En-tête :**
+
 ```vue
 <div class="flex items-center gap-2">
   <span class="text-lg font-semibold">🗄️ Conservation des données</span>
@@ -137,12 +152,13 @@ Composant réutilisable qui affiche une liste de blocs de texte riche avec :
 ```
 
 **Script - Imports et setup :**
+
 ```typescript
-import { useRichTextBlocks } from '@/composables/useRichTextBlocks';
-import RichTextBlockList from '@/components/shared/RichTextBlockList.vue';
+import { useRichTextBlocks } from "@/composables/useRichTextBlocks";
+import RichTextBlockList from "@/components/shared/RichTextBlockList.vue";
 
 // Injecter les findings
-const findings = inject<Finding[]>('reportFindings', []);
+const findings = inject<Finding[]>("reportFindings", []);
 
 // Gestion des blocs de texte riche
 const {
@@ -168,7 +184,7 @@ watch(
 
 // Émission avec richTextBlocks
 function emitUpdate() {
-  emit('update:modelValue', {
+  emit("update:modelValue", {
     datasets: datasets.value,
     richTextBlocks: richTextBlocks.value,
   });
@@ -178,6 +194,7 @@ function emitUpdate() {
 #### ✅ InvestigationLeadsModule.vue
 
 Structure identique à DataRetentionModule :
+
 - Bouton "Ajouter un texte"
 - Badge nombre de blocs
 - Composant RichTextBlockList
@@ -188,10 +205,12 @@ Structure identique à DataRetentionModule :
 **Particularité :** Mode lecture/édition distinct
 
 En mode lecture :
+
 - Affiche les blocs en readonly
 - Badge discret montrant le nombre de blocs
 
 En mode édition :
+
 - Bouton "Ajouter un texte" visible
 - Blocs éditables
 - Sauvegarde inclut les richTextBlocks
@@ -214,12 +233,14 @@ En mode édition :
 **Modifications à apporter :**
 
 1. **Imports à ajouter :**
+
 ```typescript
-import { useRichTextBlocks } from '@/composables/useRichTextBlocks';
-import RichTextBlockList from '@/components/shared/RichTextBlockList.vue';
+import { useRichTextBlocks } from "@/composables/useRichTextBlocks";
+import RichTextBlockList from "@/components/shared/RichTextBlockList.vue";
 ```
 
 2. **Props à ajouter :**
+
 ```typescript
 const props = defineProps<{
   modelValue: {
@@ -232,9 +253,10 @@ const props = defineProps<{
 ```
 
 3. **Setup du composable :**
+
 ```typescript
 // Injecter les findings
-const findings = inject<Finding[]>('reportFindings', []);
+const findings = inject<Finding[]>("reportFindings", []);
 
 // Gestion des blocs de texte riche
 const {
@@ -248,6 +270,7 @@ const {
 ```
 
 4. **Watch à mettre à jour :**
+
 ```typescript
 watch(
   () => props.modelValue,
@@ -262,9 +285,10 @@ watch(
 ```
 
 5. **Fonction emitUpdate :**
+
 ```typescript
 function emitUpdate() {
-  emit('update:modelValue', {
+  emit("update:modelValue", {
     findings: findings.value,
     richTextBlocks: richTextBlocks.value,
   });
@@ -272,6 +296,7 @@ function emitUpdate() {
 ```
 
 6. **Template - En-tête à modifier :**
+
 ```vue
 <div class="flex items-center justify-between mb-4">
   <div class="flex items-center gap-2">
@@ -306,6 +331,7 @@ function emitUpdate() {
 ```
 
 7. **Template - Ajouter RichTextBlockList après l'en-tête :**
+
 ```vue
 <!-- Blocs de texte enrichi -->
 <RichTextBlockList
@@ -332,15 +358,17 @@ function emitUpdate() {
 **Modifications à apporter :**
 
 1. **Imports à ajouter :**
+
 ```typescript
-import { useRichTextBlocks } from '@/composables/useRichTextBlocks';
-import RichTextBlockList from '@/components/shared/RichTextBlockList.vue';
+import { useRichTextBlocks } from "@/composables/useRichTextBlocks";
+import RichTextBlockList from "@/components/shared/RichTextBlockList.vue";
 ```
 
 2. **Setup du composable :**
+
 ```typescript
 // Injecter les findings
-const findings = inject<Finding[]>('reportFindings', []);
+const findings = inject<Finding[]>("reportFindings", []);
 
 // Gestion des blocs de texte riche
 const {
@@ -354,13 +382,14 @@ const {
 ```
 
 3. **Fonction startEditing à mettre à jour :**
+
 ```typescript
 function startEditing() {
   editablePayload.value = {
-    summary: props.modelValue?.summary || '',
+    summary: props.modelValue?.summary || "",
     notFound: props.modelValue?.notFound ? [...props.modelValue.notFound] : [],
-    methodology: props.modelValue?.methodology || '',
-    notes: props.modelValue?.notes || '',
+    methodology: props.modelValue?.methodology || "",
+    notes: props.modelValue?.notes || "",
     richTextBlocks: props.modelValue?.richTextBlocks || [], // AJOUTER
   };
   if (props.modelValue?.richTextBlocks) {
@@ -371,6 +400,7 @@ function startEditing() {
 ```
 
 4. **Fonction saveChanges à mettre à jour :**
+
 ```typescript
 async function saveChanges() {
   emit("update:modelValue", {
@@ -385,6 +415,7 @@ async function saveChanges() {
 ```
 
 5. **Template - Mode lecture - Ajouter avant les sections existantes :**
+
 ```vue
 <div v-if="!isEditing" class="space-y-4">
   <!-- Blocs de texte enrichi -->
@@ -403,6 +434,7 @@ async function saveChanges() {
 ```
 
 6. **Template - Mode édition - Ajouter bouton dans l'en-tête et liste :**
+
 ```vue
 <div v-else class="space-y-6">
   <!-- Bouton ajouter texte -->
@@ -510,21 +542,25 @@ export interface IdentifierLookupPayload {
 ## 🧪 Tests à effectuer
 
 1. **Création de blocs :**
+
    - Cliquer sur "Ajouter un texte"
    - Vérifier qu'un nouveau bloc vide est créé
 
 2. **Édition de blocs :**
+
    - Ajouter un titre
    - Ajouter du contenu avec formatage
    - Insérer une entité via le bouton 👤
    - Vérifier que les modifications sont sauvegardées
 
 3. **Organisation des blocs :**
+
    - Déplacer un bloc vers le haut
    - Déplacer un bloc vers le bas
    - Supprimer un bloc
 
 4. **Persistence :**
+
    - Sauvegarder le rapport
    - Recharger la page
    - Vérifier que les blocs sont toujours présents

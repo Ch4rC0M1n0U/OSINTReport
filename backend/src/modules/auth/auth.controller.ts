@@ -21,6 +21,7 @@ import {
 } from "@modules/auth/auth.validation";
 import { verify2FASchema } from "@modules/auth/auth2FA.validation";
 import { verifyRefreshToken } from "@shared/token";
+import { AuditService, AuditAction, AuditResource } from "@modules/audit/audit.service";
 
 export class AuthController {
   static async register(req: Request, res: Response) {
@@ -33,33 +34,76 @@ export class AuthController {
 
     const user = await AuthService.register(payload, actor);
 
+    // Logger la création d'utilisateur
+    await AuditService.logFromRequest(
+      req,
+      AuditAction.USER_CREATE,
+      AuditResource.USER,
+      user.id,
+      {
+        email: user.email,
+        matricule: user.matricule,
+        createdBy: actor.id,
+      }
+    );
+
     res.status(201).json({ user });
   }
 
   static async login(req: Request, res: Response) {
     const payload: LoginInput = loginSchema.parse(req.body);
 
-    const result = await AuthService.login(payload, {
-      userAgent: req.get("user-agent") ?? undefined,
-      ipAddress: req.ip,
-    });
-
-    // Si la 2FA est requise, retourner le tempToken
-    if (result.requires2FA) {
-      return res.status(200).json({ 
-        requires2FA: true, 
-        tempToken: result.tempToken 
+    try {
+      const result = await AuthService.login(payload, {
+        userAgent: req.get("user-agent") ?? undefined,
+        ipAddress: req.ip,
       });
+
+      // Si la 2FA est requise, retourner le tempToken
+      if (result.requires2FA) {
+        return res.status(200).json({ 
+          requires2FA: true, 
+          tempToken: result.tempToken 
+        });
+      }
+
+      // Sinon, compléter le login
+      if (!result.accessToken || !result.refreshToken || !result.user) {
+        throw createError(500, "Erreur lors de la connexion");
+      }
+
+      // Logger la connexion réussie
+      await AuditService.log({
+        userId: result.user.id,
+        action: AuditAction.LOGIN,
+        resource: AuditResource.AUTH,
+        details: {
+          identifier: payload.identifier,
+          matricule: result.user.matricule,
+        },
+        ipAddress: req.ip,
+        userAgent: req.get("user-agent"),
+      });
+
+      AuthController.writeAuthCookies(res, result.accessToken, result.refreshToken);
+
+      res.status(200).json({ user: result.user });
+    } catch (error) {
+      // Logger la tentative de connexion échouée
+      await AuditService.log({
+        userId: undefined,
+        action: AuditAction.LOGIN_FAILED,
+        resource: AuditResource.AUTH,
+        details: {
+          identifier: payload.identifier,
+          reason: error instanceof Error ? error.message : "Unknown error",
+        },
+        ipAddress: req.ip,
+        userAgent: req.get("user-agent"),
+      });
+
+      throw error;
     }
-
-    // Sinon, compléter le login
-    if (!result.accessToken || !result.refreshToken || !result.user) {
-      throw createError(500, "Erreur lors de la connexion");
-    }
-
-    AuthController.writeAuthCookies(res, result.accessToken, result.refreshToken);
-
-    res.status(200).json({ user: result.user });
   }
 
   static async verify2FA(req: Request, res: Response) {
@@ -73,6 +117,18 @@ export class AuthController {
         ipAddress: req.ip,
       }
     );
+
+    // Logger la vérification 2FA réussie
+    await AuditService.log({
+      userId: result.user.id,
+      action: AuditAction.TWO_FACTOR_VERIFY,
+      resource: AuditResource.AUTH,
+      details: {
+        matricule: result.user.matricule,
+      },
+      ipAddress: req.ip,
+      userAgent: req.get("user-agent"),
+    });
 
     AuthController.writeAuthCookies(res, result.accessToken, result.refreshToken);
 
@@ -94,6 +150,8 @@ export class AuthController {
 
   static async logout(req: Request, res: Response) {
     const refreshToken = req.cookies?.[cookieNames.refreshToken];
+    const user = req.user;
+    
     if (refreshToken) {
       try {
         const payload = verifyRefreshToken(refreshToken);
@@ -101,6 +159,20 @@ export class AuthController {
       } catch (error) {
         // ignore invalid token during logout
       }
+    }
+
+    // Logger la déconnexion
+    if (user) {
+      await AuditService.log({
+        userId: user.id,
+        action: AuditAction.LOGOUT,
+        resource: AuditResource.AUTH,
+        details: {
+          matricule: user.matricule,
+        },
+        ipAddress: req.ip,
+        userAgent: req.get("user-agent"),
+      });
     }
 
     res
@@ -130,6 +202,18 @@ export class AuthController {
   static async forgotPassword(req: Request, res: Response) {
     const payload: ForgotPasswordInput = forgotPasswordSchema.parse(req.body);
 
+    // Logger la demande de réinitialisation
+    await AuditService.log({
+      userId: undefined,
+      action: AuditAction.PASSWORD_RESET_REQUEST,
+      resource: AuditResource.AUTH,
+      details: {
+        email: payload.email,
+      },
+      ipAddress: req.ip,
+      userAgent: req.get("user-agent"),
+    });
+
     // Appel asynchrone sans attendre pour ne pas révéler si l'email existe
     AuthService.requestPasswordReset(payload.email).catch((error) => {
       console.error("Erreur lors de l'envoi de l'email de réinitialisation:", error);
@@ -146,6 +230,18 @@ export class AuthController {
     const payload: ResetPasswordInput = resetPasswordSchema.parse(req.body);
 
     await AuthService.resetPassword(payload.token, payload.newPassword);
+
+    // Logger la réinitialisation de mot de passe (sans récupérer l'ID utilisateur pour des raisons de sécurité)
+    await AuditService.log({
+      userId: undefined,
+      action: AuditAction.PASSWORD_RESET_COMPLETE,
+      resource: AuditResource.AUTH,
+      details: {
+        tokenUsed: true,
+      },
+      ipAddress: req.ip,
+      userAgent: req.get("user-agent"),
+    });
 
     res.status(200).json({
       message: "Votre mot de passe a été réinitialisé avec succès. Vous pouvez maintenant vous connecter.",

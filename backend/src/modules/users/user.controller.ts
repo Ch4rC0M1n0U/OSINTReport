@@ -5,6 +5,7 @@ import crypto from "crypto";
 
 import { AuthService } from "@modules/auth/auth.service";
 import { prisma } from "@shared/prisma";
+import { AuditService, AuditAction, AuditResource } from "@modules/audit/audit.service";
 
 export class UserController {
   static async me(req: Request, res: Response) {
@@ -180,6 +181,18 @@ export class UserController {
         },
       },
     });
+
+    // Logger la modification d'utilisateur
+    await AuditService.logFromRequest(
+      req,
+      AuditAction.USER_UPDATE,
+      AuditResource.USER,
+      user.id,
+      {
+        matricule: user.matricule,
+        updatedFields: Object.keys(req.body),
+      }
+    );
 
     res.json({ user });
   }

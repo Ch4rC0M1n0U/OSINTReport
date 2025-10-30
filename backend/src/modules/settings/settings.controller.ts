@@ -7,6 +7,7 @@ import { z } from "zod";
 import { SettingsService } from "./settings.service";
 import { ApiKeyEncryption } from "./api-key-encryption";
 import { logger } from "@/config/logger";
+import { AuditService, AuditAction, AuditResource } from "@modules/audit/audit.service";
 
 // Schéma de validation pour la mise à jour des paramètres
 const updateSettingsSchema = z.object({
@@ -102,6 +103,19 @@ export class SettingsController {
       // Mettre à jour
       const updated = await SettingsService.updateSettings(data);
 
+      // Logger la mise à jour des paramètres
+      await AuditService.logFromRequest(
+        req,
+        AuditAction.SETTINGS_UPDATE,
+        AuditResource.SETTINGS,
+        undefined,
+        {
+          updatedFields: Object.keys(validatedData),
+          maintenanceEnabled: data.maintenanceEnabled,
+          lockUserCreation: data.lockUserCreation,
+        }
+      );
+
       res.json(updated);
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -159,6 +173,19 @@ export class SettingsController {
     try {
       const validatedData = updateAISettingsSchema.parse(req.body);
       const settings = await SettingsService.updateAISettings(validatedData);
+
+      // Logger la mise à jour des paramètres IA
+      await AuditService.logFromRequest(
+        req,
+        AuditAction.AI_SETTINGS_UPDATE,
+        AuditResource.SETTINGS,
+        undefined,
+        {
+          aiEnabled: settings.aiEnabled,
+          aiProvider: settings.aiProvider,
+          aiModel: settings.aiModel,
+        }
+      );
       
       res.status(200).json({
         success: true,

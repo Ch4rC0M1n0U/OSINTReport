@@ -15,6 +15,7 @@ Cette fonctionnalité ajoute la possibilité d'insérer des **blocs de texte enr
 ## 🎯 Fonctionnalités implémentées
 
 ### Pour l'utilisateur
+
 - 📝 **Bouton "Ajouter un texte"** dans chaque module
 - ✏️ **Éditeur WYSIWYG** pour chaque bloc avec :
   - Formatage riche (gras, italique, listes, etc.)
@@ -27,6 +28,7 @@ Cette fonctionnalité ajoute la possibilité d'insérer des **blocs de texte enr
 - ✏️ **Mode édition** : modification complète
 
 ### Architecture technique
+
 - ♻️ **Composable réutilisable** : `useRichTextBlocks`
 - 🧩 **Composant partagé** : `RichTextBlockList.vue`
 - 💾 **Persistance** : Stockage dans le champ `payload.richTextBlocks` de chaque module
@@ -35,10 +37,13 @@ Cette fonctionnalité ajoute la possibilité d'insérer des **blocs de texte enr
 ## 📦 Fichiers créés
 
 ### Nouveau composable
+
 ```
 frontend/src/composables/useRichTextBlocks.ts
 ```
+
 **Fonctions exposées** :
+
 - `richTextBlocks` : Liste réactive des blocs
 - `addRichTextBlock()` : Ajouter un bloc
 - `deleteBlock(id)` : Supprimer un bloc
@@ -47,10 +52,13 @@ frontend/src/composables/useRichTextBlocks.ts
 - `setBlocks(blocks)` : Remplacer tous les blocs
 
 ### Nouveau composant
+
 ```
 frontend/src/components/shared/RichTextBlockList.vue
 ```
+
 **Props** :
+
 - `blocks` : Liste des blocs à afficher
 - `readonly` : Mode lecture seule
 - `reportId` : ID du rapport (optionnel)
@@ -58,6 +66,7 @@ frontend/src/components/shared/RichTextBlockList.vue
 - `placeholder` : Texte d'aide pour l'éditeur
 
 **Events** :
+
 - `@update` : Modification d'un bloc
 - `@delete` : Suppression d'un bloc
 - `@move-up` : Déplacement vers le haut
@@ -66,9 +75,11 @@ frontend/src/components/shared/RichTextBlockList.vue
 ## 🔧 Fichiers modifiés
 
 ### Backend
+
 ```
 backend/src/modules/reports/report.types.ts
 ```
+
 - ✅ Ajout interface `RichTextBlock { id, title, content }`
 - ✅ Ajout `richTextBlocks?: RichTextBlock[]` dans :
   - `DataRetentionPayload`
@@ -79,15 +90,18 @@ backend/src/modules/reports/report.types.ts
   - `IdentifierLookupPayload`
 
 ### Frontend - Types
+
 ```
 frontend/src/services/api/reports.ts
 ```
+
 - ✅ Ajout interface `RichTextBlock { id, title, content }`
 - ✅ Ajout `richTextBlocks?: RichTextBlock[]` dans les mêmes 6 payloads
 
 ### Frontend - Modules
 
 #### 1. DataRetentionModule.vue
+
 - ✅ Bouton "Ajouter un texte" dans l'en-tête
 - ✅ Badge affichant le nombre de blocs
 - ✅ `RichTextBlockList` avant la liste des datasets
@@ -96,10 +110,12 @@ frontend/src/services/api/reports.ts
 - ✅ `emitUpdate()` inclut `richTextBlocks`
 
 #### 2. InvestigationLeadsModule.vue
+
 - ✅ Même pattern que DataRetentionModule
 - ✅ Blocs affichés avant la liste des pistes
 
 #### 3. ObjectivesModule.vue
+
 - ✅ Gestion des modes lecture/édition distincts
 - ✅ Badge discret en mode lecture
 - ✅ Bouton "Ajouter un texte" en mode édition
@@ -107,18 +123,21 @@ frontend/src/services/api/reports.ts
 - ✅ `saveChanges()` inclut les blocs
 
 #### 4. EntityOverviewModule.vue
+
 - ✅ Pas de mode édition global (utilise des modales)
 - ✅ Bouton visible quand `!readonly`
 - ✅ Blocs affichés avant la liste des entités
 - ✅ Prop `reportId` ajoutée
 
 #### 5. IdentifierLookupModule.vue
+
 - ✅ Bouton + badge dans l'en-tête
 - ✅ Blocs affichés avant les cartes d'identifiants
 - ✅ Injection `allFindings` depuis `reportFindings`
 - ✅ Watch pour synchroniser avec `modelValue`
 
 #### 6. ResearchSummaryModule.vue
+
 - ✅ Modes lecture/édition avec auto-save
 - ✅ Blocs en **lecture** : readonly, affichés en premier
 - ✅ Blocs en **édition** : éditables avec bouton "Ajouter un texte"
@@ -129,6 +148,7 @@ frontend/src/services/api/reports.ts
 ## 🎨 Interface utilisateur
 
 ### Mode lecture (readonly)
+
 ```
 ┌─────────────────────────────────────┐
 │ 📝 Titre du bloc                    │
@@ -139,6 +159,7 @@ frontend/src/services/api/reports.ts
 ```
 
 ### Mode édition
+
 ```
 ┌─────────────────────────────────────┐
 │ 📝 Ajouter un bloc de texte      [X]│
@@ -157,6 +178,7 @@ frontend/src/services/api/reports.ts
 ## 🧪 Tests à effectuer
 
 ### Test 1 : Création de blocs
+
 1. ✅ Ouvrir un rapport en mode brouillon
 2. ✅ Aller dans chaque module (Conservation, Pistes, Objectifs, etc.)
 3. ✅ Cliquer sur "Ajouter un texte"
@@ -165,6 +187,7 @@ frontend/src/services/api/reports.ts
 6. ✅ Vérifier que le bloc s'affiche
 
 ### Test 2 : Insertion d'entités
+
 1. ✅ Créer quelques entités dans le rapport
 2. ✅ Ajouter un bloc de texte dans un module
 3. ✅ Cliquer sur le bouton 👤 dans l'éditeur
@@ -172,6 +195,7 @@ frontend/src/services/api/reports.ts
 5. ✅ Vérifier que le badge s'insère correctement
 
 ### Test 3 : Réorganisation
+
 1. ✅ Créer 3 blocs de texte
 2. ✅ Utiliser les boutons 🔼 et 🔽
 3. ✅ Vérifier que l'ordre change
@@ -179,24 +203,28 @@ frontend/src/services/api/reports.ts
 5. ✅ Vérifier que l'ordre est persisté
 
 ### Test 4 : Suppression
+
 1. ✅ Créer un bloc de texte
 2. ✅ Cliquer sur 🗑️ Supprimer
 3. ✅ Confirmer la suppression
 4. ✅ Vérifier que le bloc disparaît
 
 ### Test 5 : Modes lecture/édition
+
 1. ✅ **ObjectivesModule** : Vérifier transition lecture ↔ édition
 2. ✅ **ResearchSummaryModule** : Vérifier transition lecture ↔ édition
 3. ✅ Vérifier que les blocs sont readonly en mode lecture
 4. ✅ Vérifier que les blocs sont éditables en mode édition
 
 ### Test 6 : Badge de comptage
+
 1. ✅ Créer 2-3 blocs dans un module
 2. ✅ Vérifier que le badge affiche "2 blocs de texte" ou "3 blocs de texte"
 3. ✅ Supprimer un bloc
 4. ✅ Vérifier que le badge se met à jour
 
 ### Test 7 : Persistance
+
 1. ✅ Créer des blocs dans plusieurs modules
 2. ✅ Sauvegarder le rapport
 3. ✅ Actualiser la page (F5)
@@ -206,29 +234,33 @@ frontend/src/services/api/reports.ts
 ## 📊 Compatibilité
 
 ### Modules avec blocs de texte enrichi
-| Module | Support | Particularités |
-|--------|---------|----------------|
-| Conservation des données | ✅ | Blocs avant datasets |
-| Pistes d'enquête | ✅ | Blocs avant liste de pistes |
-| Objectifs OSINT | ✅ | Mode lecture/édition |
-| Vue d'ensemble entité | ✅ | Pas de mode édition global |
-| Recherche d'identifiant | ✅ | Blocs avant cartes d'identifiants |
-| Résumé des recherches | ✅ | Mode lecture/édition avec auto-save |
+
+| Module                   | Support | Particularités                      |
+| ------------------------ | ------- | ----------------------------------- |
+| Conservation des données | ✅      | Blocs avant datasets                |
+| Pistes d'enquête         | ✅      | Blocs avant liste de pistes         |
+| Objectifs OSINT          | ✅      | Mode lecture/édition                |
+| Vue d'ensemble entité    | ✅      | Pas de mode édition global          |
+| Recherche d'identifiant  | ✅      | Blocs avant cartes d'identifiants   |
+| Résumé des recherches    | ✅      | Mode lecture/édition avec auto-save |
 
 ### Modules SANS modification
-| Module | Raison |
-|--------|--------|
-| Résumé des faits | A déjà des blocs de texte enrichi |
-| Analyse de plateforme | A déjà des blocs de texte enrichi |
-| Entités concernées | Module de gestion d'entités, pas de besoin |
-| Galerie média | Module spécialisé médias |
-| Conclusions | Module structuré différemment |
-| Signature | Module technique |
+
+| Module                | Raison                                     |
+| --------------------- | ------------------------------------------ |
+| Résumé des faits      | A déjà des blocs de texte enrichi          |
+| Analyse de plateforme | A déjà des blocs de texte enrichi          |
+| Entités concernées    | Module de gestion d'entités, pas de besoin |
+| Galerie média         | Module spécialisé médias                   |
+| Conclusions           | Module structuré différemment              |
+| Signature             | Module technique                           |
 
 ## 🐛 Problèmes connus
 
 ### ⚠️ Erreurs TypeScript générales
+
 Les erreurs suivantes sont **non bloquantes** et proviennent de la configuration TypeScript du projet (imports `@/` non résolus) :
+
 - `Cannot find module '@/components/...'`
 - `Cannot find module '@/services/...'`
 - `Cannot find module '@/stores/...'`
@@ -236,7 +268,9 @@ Les erreurs suivantes sont **non bloquantes** et proviennent de la configuration
 Ces erreurs apparaissent dans **tous** les fichiers du projet, pas uniquement dans nos modifications. Le code **fonctionne correctement** malgré ces erreurs de configuration.
 
 ### ✅ Nos modules sont sans erreur
+
 Les fichiers suivants n'ont **AUCUNE erreur TypeScript** :
+
 - ✅ `DataRetentionModule.vue`
 - ✅ `InvestigationLeadsModule.vue`
 - ✅ `ObjectivesModule.vue`
@@ -249,12 +283,15 @@ Les fichiers suivants n'ont **AUCUNE erreur TypeScript** :
 ## 🚀 Déploiement
 
 ### Pas de migration nécessaire
+
 Les blocs de texte sont **optionnels** (`richTextBlocks?: RichTextBlock[]`), donc :
+
 - ✅ Les rapports existants continuent de fonctionner
 - ✅ Pas de migration de base de données requise
 - ✅ Compatibilité ascendante garantie
 
 ### Fichiers à déployer
+
 ```bash
 # Backend
 backend/src/modules/reports/report.types.ts
@@ -299,6 +336,7 @@ frontend/src/services/api/reports.ts
 ## 🎉 Conclusion
 
 La fonctionnalité des **blocs de texte enrichi** est maintenant disponible dans **6 modules de rapport**, avec :
+
 - ✨ Interface utilisateur intuitive
 - ♻️ Code réutilisable et maintenable
 - 💾 Persistance garantie
@@ -308,5 +346,6 @@ La fonctionnalité des **blocs de texte enrichi** est maintenant disponible dans
 **Statut** : ✅ **PRÊT POUR TESTS**
 
 ---
-*Document généré le 2025-01-XX*
-*Fonctionnalité développée par GitHub Copilot*
+
+_Document généré le 2025-01-XX_
+_Fonctionnalité développée par GitHub Copilot_
