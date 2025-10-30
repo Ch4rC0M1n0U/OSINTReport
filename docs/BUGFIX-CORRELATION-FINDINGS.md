@@ -39,6 +39,7 @@ Inspection de la base de données a révélé que les findings sont stockés ain
 ```
 
 **⚠️ Points critiques :**
+
 - Le **nom complet** est dans `finding.label`, PAS dans `personDetails.firstName/lastName`
 - Les modules EntityOverview **n'ont PAS** d'entité associée (`entityId = null`)
 
@@ -55,18 +56,25 @@ Inspection de la base de données a révélé que les findings sont stockés ain
 ```typescript
 // AVANT (❌)
 for (const module of report.modules) {
-  if (module.entity) {  // ← EntityOverview n'a PAS d'entité !
-    if (payload.findings) { /* ... */ }
+  if (module.entity) {
+    // ← EntityOverview n'a PAS d'entité !
+    if (payload.findings) {
+      /* ... */
+    }
   }
 }
 
 // APRÈS (✅)
 for (const module of report.modules) {
   // Findings pour TOUS les modules
-  if (payload.findings) { /* ... */ }
-  
+  if (payload.findings) {
+    /* ... */
+  }
+
   // Ensuite modules avec entité
-  if (module.entity) { /* ... */ }
+  if (module.entity) {
+    /* ... */
+  }
 }
 ```
 
@@ -75,18 +83,18 @@ for (const module of report.modules) {
 ```typescript
 if (payload.findings && Array.isArray(payload.findings)) {
   for (const finding of payload.findings) {
-    const label = finding.label?.trim();  // ← NOM COMPLET
-    
+    const label = finding.label?.trim(); // ← NOM COMPLET
+
     if (!label) continue;
-    
-    if (finding.metadata?.entityType === 'person') {
+
+    if (finding.metadata?.entityType === "person") {
       correlatableData.push({
         type: CorrelationType.NAME,
-        value: label,  // ← "Robert Redfort"
+        value: label, // ← "Robert Redfort"
         context: `Entité identifiée: ${label}`,
       });
     }
-    
+
     // Adresse physique
     if (finding.metadata?.personDetails?.physicalAddress) {
       correlatableData.push({
@@ -132,13 +140,13 @@ npx tsx src/modules/correlations/test-detection.ts
 
 ## 📊 Types de données extraites
 
-| Type | Source | Testé |
-|------|--------|-------|
-| **NAME** | `finding.label` | ✅ |
-| **ADDRESS** | `personDetails.physicalAddress` | ✅ |
-| **ORGANIZATION** | `finding.label` ou `companyDetails.legalName` | ⚠️ |
-| **PHONE** | `personDetails.phoneNumbers[]` | ⚠️ |
-| **EMAIL** | `personDetails.emails[]` | ⚠️ |
+| Type             | Source                                        | Testé |
+| ---------------- | --------------------------------------------- | ----- |
+| **NAME**         | `finding.label`                               | ✅    |
+| **ADDRESS**      | `personDetails.physicalAddress`               | ✅    |
+| **ORGANIZATION** | `finding.label` ou `companyDetails.legalName` | ⚠️    |
+| **PHONE**        | `personDetails.phoneNumbers[]`                | ⚠️    |
+| **EMAIL**        | `personDetails.emails[]`                      | ⚠️    |
 
 ## 📝 Impact
 
