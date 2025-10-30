@@ -1,9 +1,10 @@
 # 🔧 Correction : Détection de corrélation dans les "Entités identifiées"
 
 **Date** : 30 octobre 2025  
-**Type** : Bugfix  
+**Type** : Bugfix critique  
 **Criticité** : Élevée  
-**Composant** : Système de corrélation
+**Composant** : Système de corrélation  
+**Statut** : ✅ RÉSOLU ET TESTÉ
 
 ## 📋 Problème identifié
 
@@ -11,190 +12,149 @@ Le système de détection de corrélation ne trouvait **PAS** les correspondance
 
 ### Exemple du problème
 
-- **Situation** : Rapport dupliqué 2 fois avec "Robert Redford" dans les Entités identifiées
-- **Comportement attendu** : La détection de corrélation devrait trouver "Robert Redford" dans les 3 rapports
+- **Situation** : Rapports "LUMBAGO" et "EMBARGO" avec "Robert Redfort" dans les Entités identifiées
+- **Comportement attendu** : La détection de corrélation devrait trouver "Robert Redfort" dans les 2 rapports
 - **Comportement observé** : Aucune corrélation détectée ❌
 
 ## 🔍 Analyse de la cause
 
-### Structure des données
+### Structure réelle des données
 
-Les "Entités identifiées" sont stockées dans `ReportModule.payload.findings[]` avec cette structure :
+Inspection de la base de données a révélé que les findings sont stockés ainsi :
 
-```typescript
+```json
 {
-  findings: [
-    {
-      label: "Robert Redford",
-      description: "...",
-      metadata: {
-        entityType: "person",
-        personDetails: {
-          firstName: "Robert",
-          lastName: "Redford",
-          phoneNumbers: [...],
-          emails: [...],
-          addresses: [...]
-        }
-      }
+  "label": "Robert Redfort",
+  "description": "",
+  "metadata": {
+    "entityType": "person",
+    "personDetails": {
+      "dateOfBirth": "1947-07-25",
+      "nationalRegistryNumber": "47.07.25-125-25",
+      "phoneNumbers": [],
+      "physicalAddress": "gfqdfsgrsg"
     }
-  ]
+  }
 }
 ```
 
-### Code problématique
+**⚠️ Points critiques :**
+- Le **nom complet** est dans `finding.label`, PAS dans `personDetails.firstName/lastName`
+- Les modules EntityOverview **n'ont PAS** d'entité associée (`entityId = null`)
 
-Le service `correlation.service.ts` ne cherchait que dans :
+### Problèmes identifiés
 
-1. ❌ `payload.firstName` + `payload.lastName` (structure ancienne)
-2. ✅ `researchItems.details`
-3. ❌ **IGNORAIT** `payload.findings[]`
+1. ❌ Code cherchait `personDetails.firstName + lastName` qui **n'existent PAS**
+2. ❌ Code était dans le bloc `if (module.entity)` alors que EntityOverview **n'a PAS d'entité**
+3. ❌ Le `label` du finding n'était pas utilisé
 
 ## ✅ Solution implémentée
 
-### Modification 1 : `extractCorrelatableData()`
-
-Ajout de l'extraction depuis `payload.findings[]` :
+### Modification 1 : Déplacement hors du bloc `if (module.entity)`
 
 ```typescript
-// Extraire aussi depuis les "Entités identifiées" (findings)
+// AVANT (❌)
+for (const module of report.modules) {
+  if (module.entity) {  // ← EntityOverview n'a PAS d'entité !
+    if (payload.findings) { /* ... */ }
+  }
+}
+
+// APRÈS (✅)
+for (const module of report.modules) {
+  // Findings pour TOUS les modules
+  if (payload.findings) { /* ... */ }
+  
+  // Ensuite modules avec entité
+  if (module.entity) { /* ... */ }
+}
+```
+
+### Modification 2 : Utilisation du `label`
+
+```typescript
 if (payload.findings && Array.isArray(payload.findings)) {
   for (const finding of payload.findings) {
-    if (finding.metadata) {
-      const meta = finding.metadata;
-
-      // Noms de personnes
-      if (meta.entityType === "person" && meta.personDetails) {
-        const firstName = meta.personDetails.firstName || "";
-        const lastName = meta.personDetails.lastName || "";
-        const fullName = `${firstName} ${lastName}`.trim();
-
-        if (fullName) {
-          correlatableData.push({
-            type: CorrelationType.NAME,
-            value: fullName,
-            context: `Entité identifiée: ${finding.label}`,
-          });
-        }
-      }
-
-      // Organisations
-      if (
-        (meta.entityType === "organization" || meta.entityType === "company") &&
-        meta.companyDetails
-      ) {
-        if (meta.companyDetails.legalName) {
-          correlatableData.push({
-            type: CorrelationType.ORGANIZATION,
-            value: meta.companyDetails.legalName,
-            context: `Entité identifiée: ${finding.label}`,
-          });
-        }
-      }
-
-      // Téléphones, emails, adresses...
-      // (extraction depuis personDetails et companyDetails)
+    const label = finding.label?.trim();  // ← NOM COMPLET
+    
+    if (!label) continue;
+    
+    if (finding.metadata?.entityType === 'person') {
+      correlatableData.push({
+        type: CorrelationType.NAME,
+        value: label,  // ← "Robert Redfort"
+        context: `Entité identifiée: ${label}`,
+      });
+    }
+    
+    // Adresse physique
+    if (finding.metadata?.personDetails?.physicalAddress) {
+      correlatableData.push({
+        type: CorrelationType.ADDRESS,
+        value: finding.metadata.personDetails.physicalAddress,
+        context: `Entité identifiée: ${label}`,
+      });
     }
   }
 }
 ```
 
-### Modification 2 : `checkCorrelation()`
+## 🧪 Tests et résultats
 
-Ajout de la recherche dans `payload.findings[]` lors de la comparaison avec d'autres rapports :
+### Commande de test
 
-```typescript
-// Chercher aussi dans les "Entités identifiées" (findings)
-if (!found && module.payload && typeof module.payload === "object") {
-  const payload: any = module.payload;
+```bash
+npx tsx src/modules/correlations/test-detection.ts
+```
 
-  if (payload.findings && Array.isArray(payload.findings)) {
-    for (const finding of payload.findings) {
-      if (finding.metadata) {
-        const meta = finding.metadata;
+### Résultats ✅
 
-        switch (type) {
-          case CorrelationType.NAME:
-            if (meta.entityType === "person" && meta.personDetails) {
-              const fullName = `${meta.personDetails.firstName || ""} ${
-                meta.personDetails.lastName || ""
-              }`.trim();
+```
+=== Rapport: LUMBAGO ===
+✅ 2 données corrélables extraites:
+   - [NAME] "Robert Redfort" (Entité identifiée: Robert Redfort)
+   - [ADDRESS] "gfqdfsgrsg" (Entité identifiée: Robert Redfort)
 
-              if (fullName === value) {
-                found = true;
-                foundContext = `Entité identifiée: ${finding.label}`;
-              }
-            }
-            break;
-          // ... autres types de corrélation
-        }
-      }
-    }
-  }
-}
+🔄 Lancement de la détection...
+✅ 2 corrélation(s) détectée(s)
+   🔗 Corrélation avec: EMBARGO
+      Type: NAME
+      Valeur: Robert Redfort
+      Confiance: 1.0
+
+=== Rapport: EMBARGO ===
+✅ 2 données corrélables extraites:
+   - [NAME] "Robert Redfort" (Entité identifiée: Robert Redfort)
+   - [ADDRESS] "gfqdfsgrsg" (Entité identifiée: Robert Redfort)
+
+✅ 4 corrélation(s) détectée(s) (bidirectionnelles)
 ```
 
 ## 📊 Types de données extraites
 
-Le système extrait maintenant depuis `findings[]` :
-
-| Type             | Source                                  | Exemple              |
-| ---------------- | --------------------------------------- | -------------------- |
-| **NAME**         | `personDetails.firstName + lastName`    | "Robert Redford"     |
-| **ORGANIZATION** | `companyDetails.legalName`              | "ACME Corporation"   |
-| **PHONE**        | `personDetails.phoneNumbers[].number`   | "+33612345678"       |
-| **EMAIL**        | `personDetails.emails[].address`        | "robert@example.com" |
-| **ADDRESS**      | `personDetails.addresses[].fullAddress` | "123 Main St, Paris" |
-
-## 🧪 Tests
-
-### Scénario de test
-
-1. Créer un rapport avec "Robert Redford" dans Entités identifiées
-2. Dupliquer le rapport 2 fois
-3. Lancer "Détecter corrélations" sur l'un des rapports
-4. **Résultat attendu** : 2 corrélations de type NAME détectées ✅
-
-### Vérification
-
-```bash
-# Vérifier dans les logs
-# Devrait afficher : "X éléments analysés"
-# avec au moins le nom de la personne
-
-# Vérifier dans la base de données
-SELECT * FROM "ReportCorrelation"
-WHERE "correlationType" = 'NAME'
-AND "correlationData"->>'value' = 'Robert Redford';
-```
+| Type | Source | Testé |
+|------|--------|-------|
+| **NAME** | `finding.label` | ✅ |
+| **ADDRESS** | `personDetails.physicalAddress` | ✅ |
+| **ORGANIZATION** | `finding.label` ou `companyDetails.legalName` | ⚠️ |
+| **PHONE** | `personDetails.phoneNumbers[]` | ⚠️ |
+| **EMAIL** | `personDetails.emails[]` | ⚠️ |
 
 ## 📝 Impact
 
-### Portée
-
-- ✅ Améliore la détection de corrélations pour tous les modules EntityOverview
-- ✅ Couvre les noms, organisations, téléphones, emails et adresses
-- ✅ Gère la correspondance exacte et partielle pour les noms
-- ✅ Contextualise avec le label de l'entité identifiée
-
-### Rétrocompatibilité
-
-- ✅ Conserve la recherche dans les structures anciennes (`payload.firstName`, etc.)
-- ✅ Conserve la recherche dans `researchItems`
-- ✅ Aucune migration de données nécessaire
+- ✅ Résout le problème de détection dans EntityOverview
+- ✅ Support des tableaux vides (phoneNumbers, emails)
+- ✅ Fallback sur label si pas de metadata
+- ✅ Correspondance exacte et partielle pour noms
+- ✅ Rétrocompatible avec anciennes structures
 
 ## 🔗 Fichiers modifiés
 
 - `backend/src/modules/correlations/correlation.service.ts`
-  - Fonction `extractCorrelatableData()` : +115 lignes
-  - Fonction `checkCorrelation()` : +120 lignes
-
-## 📚 Documentation associée
-
-- [Guide d'implémentation des corrélations](./correlation-implementation-guide.md)
-- [Résumé Phase 1 - Corrélations](./correlation-system-phase1-summary.md)
+  - `extractCorrelatableData()` : Déplacement et utilisation du label
+  - `checkCorrelation()` : Recherche dans findings
 
 ---
 
 **Livré par** : GitHub Copilot 🤖  
-**Testé** : ⚠️ À valider par l'utilisateur
+**Testé** : ✅ Validé sur LUMBAGO et EMBARGO
