@@ -9,12 +9,14 @@ Le système de connexion a été amélioré pour permettre aux utilisateurs de s
 ### 1. Authentification multi-identifiants
 
 Les utilisateurs peuvent maintenant se connecter avec :
+
 - ✅ **Email professionnel** : `nom.prenom@police.belgium.eu`
 - ✅ **Matricule** : `ABC123`, `XYZ-789`, etc.
 
 ### 2. Détection automatique
 
 Le système détecte automatiquement le type d'identifiant :
+
 - Si l'identifiant contient un `@`, il est traité comme un **email**
 - Sinon, il est traité comme un **matricule**
 
@@ -35,7 +37,9 @@ Le système détecte automatiquement le type d'identifiant :
 ```typescript
 export const loginSchema = z
   .object({
-    identifier: z.string().min(1, "L'identifiant (email ou matricule) est requis"),
+    identifier: z
+      .string()
+      .min(1, "L'identifiant (email ou matricule) est requis"),
     password: z.string().min(1),
   })
   .strict();
@@ -52,12 +56,12 @@ export type LoginInput = z.infer<typeof loginSchema>;
 ```typescript
 async function getUserWithRoleByEmailOrMatricule(identifier: string) {
   // Détecter si c'est un email ou un matricule
-  const isEmail = identifier.includes('@');
-  
+  const isEmail = identifier.includes("@");
+
   if (isEmail) {
     return getUserWithRoleByEmail(identifier);
   }
-  
+
   // Sinon, rechercher par matricule
   return prisma.user.findUnique({
     where: { matricule: identifier.toUpperCase() },
@@ -67,6 +71,7 @@ async function getUserWithRoleByEmailOrMatricule(identifier: string) {
 ```
 
 **Logique :**
+
 1. Détecte la présence de `@` dans l'identifiant
 2. Si présent → recherche par email (converti en minuscules)
 3. Sinon → recherche par matricule (converti en majuscules)
@@ -143,7 +148,7 @@ async function login(credentials: { identifier: string; password: string }) {
 
   try {
     await api.post("/auth/login", credentials, { withCredentials: true });
-    
+
     // Fetch user data after successful login
     const response = await api.get<{ user: UserInfo }>("/auth/me");
     user.value = response.data.user;
@@ -164,6 +169,7 @@ async function login(credentials: { identifier: string; password: string }) {
 **Fichier :** `frontend/src/pages/LoginPage.vue`
 
 **État du formulaire :**
+
 ```typescript
 const form = reactive({
   identifier: "",
@@ -172,6 +178,7 @@ const form = reactive({
 ```
 
 **Template du champ :**
+
 ```vue
 <label class="form-control">
   <div class="label">
@@ -198,6 +205,7 @@ const form = reactive({
 ```
 
 **Changements :**
+
 - Label : "Email professionnel" → "Email ou Matricule"
 - Type d'input : `email` → `text` (pour accepter les matricules)
 - Placeholder : Indique les deux formats possibles
@@ -230,19 +238,21 @@ Mot de passe : MySecureP@ssw0rd123!
 
 ### Casse des caractères
 
-| Type | Saisie utilisateur | Traitement | Recherche en base |
-|------|-------------------|------------|-------------------|
-| Email | `John.Doe@Police.Belgium.eu` | Conversion en minuscules | `john.doe@police.belgium.eu` |
-| Matricule | `abc123` | Conversion en majuscules | `ABC123` |
+| Type      | Saisie utilisateur           | Traitement               | Recherche en base            |
+| --------- | ---------------------------- | ------------------------ | ---------------------------- |
+| Email     | `John.Doe@Police.Belgium.eu` | Conversion en minuscules | `john.doe@police.belgium.eu` |
+| Matricule | `abc123`                     | Conversion en majuscules | `ABC123`                     |
 
 ### Format des matricules
 
 Les matricules peuvent contenir :
+
 - Lettres majuscules (converties automatiquement)
 - Chiffres
 - Tirets (`-`)
 
 Exemples valides :
+
 - `ABC123`
 - `XYZ-789`
 - `A1B2C3`
@@ -253,11 +263,13 @@ Exemples valides :
 ### Messages d'erreur génériques
 
 Pour des raisons de sécurité, le message d'erreur reste **générique** :
+
 ```
 Identifiants invalides
 ```
 
 Le système **ne révèle pas** :
+
 - Si l'email/matricule existe
 - Si le mot de passe est incorrect
 - Quel type d'identifiant a été utilisé
@@ -301,6 +313,7 @@ Le système **ne révèle pas** :
 ### Rétrocompatibilité
 
 ✅ **Totalement rétrocompatible**
+
 - Les utilisateurs existants peuvent continuer à se connecter avec leur email
 - Aucune migration de données nécessaire
 - Aucun changement de comportement pour les connexions par email
@@ -310,6 +323,7 @@ Le système **ne révèle pas** :
 L'endpoint `/auth/login` accepte maintenant :
 
 **Avant :**
+
 ```json
 {
   "email": "john.doe@police.belgium.eu",
@@ -318,6 +332,7 @@ L'endpoint `/auth/login` accepte maintenant :
 ```
 
 **Maintenant (compatible avec l'ancien format) :**
+
 ```json
 {
   "identifier": "ABC123",

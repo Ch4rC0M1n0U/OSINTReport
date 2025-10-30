@@ -9,6 +9,7 @@ Lors de l'enregistrement, de la mise à jour ou de l'activation d'une configurat
 ### 1. Email de test automatique
 
 L'email de test est envoyé automatiquement dans les cas suivants :
+
 - **Création** d'une nouvelle configuration SMTP active
 - **Mise à jour** d'une configuration SMTP active
 - **Activation** d'une configuration SMTP existante
@@ -16,6 +17,7 @@ L'email de test est envoyé automatiquement dans les cas suivants :
 ### 2. Destinataire de l'email de test
 
 L'email de test est envoyé à l'adresse email définie comme **adresse d'expédition** (`fromEmail`) de la configuration SMTP. Cela permet de vérifier que :
+
 - La configuration SMTP fonctionne
 - L'adresse d'expédition est valide
 - Les emails peuvent être envoyés et reçus
@@ -23,6 +25,7 @@ L'email de test est envoyé à l'adresse email définie comme **adresse d'expéd
 ### 3. Contenu de l'email de test
 
 L'email de test contient :
+
 - ✅ Un message de confirmation que la configuration fonctionne
 - Les détails de la configuration (serveur, port, sécurité, utilisateur)
 - La date et l'heure de l'envoi
@@ -52,6 +55,7 @@ static async sendTestEmail(
 ```
 
 Cette méthode :
+
 - Crée un transporteur nodemailer avec la configuration fournie
 - Génère un email de test au format HTML et texte
 - Envoie l'email au destinataire spécifié
@@ -64,6 +68,7 @@ Cette méthode :
 Les méthodes suivantes ont été modifiées pour envoyer automatiquement un email de test :
 
 ##### `createConfig()`
+
 ```typescript
 // Envoyer un email de test si la configuration est active
 if (config.active) {
@@ -76,6 +81,7 @@ if (config.active) {
 ```
 
 ##### `updateConfig()`
+
 ```typescript
 // Envoyer un email de test si la configuration est active
 if (config.active) {
@@ -88,6 +94,7 @@ if (config.active) {
 ```
 
 ##### `activateConfig()`
+
 ```typescript
 // Envoyer un email de test lors de l'activation
 try {
@@ -100,6 +107,7 @@ try {
 ## 🎯 Comportement
 
 ### Succès
+
 1. L'utilisateur enregistre ou active une configuration SMTP
 2. La configuration est sauvegardée dans la base de données
 3. Un email de test est envoyé automatiquement
@@ -107,6 +115,7 @@ try {
 5. La configuration est validée comme fonctionnelle
 
 ### Gestion des erreurs
+
 - Si l'envoi de l'email de test échoue, **l'erreur est loggée** mais **ne bloque pas** l'enregistrement de la configuration
 - Cela permet de sauvegarder la configuration même si l'email de test ne peut pas être envoyé
 - L'utilisateur peut ensuite utiliser le bouton "Tester la connexion" pour diagnostiquer le problème
@@ -122,17 +131,20 @@ try {
 ## 📧 Format de l'email de test
 
 ### Objet
+
 ```
 ✅ Test de configuration SMTP - OSINTReport
 ```
 
 ### Contenu HTML
+
 - En-tête vert avec icône de validation
 - Message de félicitations
 - Détails de la configuration (serveur, port, sécurité, utilisateur)
 - Footer avec date/heure et copyright
 
 ### Contenu texte
+
 Version texte brut pour les clients email qui ne supportent pas le HTML
 
 ## 🔍 Points techniques importants
@@ -177,11 +189,13 @@ POST /api/smtp/config/:id/activate
 ## 📊 Logs
 
 Les logs incluent :
+
 - Succès de l'envoi avec destinataire et serveur SMTP
 - Erreurs d'envoi avec détails de l'exception
 - Informations de débogage pour diagnostiquer les problèmes
 
 Exemple de log :
+
 ```
 INFO: Email de test SMTP envoyé avec succès
   to: noreply@example.com

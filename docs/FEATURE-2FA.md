@@ -9,6 +9,7 @@ L'authentification à deux facteurs (2FA) a été implémentée pour renforcer l
 ### 1. Activation de la 2FA
 
 Les utilisateurs peuvent activer la 2FA depuis leur page de profil :
+
 - ✅ Génération d'un QR code unique
 - ✅ Support des applications d'authentification (Google Authenticator, Microsoft Authenticator, Authy)
 - ✅ Code de sauvegarde manuel disponible
@@ -17,6 +18,7 @@ Les utilisateurs peuvent activer la 2FA depuis leur page de profil :
 ### 2. Processus de login avec 2FA
 
 Lorsqu'un utilisateur avec 2FA activée se connecte :
+
 1. Saisie identifiant (email/matricule) + mot de passe
 2. Si valide et 2FA activée → Modal de vérification 2FA
 3. Saisie du code à 6 chiffres de l'application
@@ -25,6 +27,7 @@ Lorsqu'un utilisateur avec 2FA activée se connecte :
 ### 3. Gestion de la 2FA
 
 Dans la page profil, les utilisateurs peuvent :
+
 - **Activer** la 2FA avec un assistant guidé
 - **Désactiver** la 2FA avec vérification par code
 - **Consulter** le statut de leur 2FA
@@ -60,6 +63,7 @@ model User {
 - `isEnabled(userId)` : Vérifie si la 2FA est activée
 
 **Technologies utilisées :**
+
 - `speakeasy` : Génération et vérification des codes TOTP
 - `qrcode` : Génération des QR codes
 
@@ -72,7 +76,7 @@ model User {
 ```typescript
 static async login(input, context) {
   // Vérification identifiant + mot de passe
-  
+
   // Si 2FA activée
   if (user.twoFactorEnabled) {
     // Créer un token temporaire
@@ -81,13 +85,13 @@ static async login(input, context) {
       temp2FA: true,
       // ...
     });
-    
+
     return {
       requires2FA: true,
       tempToken,
     };
   }
-  
+
   // Sinon, login normal
   return {
     accessToken,
@@ -151,6 +155,7 @@ export const twoFactorApi = {
 **Fichier :** `frontend/src/components/profile/TwoFactorSection.vue`
 
 **Fonctionnalités :**
+
 - Affichage du statut 2FA (activée/désactivée)
 - Assistant d'activation avec 3 étapes :
   1. Installation de l'application
@@ -159,6 +164,7 @@ export const twoFactorApi = {
 - Désactivation avec code de vérification
 
 **États :**
+
 - `enabled` : Statut de la 2FA
 - `setupMode` : Mode configuration active
 - `qrCode` : Image QR code en data URL
@@ -169,6 +175,7 @@ export const twoFactorApi = {
 **Fichier :** `frontend/src/components/TwoFactorModal.vue`
 
 **Caractéristiques :**
+
 - Champ de saisie de 6 chiffres
 - Auto-submit quand le code est complet
 - Design centré sur l'UX
@@ -183,14 +190,14 @@ export const twoFactorApi = {
 ```typescript
 async function handleSubmit() {
   const result = await auth.login(form);
-  
+
   // Si 2FA requise
   if (result?.requires2FA && result?.tempToken) {
     tempToken.value = result.tempToken;
     show2FAModal.value = true;
     return;
   }
-  
+
   // Sinon, redirection normale
   router.push("/");
 }
@@ -212,7 +219,7 @@ async function handle2FAVerification(code) {
 async function login(credentials): Promise<{
   requires2FA?: boolean;
   tempToken?: string;
-} | void>
+} | void>;
 ```
 
 ## 🎯 Flow utilisateur
@@ -277,10 +284,12 @@ async function login(credentials): Promise<{
 ### Recommandées
 
 1. **Google Authenticator**
+
    - iOS : [App Store](https://apps.apple.com/app/google-authenticator/)
    - Android : [Play Store](https://play.google.com/store/apps/details?id=com.google.android.apps.authenticator2)
 
 2. **Microsoft Authenticator**
+
    - iOS : [App Store](https://apps.apple.com/app/microsoft-authenticator/)
    - Android : [Play Store](https://play.google.com/store/apps/details?id=com.azure.authenticator)
 
@@ -291,6 +300,7 @@ async function login(credentials): Promise<{
 ### Compatibilité
 
 Toute application supportant le protocole **TOTP (RFC 6238)** fonctionne :
+
 - 1Password
 - Bitwarden
 - LastPass Authenticator
@@ -301,10 +311,10 @@ Toute application supportant le protocole **TOTP (RFC 6238)** fonctionne :
 
 ### Nouveaux champs User
 
-| Champ | Type | Default | Description |
-|-------|------|---------|-------------|
-| `twoFactorEnabled` | Boolean | false | 2FA activée ou non |
-| `twoFactorSecret` | String? | null | Secret TOTP (base32) |
+| Champ              | Type    | Default | Description          |
+| ------------------ | ------- | ------- | -------------------- |
+| `twoFactorEnabled` | Boolean | false   | 2FA activée ou non   |
+| `twoFactorSecret`  | String? | null    | Secret TOTP (base32) |
 
 ### Migration
 
@@ -363,6 +373,7 @@ ALTER TABLE "User" ADD COLUMN "twoFactorSecret" TEXT;
 ### Stockage du secret
 
 Le secret est stocké en **base32** dans la base de données :
+
 - Format : `ABCD EFGH IJKL MNOP QRST UVWX YZ23 4567`
 - Longueur : 32 caractères
 - Encoding : base32 (RFC 4648)
@@ -393,6 +404,7 @@ npx tsc --noEmit
 ### Rétrocompatibilité
 
 ✅ **Totalement rétrocompatible**
+
 - Les utilisateurs existants peuvent continuer à se connecter normalement
 - La 2FA est **optionnelle** (désactivée par défaut)
 - Aucun impact sur les utilisateurs n'activant pas la 2FA
@@ -400,6 +412,7 @@ npx tsc --noEmit
 ### Migration des utilisateurs
 
 Aucune migration nécessaire :
+
 - Nouveaux champs ajoutés avec valeurs par défaut
 - `twoFactorEnabled = false` par défaut
 - `twoFactorSecret = null` par défaut
@@ -412,6 +425,7 @@ Aucune migration nécessaire :
 **Body** : Aucun
 
 **Response :**
+
 ```json
 {
   "secret": "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567",
@@ -423,6 +437,7 @@ Aucune migration nécessaire :
 
 **Auth** : Requise  
 **Body** :
+
 ```json
 {
   "secret": "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567",
@@ -431,6 +446,7 @@ Aucune migration nécessaire :
 ```
 
 **Response :**
+
 ```json
 {
   "message": "Authentification à deux facteurs activée avec succès"
@@ -441,6 +457,7 @@ Aucune migration nécessaire :
 
 **Auth** : Requise  
 **Body** :
+
 ```json
 {
   "token": "123456"
@@ -448,6 +465,7 @@ Aucune migration nécessaire :
 ```
 
 **Response :**
+
 ```json
 {
   "message": "Authentification à deux facteurs désactivée avec succès"
@@ -459,6 +477,7 @@ Aucune migration nécessaire :
 **Auth** : Requise
 
 **Response :**
+
 ```json
 {
   "enabled": true
@@ -469,6 +488,7 @@ Aucune migration nécessaire :
 
 **Auth** : Non (utilise tempToken)  
 **Body** :
+
 ```json
 {
   "tempToken": "eyJhbGciOiJIUzI1NiIs...",
@@ -477,11 +497,12 @@ Aucune migration nécessaire :
 ```
 
 **Response :**
+
 ```json
 {
   "user": {
     "id": "...",
-    "email": "...",
+    "email": "..."
     // ...
   }
 }

@@ -26,7 +26,7 @@ let payload: any;
 try {
   const jwt = require("jsonwebtoken");
   payload = jwt.verify(tempToken, process.env.JWT_SECRET);
-  
+
   if (!payload.temp2FA) {
     throw new Error("Invalid temp token");
   }
@@ -51,7 +51,7 @@ try {
 let payload: AccessTokenClaims;
 try {
   payload = verifyAccessToken(tempToken);
-  
+
   if (!payload.temp2FA) {
     throw new Error("Invalid temp token");
   }
@@ -63,12 +63,12 @@ try {
 ### Imports ajoutés
 
 ```typescript
-import { 
-  createRefreshToken, 
-  signAccessToken, 
-  verifyRefreshToken, 
-  verifyAccessToken,      // ✅ Ajouté
-  AccessTokenClaims       // ✅ Ajouté
+import {
+  createRefreshToken,
+  signAccessToken,
+  verifyRefreshToken,
+  verifyAccessToken, // ✅ Ajouté
+  AccessTokenClaims, // ✅ Ajouté
 } from "@shared/token";
 ```
 
@@ -86,11 +86,12 @@ L'application utilise deux secrets distincts :
 
 ```typescript
 // shared/token.ts
-const accessSecret: Secret = env.JWT_ACCESS_SECRET;   // Pour les access tokens
+const accessSecret: Secret = env.JWT_ACCESS_SECRET; // Pour les access tokens
 const refreshSecret: Secret = env.JWT_REFRESH_SECRET; // Pour les refresh tokens
 ```
 
 Et vérifie également :
+
 - **Issuer** : `BACKEND_URL`
 - **Audience** : `FRONTEND_URL`
 
@@ -121,14 +122,14 @@ Et vérifie également :
 +     payload = verifyAccessToken(tempToken);
 -     const jwt = require("jsonwebtoken");
 -     payload = jwt.verify(tempToken, process.env.JWT_SECRET);
-      
+
       if (!payload.temp2FA) {
         throw new Error("Invalid temp token");
       }
     } catch (error) {
       throw createError(401, "Token temporaire invalide");
     }
-    
+
     // ... reste du code
   }
 ```
