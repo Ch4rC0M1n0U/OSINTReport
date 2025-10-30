@@ -26,6 +26,12 @@ export interface Finding {
   metadata?: Record<string, any>;
 }
 
+export interface RichTextBlock {
+  id: string;
+  title: string;
+  content: string; // HTML du WYSIWYG editor
+}
+
 export interface MediaItem {
   attachmentId: string;
   caption: string;
@@ -86,6 +92,7 @@ export interface EntitiesPayload {
  */
 export interface ObjectivesPayload {
   objectives: string[];
+  richTextBlocks?: RichTextBlock[];
 }
 
 /**
@@ -97,6 +104,7 @@ export interface ResearchSummaryPayload {
   notFound: string[];
   methodology?: string;
   notes?: string;
+  richTextBlocks?: RichTextBlock[];
 }
 
 /**
@@ -108,6 +116,7 @@ export interface EntityOverviewPayload {
   context: string;
   findings: Finding[];
   notes?: string;
+  richTextBlocks?: RichTextBlock[];
 }
 
 /**
@@ -119,6 +128,7 @@ export interface IdentifierLookupPayload {
   identifierValue: string;
   findings: Finding[];
   notes?: string;
+  richTextBlocks?: RichTextBlock[];
 }
 
 /**
@@ -157,6 +167,7 @@ export interface MediaGalleryPayload {
  */
 export interface DataRetentionPayload {
   datasets: Dataset[];
+  richTextBlocks?: RichTextBlock[];
 }
 
 /**
@@ -173,6 +184,7 @@ export interface ConclusionsPayload {
  */
 export interface InvestigationLeadsPayload {
   leads: InvestigationLead[];
+  richTextBlocks?: RichTextBlock[];
 }
 
 /**

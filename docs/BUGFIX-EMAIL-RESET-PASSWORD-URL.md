@@ -37,7 +37,7 @@ await EmailService.sendPasswordResetEmail(
   user.email,
   user.firstName,
   resetToken,
-  env.FRONTEND_URL  // ← Utilise la valeur de .env ou le défaut
+  env.FRONTEND_URL // ← Utilise la valeur de .env ou le défaut
 );
 ```
 
@@ -52,11 +52,13 @@ const resetLink = `${frontendUrl}/reset-password?token=${resetToken}`;
 ### 1. Script automatique de détection d'environnement
 
 Création du script `scripts/update-env-urls.sh` qui :
+
 - ✅ Détecte automatiquement l'environnement (local vs GitHub Codespaces vs production)
 - ✅ Construit les URLs appropriées
 - ✅ Met à jour le fichier `.env` automatiquement
 
 **Détection GitHub Codespaces :**
+
 ```bash
 if [ -n "$CODESPACE_NAME" ] && [ -n "$GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN" ]; then
     FRONTEND_URL="https://${CODESPACE_NAME}-5173.${GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN}"
@@ -65,6 +67,7 @@ fi
 ```
 
 **Utilisation :**
+
 ```bash
 ./scripts/update-env-urls.sh
 ```
@@ -79,7 +82,7 @@ Mise à jour de `.env.example` avec des commentaires explicatifs :
 #   - Les liens dans les emails (réinitialisation de mot de passe, etc.)
 #   - Les cookies (CORS)
 #   - Les tokens JWT (issuer/audience)
-# 
+#
 # En environnement local :
 #   FRONTEND_URL=http://localhost:5173
 #   BACKEND_URL=http://localhost:4000
@@ -105,19 +108,25 @@ BACKEND_URL=https://fuzzy-halibut-97wgwqvrqgg379r7-4000.app.github.dev
 ## 📧 Impact sur les emails
 
 ### Avant
+
 ```html
 <a href="http://localhost:5173/reset-password?token=abc123">
   Réinitialiser mon mot de passe
 </a>
 ```
+
 ❌ Lien non fonctionnel depuis l'extérieur
 
 ### Après
+
 ```html
-<a href="https://fuzzy-halibut-97wgwqvrqgg379r7-5173.app.github.dev/reset-password?token=abc123">
+<a
+  href="https://fuzzy-halibut-97wgwqvrqgg379r7-5173.app.github.dev/reset-password?token=abc123"
+>
   Réinitialiser mon mot de passe
 </a>
 ```
+
 ✅ Lien fonctionnel depuis n'importe où
 
 ## 🔄 Autres usages de ces variables
@@ -125,12 +134,14 @@ BACKEND_URL=https://fuzzy-halibut-97wgwqvrqgg379r7-4000.app.github.dev
 Les variables `FRONTEND_URL` et `BACKEND_URL` sont également utilisées pour :
 
 1. **JWT Tokens** (`backend/src/shared/token.ts`)
+
    ```typescript
    const jwtIssuer = env.BACKEND_URL;
    const jwtAudience = env.FRONTEND_URL;
    ```
 
 2. **Cookies** (`backend/src/config/cookies.ts`)
+
    - Configuration du domaine des cookies
    - Configuration CORS
 
@@ -141,9 +152,11 @@ Les variables `FRONTEND_URL` et `BACKEND_URL` sont également utilisées pour :
 ## 📋 Fichiers modifiés
 
 ### Nouveau fichier
+
 - ✅ `scripts/update-env-urls.sh` - Script de détection et configuration automatique
 
 ### Fichiers mis à jour
+
 - ✅ `.env` - URLs configurées pour GitHub Codespaces
 - ✅ `.env.example` - Documentation améliorée avec commentaires explicatifs
 
@@ -152,12 +165,14 @@ Les variables `FRONTEND_URL` et `BACKEND_URL` sont également utilisées pour :
 ### Pour les développeurs
 
 **Sur GitHub Codespaces :**
+
 ```bash
 ./scripts/update-env-urls.sh
 npm run dev
 ```
 
 **En local :**
+
 ```bash
 # Pas besoin du script, les valeurs par défaut fonctionnent
 npm run dev
@@ -166,6 +181,7 @@ npm run dev
 ### Pour la production
 
 1. Configurer manuellement dans `.env` :
+
    ```bash
    FRONTEND_URL=https://votre-domaine.com
    BACKEND_URL=https://api.votre-domaine.com
@@ -180,11 +196,13 @@ npm run dev
 Pour tester que les URLs sont correctes :
 
 1. **Vérifier les variables :**
+
    ```bash
    grep -E "^(FRONTEND_URL|BACKEND_URL)" .env
    ```
 
 2. **Tester l'email de récupération :**
+
    - Demander une réinitialisation de mot de passe
    - Vérifier que le lien dans l'email contient l'URL publique
    - Cliquer sur le lien pour confirmer qu'il fonctionne

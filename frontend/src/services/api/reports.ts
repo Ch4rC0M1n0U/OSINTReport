@@ -181,6 +181,12 @@ export const MODULE_TYPE_METADATA: Record<
 
 export type ConfidenceLevel = "confirmed" | "probable" | "possible" | "unknown";
 
+export interface RichTextBlock {
+  id: string;
+  title: string;
+  content: string;
+}
+
 export interface Source {
   type: "url" | "document" | "database" | "testimony";
   value: string;
@@ -275,6 +281,7 @@ export interface EntitiesPayload {
 
 export interface ObjectivesPayload {
   objectives: string[];
+  richTextBlocks?: RichTextBlock[];
 }
 
 export interface ResearchSummaryPayload {
@@ -282,6 +289,7 @@ export interface ResearchSummaryPayload {
   notFound: string[];
   methodology?: string;
   notes?: string;
+  richTextBlocks?: RichTextBlock[];
 }
 
 export interface EntityOverviewPayload {
@@ -289,6 +297,7 @@ export interface EntityOverviewPayload {
   context: string;
   findings: Finding[];
   notes?: string;
+  richTextBlocks?: RichTextBlock[];
 }
 
 export interface IdentifierLookupPayload {
@@ -296,6 +305,7 @@ export interface IdentifierLookupPayload {
   identifierValue: string;
   findings: Finding[];
   notes?: string;
+  richTextBlocks?: RichTextBlock[];
 }
 
 export interface PlatformAnalysisPayload {
@@ -322,6 +332,7 @@ export interface MediaGalleryPayload {
 
 export interface DataRetentionPayload {
   datasets: Dataset[];
+  richTextBlocks?: RichTextBlock[];
 }
 
 export interface ConclusionsPayload {
@@ -330,6 +341,7 @@ export interface ConclusionsPayload {
 
 export interface InvestigationLeadsPayload {
   leads: InvestigationLead[];
+  richTextBlocks?: RichTextBlock[];
 }
 
 export interface SignOffPayload {

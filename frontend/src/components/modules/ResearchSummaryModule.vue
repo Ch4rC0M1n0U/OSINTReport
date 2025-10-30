@@ -2,6 +2,17 @@
   <div class="space-y-6">
     <!-- Mode lecture -->
     <div v-if="!isEditing" class="space-y-4">
+      <!-- Blocs de texte enrichi -->
+      <RichTextBlockList
+        v-if="richTextBlocks.length > 0"
+        :blocks="richTextBlocks"
+        :readonly="true"
+        :report-id="reportId"
+        :findings="findings"
+        placeholder="Informations complémentaires..."
+        class="mb-4"
+      />
+      
       <!-- Résumé global -->
       <section v-if="safePayload.summary" class="card bg-base-100 shadow">
         <div class="card-body">
@@ -45,12 +56,20 @@
       </section>
 
       <!-- Message si vide -->
-      <div v-if="!safePayload.summary && !safePayload.methodology && (!safePayload.notFound || safePayload.notFound.length === 0) && !safePayload.notes" class="text-center py-8 text-base-content/60 italic">
+      <div v-if="!richTextBlocks.length && !safePayload.summary && !safePayload.methodology && (!safePayload.notFound || safePayload.notFound.length === 0) && !safePayload.notes" class="text-center py-8 text-base-content/60 italic">
         Aucun contenu pour ce module
       </div>
 
       <!-- Bouton édition -->
-      <div class="flex justify-end">
+      <div class="flex justify-end gap-2">
+        <button
+          v-if="richTextBlocks.length > 0"
+          @click="() => {}"
+          class="btn btn-ghost btn-sm"
+          disabled
+        >
+          {{ richTextBlocks.length }} bloc{{ richTextBlocks.length > 1 ? 's' : '' }} de texte
+        </button>
         <button @click="startEditing" class="btn btn-primary">
           ✏️ Modifier
         </button>
@@ -59,6 +78,33 @@
 
     <!-- Mode édition avec auto-save -->
     <div v-else class="space-y-6">
+      <!-- Bouton ajouter texte -->
+      <div class="flex justify-end">
+        <button
+          type="button"
+          @click="addRichTextBlock"
+          class="btn btn-sm btn-outline gap-2"
+        >
+          <span>📝</span>
+          <span>Ajouter un bloc de texte</span>
+        </button>
+      </div>
+
+      <!-- Blocs de texte enrichi -->
+      <RichTextBlockList
+        v-if="richTextBlocks.length > 0"
+        :blocks="richTextBlocks"
+        :readonly="false"
+        :report-id="reportId"
+        :findings="findings"
+        placeholder="Ajoutez des informations complémentaires... Utilisez le bouton 👤 pour insérer des entités."
+        class="mb-4"
+        @update="() => {}"
+        @delete="deleteBlock"
+        @move-up="moveBlockUp"
+        @move-down="moveBlockDown"
+      />
+      
       <!-- Résumé global -->
       <section class="form-control">
         <label class="label">
@@ -167,17 +213,28 @@
 import { ref, computed, watch, inject } from "vue";
 import WysiwygEditor from "@/components/shared/WysiwygEditor.vue";
 import MarkdownRenderer from "@/components/shared/MarkdownRenderer.vue";
+import RichTextBlockList from "@/components/shared/RichTextBlockList.vue";
 import type { Report } from "@/services/api/reports";
+import { useRichTextBlocks } from "@/composables/useRichTextBlocks";
+import type { Finding } from "@/services/api/findings";
+
+interface RichTextBlock {
+  id: string;
+  title: string;
+  content: string;
+}
 
 interface ResearchSummaryPayload {
   summary: string;
   notFound: string[];
   methodology?: string;
   notes?: string;
+  richTextBlocks?: RichTextBlock[];
 }
 
 interface Props {
   modelValue: ResearchSummaryPayload;
+  reportId?: number;
 }
 
 interface Emits {
@@ -189,6 +246,21 @@ const emit = defineEmits<Emits>();
 
 // Injecter les données du rapport depuis le parent
 const report = inject<Report>('report', null as any);
+const findings = inject<Finding[]>('reportFindings', []);
+
+// Composable pour les blocs de texte enrichi
+const emitUpdate = () => {
+  // L'update sera géré par finishEditing
+};
+
+const {
+  richTextBlocks,
+  addRichTextBlock,
+  deleteBlock,
+  moveBlockUp,
+  moveBlockDown,
+  setBlocks
+} = useRichTextBlocks(props.modelValue.richTextBlocks || [], emitUpdate);
 
 const isEditing = ref(false);
 const editablePayload = ref<ResearchSummaryPayload>({
@@ -217,19 +289,36 @@ const notesModel = computed({
   set: (value: string) => { editablePayload.value.notes = value || undefined; }
 });
 
+// Synchroniser les blocs avec le modelValue
+watch(
+  () => props.modelValue.richTextBlocks,
+  (newBlocks) => {
+    if (!isEditing.value) {
+      setBlocks(newBlocks || []);
+    }
+  },
+  { deep: true }
+);
+
 function startEditing() {
   editablePayload.value = {
     summary: safePayload.value.summary,
     notFound: [...safePayload.value.notFound],
     methodology: safePayload.value.methodology || undefined,
     notes: safePayload.value.notes || undefined,
+    richTextBlocks: props.modelValue.richTextBlocks || [],
   };
+  setBlocks(editablePayload.value.richTextBlocks || []);
   isEditing.value = true;
 }
 
 function finishEditing() {
   // Sauvegarde manuelle uniquement
-  emit("update:modelValue", editablePayload.value);
+  const payload: ResearchSummaryPayload = {
+    ...editablePayload.value,
+    richTextBlocks: richTextBlocks.value,
+  };
+  emit("update:modelValue", payload);
   isEditing.value = false;
 }
 

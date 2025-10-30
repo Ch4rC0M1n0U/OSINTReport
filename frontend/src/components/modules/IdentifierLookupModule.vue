@@ -5,17 +5,47 @@
       <div class="flex items-center gap-2">
         <span class="text-lg font-semibold">🔍 Recherche d'identifiants</span>
         <span class="badge badge-neutral">{{ findings.length }}</span>
+        <span v-if="richTextBlocks.length > 0" class="badge badge-info">
+          {{ richTextBlocks.length }} bloc{{ richTextBlocks.length > 1 ? 's' : '' }} de texte
+        </span>
       </div>
-      <button
-        v-if="!readonly"
-        type="button"
-        class="btn btn-sm btn-primary gap-2"
-        @click="openCreateModal"
-      >
-        <span>➕</span>
-        <span>Nouvel identifiant</span>
-      </button>
+      <div class="flex items-center gap-2">
+        <button
+          v-if="!readonly"
+          type="button"
+          class="btn btn-sm btn-outline gap-2"
+          @click="addRichTextBlock"
+          title="Ajouter un bloc de texte enrichi"
+        >
+          <span>📝</span>
+          <span>Ajouter un texte</span>
+        </button>
+        <button
+          v-if="!readonly"
+          type="button"
+          class="btn btn-sm btn-primary gap-2"
+          @click="openCreateModal"
+        >
+          <span>➕</span>
+          <span>Nouvel identifiant</span>
+        </button>
+      </div>
     </div>
+
+    <!-- Blocs de texte enrichi -->
+    <RichTextBlockList
+      v-if="richTextBlocks.length > 0"
+      :blocks="richTextBlocks"
+      :readonly="readonly"
+      :report-id="reportId"
+      :findings="findings"
+      placeholder="Ajoutez des informations sur la recherche d'identifiants... Utilisez le bouton 👤 pour insérer des entités."
+      class="mb-4"
+      @update="emitUpdate"
+      @delete="deleteBlock"
+      @move-up="moveBlockUp"
+      @move-down="moveBlockDown"
+    />
 
     <!-- Liste des identifiants (cartes compactes) -->
     <div v-if="findings.length > 0" class="grid grid-cols-1 lg:grid-cols-2 gap-3">
@@ -59,22 +89,28 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue';
+import { ref, computed, watch, inject } from 'vue';
 import type { Finding } from '@/services/api/reports';
 import IdentifierCard from './IdentifierCard.vue';
 import IdentifierEditModal from './IdentifierEditModal.vue';
+import { useRichTextBlocks } from '@/composables/useRichTextBlocks';
+import RichTextBlockList from '@/components/shared/RichTextBlockList.vue';
 
 const props = defineProps<{
   modelValue: {
     findings?: Finding[];
+    richTextBlocks?: any[];
   };
   readonly?: boolean;
   reportId?: string; // UID du rapport pour screenshots
 }>();
 
 const emit = defineEmits<{
-  (e: 'update:modelValue', value: { findings: Finding[] }): void;
+  (e: 'update:modelValue', value: { findings: Finding[]; richTextBlocks?: any[] }): void;
 }>();
+
+// Injecter les findings depuis le contexte du rapport (si disponibles)
+const allFindings = inject<Finding[]>('reportFindings', []);
 
 // État local
 const findings = ref<Finding[]>([]);
@@ -82,11 +118,24 @@ const isModalOpen = ref(false);
 const editingIdentifier = ref<Finding | null>(null);
 const editingIndex = ref<number | null>(null);
 
+// Gestion des blocs de texte riche
+const {
+  richTextBlocks,
+  addRichTextBlock,
+  deleteBlock,
+  moveBlockUp,
+  moveBlockDown,
+  setBlocks,
+} = useRichTextBlocks(props.modelValue.richTextBlocks || [], emitUpdate);
+
 // Synchroniser avec modelValue
 watch(
   () => props.modelValue,
   (newValue) => {
     findings.value = newValue?.findings || [];
+    if (newValue?.richTextBlocks) {
+      setBlocks(newValue.richTextBlocks);
+    }
   },
   { immediate: true, deep: true }
 );
@@ -155,7 +204,10 @@ function handleSave(identifier: Finding) {
 
 // Émettre la mise à jour
 function emitUpdate() {
-  emit('update:modelValue', { findings: findings.value });
+  emit('update:modelValue', { 
+    findings: findings.value,
+    richTextBlocks: richTextBlocks.value,
+  });
 }
 </script>
 

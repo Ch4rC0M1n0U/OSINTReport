@@ -6,16 +6,45 @@
         <div class="flex items-center gap-2">
           <span class="text-lg font-semibold">🗄️ Conservation des données</span>
           <span class="badge badge-neutral">{{ datasets.length }}</span>
+          <span v-if="richTextBlocks.length > 0" class="badge badge-info">
+            {{ richTextBlocks.length }} bloc{{ richTextBlocks.length > 1 ? 's' : '' }} de texte
+          </span>
         </div>
-        <button
-          v-if="!readonly"
-          type="button"
-          class="btn btn-sm btn-primary"
-          @click="startEditing"
-        >
-          ✏️ Modifier
-        </button>
+        <div class="flex items-center gap-2">
+          <button
+            v-if="!readonly"
+            type="button"
+            class="btn btn-sm btn-outline gap-2"
+            @click="addRichTextBlock"
+            title="Ajouter un bloc de texte enrichi"
+          >
+            <span>📝</span>
+            <span>Ajouter un texte</span>
+          </button>
+          <button
+            v-if="!readonly"
+            type="button"
+            class="btn btn-sm btn-primary"
+            @click="startEditing"
+          >
+            ✏️ Modifier
+          </button>
+        </div>
       </div>
+
+      <!-- Blocs de texte enrichi -->
+      <RichTextBlockList
+        v-if="richTextBlocks.length > 0"
+        :blocks="richTextBlocks"
+        :readonly="readonly"
+        :report-id="reportId"
+        :findings="findings"
+        placeholder="Ajoutez des informations sur la conservation des données... Utilisez le bouton 👤 pour insérer des entités."
+        @update="emitUpdate"
+        @delete="deleteBlock"
+        @move-up="moveBlockUp"
+        @move-down="moveBlockDown"
+      />
 
       <!-- Liste des datasets -->
       <div v-if="datasets.length > 0" class="space-y-3">
@@ -128,13 +157,16 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue';
-import type { DataRetentionPayload, Dataset } from '@/services/api/reports';
+import { ref, watch, inject } from 'vue';
+import type { DataRetentionPayload, Dataset, Finding } from '@/services/api/reports';
+import { useRichTextBlocks, type RichTextBlock } from '@/composables/useRichTextBlocks';
+import RichTextBlockList from '@/components/shared/RichTextBlockList.vue';
 
 const props = withDefaults(
   defineProps<{
     modelValue: DataRetentionPayload;
     readonly?: boolean;
+    reportId?: string;
   }>(),
   {
     readonly: false,
@@ -145,17 +177,40 @@ const emit = defineEmits<{
   (e: 'update:modelValue', value: DataRetentionPayload): void;
 }>();
 
+// Injecter les findings depuis le contexte du rapport
+const findings = inject<Finding[]>('reportFindings', []);
+
 const isEditing = ref(false);
 const datasets = ref<Dataset[]>(props.modelValue.datasets || []);
 const editedDatasets = ref<Dataset[]>([]);
+
+// Gestion des blocs de texte riche
+const {
+  richTextBlocks,
+  addRichTextBlock,
+  deleteBlock,
+  moveBlockUp,
+  moveBlockDown,
+  setBlocks,
+} = useRichTextBlocks(props.modelValue.richTextBlocks || [], emitUpdate);
 
 watch(
   () => props.modelValue,
   (newValue) => {
     datasets.value = newValue.datasets || [];
+    if (newValue.richTextBlocks) {
+      setBlocks(newValue.richTextBlocks);
+    }
   },
   { deep: true }
 );
+
+function emitUpdate() {
+  emit('update:modelValue', {
+    datasets: datasets.value,
+    richTextBlocks: richTextBlocks.value,
+  });
+}
 
 function startEditing() {
   editedDatasets.value = JSON.parse(JSON.stringify(datasets.value));
@@ -170,7 +225,8 @@ function cancelEditing() {
 function saveChanges() {
   datasets.value = editedDatasets.value;
   emit('update:modelValue', {
-    datasets: datasets.value
+    datasets: datasets.value,
+    richTextBlocks: richTextBlocks.value,
   });
   isEditing.value = false;
 }

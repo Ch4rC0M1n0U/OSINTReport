@@ -2,6 +2,16 @@
   <div class="space-y-6">
     <!-- Mode lecture -->
     <div v-if="!isEditing" class="space-y-4">
+      <!-- Blocs de texte enrichi -->
+      <RichTextBlockList
+        v-if="richTextBlocks.length > 0"
+        :blocks="richTextBlocks"
+        :readonly="true"
+        :report-id="reportId"
+        :findings="findings"
+        placeholder="Ajoutez des informations sur les objectifs OSINT..."
+      />
+      
       <div v-if="safeObjectives.length > 0">
         <!-- Convertir le tableau en liste Markdown pour le rendu -->
         <MarkdownRenderer :content="objectivesAsMarkdown" />
@@ -9,7 +19,15 @@
       <p v-else class="text-base-content/60 italic">Aucun objectif défini</p>
 
       <!-- Bouton édition -->
-      <div class="flex justify-end">
+      <div class="flex justify-end gap-2">
+        <button
+          v-if="richTextBlocks.length > 0"
+          @click="() => {}"
+          class="btn btn-ghost btn-sm"
+          disabled
+        >
+          {{ richTextBlocks.length }} bloc{{ richTextBlocks.length > 1 ? 's' : '' }} de texte
+        </button>
         <button
           @click="startEditing"
           class="btn btn-primary"
@@ -26,14 +44,40 @@
           <h3 class="text-lg font-semibold">
             🎯 Objectifs OSINT
           </h3>
-          <button
-            type="button"
-            @click="addObjective"
-            class="btn btn-sm btn-primary"
-          >
-            ➕ Ajouter un objectif
-          </button>
+          <div class="flex items-center gap-2">
+            <button
+              type="button"
+              @click="addRichTextBlock"
+              class="btn btn-sm btn-outline gap-2"
+              title="Ajouter un bloc de texte enrichi"
+            >
+              <span>📝</span>
+              <span>Ajouter un texte</span>
+            </button>
+            <button
+              type="button"
+              @click="addObjective"
+              class="btn btn-sm btn-primary"
+            >
+              ➕ Ajouter un objectif
+            </button>
+          </div>
         </div>
+
+        <!-- Blocs de texte enrichi en mode édition -->
+        <RichTextBlockList
+          v-if="richTextBlocks.length > 0"
+          :blocks="richTextBlocks"
+          :readonly="false"
+          :report-id="reportId"
+          :findings="findings"
+          placeholder="Ajoutez des informations sur les objectifs OSINT... Utilisez le bouton 👤 pour insérer des entités."
+          class="mb-4"
+          @update="() => {}"
+          @delete="deleteBlock"
+          @move-up="moveBlockUp"
+          @move-down="moveBlockDown"
+        />
 
         <div v-if="editablePayload.objectives.length === 0" class="text-sm text-base-content/60 italic">
           Aucun objectif
@@ -83,12 +127,15 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from "vue";
-import type { ObjectivesPayload } from "@/services/api/reports";
+import { ref, computed, inject } from "vue";
+import type { ObjectivesPayload, Finding } from "@/services/api/reports";
 import MarkdownRenderer from "@/components/shared/MarkdownRenderer.vue";
+import { useRichTextBlocks } from '@/composables/useRichTextBlocks';
+import RichTextBlockList from '@/components/shared/RichTextBlockList.vue';
 
 interface Props {
   modelValue: ObjectivesPayload;
+  reportId?: string;
 }
 
 interface Emits {
@@ -98,8 +145,21 @@ interface Emits {
 const props = defineProps<Props>();
 const emit = defineEmits<Emits>();
 
+// Injecter les findings depuis le contexte du rapport
+const findings = inject<Finding[]>('reportFindings', []);
+
 const isEditing = ref(false);
 const editablePayload = ref<ObjectivesPayload>({ objectives: [] });
+
+// Gestion des blocs de texte riche
+const {
+  richTextBlocks,
+  addRichTextBlock,
+  deleteBlock,
+  moveBlockUp,
+  moveBlockDown,
+  setBlocks,
+} = useRichTextBlocks(props.modelValue.richTextBlocks || []);
 
 // Computed pour gérer le payload vide ou undefined
 const safeObjectives = computed(() => {
@@ -113,8 +173,12 @@ const objectivesAsMarkdown = computed(() => {
 
 function startEditing() {
   editablePayload.value = {
-    objectives: props.modelValue?.objectives ? [...props.modelValue.objectives] : []
+    objectives: props.modelValue?.objectives ? [...props.modelValue.objectives] : [],
+    richTextBlocks: props.modelValue?.richTextBlocks || [],
   };
+  if (props.modelValue?.richTextBlocks) {
+    setBlocks(props.modelValue.richTextBlocks);
+  }
   isEditing.value = true;
 }
 
@@ -131,7 +195,10 @@ function removeObjective(index: number) {
 }
 
 async function saveChanges() {
-  emit("update:modelValue", editablePayload.value);
+  emit("update:modelValue", {
+    objectives: editablePayload.value.objectives,
+    richTextBlocks: richTextBlocks.value,
+  });
   isEditing.value = false;
 }
 </script>
