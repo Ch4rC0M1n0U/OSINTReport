@@ -100,6 +100,107 @@ export class EmailService {
   }
 
   /**
+   * Envoie un email de test avec une configuration SMTP donnée
+   */
+  static async sendTestEmail(
+    config: {
+      host: string;
+      port: number;
+      secure: boolean;
+      username: string;
+      password: string;
+      fromEmail: string;
+      fromName?: string;
+    },
+    recipientEmail: string
+  ): Promise<void> {
+    const transporter = nodemailer.createTransport({
+      host: config.host,
+      port: config.port,
+      secure: config.secure,
+      auth: {
+        user: config.username,
+        pass: config.password,
+      },
+    });
+
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+          .header { background-color: #10b981; color: white; padding: 20px; text-align: center; }
+          .content { background-color: #f9fafb; padding: 30px; }
+          .success { background-color: #d1fae5; border-left: 4px solid #10b981; padding: 15px; margin: 20px 0; }
+          .footer { text-align: center; padding: 20px; font-size: 12px; color: #6b7280; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1>✅ Test de configuration SMTP</h1>
+          </div>
+          <div class="content">
+            <div class="success">
+              <strong>Félicitations !</strong>
+              <p>Votre configuration SMTP fonctionne correctement.</p>
+            </div>
+            <p>Cet email de test confirme que votre serveur SMTP est correctement configuré et peut envoyer des emails.</p>
+            <p><strong>Détails de la configuration :</strong></p>
+            <ul>
+              <li>Serveur SMTP : ${config.host}</li>
+              <li>Port : ${config.port}</li>
+              <li>Sécurisé : ${config.secure ? 'Oui (SSL/TLS)' : 'Non'}</li>
+              <li>Utilisateur : ${config.username}</li>
+            </ul>
+            <p>Vous pouvez maintenant utiliser cette configuration pour envoyer des emails depuis OSINTReport.</p>
+          </div>
+          <div class="footer">
+            <p>Email de test envoyé le ${new Date().toLocaleString('fr-FR')}</p>
+            <p>&copy; ${new Date().getFullYear()} OSINTReport. Tous droits réservés.</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+
+    const textContent = `
+✅ Test de configuration SMTP
+
+Félicitations ! Votre configuration SMTP fonctionne correctement.
+
+Cet email de test confirme que votre serveur SMTP est correctement configuré et peut envoyer des emails.
+
+Détails de la configuration :
+- Serveur SMTP : ${config.host}
+- Port : ${config.port}
+- Sécurisé : ${config.secure ? 'Oui (SSL/TLS)' : 'Non'}
+- Utilisateur : ${config.username}
+
+Vous pouvez maintenant utiliser cette configuration pour envoyer des emails depuis OSINTReport.
+
+---
+Email de test envoyé le ${new Date().toLocaleString('fr-FR')}
+© ${new Date().getFullYear()} OSINTReport. Tous droits réservés.
+    `;
+
+    await transporter.sendMail({
+      from: config.fromName
+        ? `"${config.fromName}" <${config.fromEmail}>`
+        : config.fromEmail,
+      to: recipientEmail,
+      subject: "✅ Test de configuration SMTP - OSINTReport",
+      text: textContent.trim(),
+      html: htmlContent,
+    });
+
+    logger.info({ to: recipientEmail, host: config.host }, "Email de test SMTP envoyé avec succès");
+  }
+
+  /**
    * Envoie un email de réinitialisation de mot de passe
    */
   static async sendPasswordResetEmail(

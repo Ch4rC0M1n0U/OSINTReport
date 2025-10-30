@@ -47,7 +47,7 @@ export type RegisterInput = z.infer<typeof registerSchema>;
 
 export const loginSchema = z
   .object({
-    email: z.string().email(),
+    identifier: z.string().min(1, "L'identifiant (email ou matricule) est requis"),
     password: z.string().min(1),
   })
   .strict();

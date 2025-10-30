@@ -1,7 +1,7 @@
 import createError from "http-errors";
 import { prisma } from "@shared/prisma";
 import { hashPassword, hashSecret, verifyPassword, verifySecret } from "@shared/password";
-import { createRefreshToken, signAccessToken, verifyRefreshToken } from "@shared/token";
+import { createRefreshToken, signAccessToken, verifyRefreshToken, verifyAccessToken, AccessTokenClaims } from "@shared/token";
 
 import { PermissionCode } from "./auth.constants";
 import { LoginInput, RegisterInput } from "./auth.validation";
@@ -29,38 +29,57 @@ function mapPermissions(rolePermissions: { permission: { code: string } }[]): Pe
   return rolePermissions.map((rolePermission) => rolePermission.permission.code as PermissionCode);
 }
 
-async function getUserWithRoleByEmail(email: string) {
-  return prisma.user.findUnique({
-    where: { email: email.toLowerCase() },
-    select: {
-      id: true,
-      firstName: true,
-      lastName: true,
-      matricule: true,
-      email: true,
-      phone: true,
-      grade: true,
-      unit: true,
-      avatarUrl: true,
-      signatureUrl: true,
-      timezone: true,
-      dateFormat: true,
-      firstDayOfWeek: true,
-      passwordHash: true,
-      roleId: true,
-      status: true,
-      createdAt: true,
-      updatedAt: true,
-      role: {
+const userWithRoleSelect = {
+  id: true,
+  firstName: true,
+  lastName: true,
+  matricule: true,
+  email: true,
+  phone: true,
+  grade: true,
+  unit: true,
+  avatarUrl: true,
+  signatureUrl: true,
+  timezone: true,
+  dateFormat: true,
+  firstDayOfWeek: true,
+  passwordHash: true,
+  roleId: true,
+  status: true,
+  twoFactorEnabled: true,
+  twoFactorSecret: true,
+  createdAt: true,
+  updatedAt: true,
+  role: {
+    include: {
+      permissions: {
         include: {
-          permissions: {
-            include: {
-              permission: true,
-            },
-          },
+          permission: true,
         },
       },
     },
+  },
+} as const;
+
+async function getUserWithRoleByEmail(email: string) {
+  return prisma.user.findUnique({
+    where: { email: email.toLowerCase() },
+    select: userWithRoleSelect,
+  });
+}
+
+async function getUserWithRoleByEmailOrMatricule(identifier: string) {
+  // Détecter si c'est un email ou un matricule
+  const isEmail = identifier.includes('@');
+  
+  if (isEmail) {
+    return getUserWithRoleByEmail(identifier);
+  }
+  
+  // Sinon, rechercher par matricule
+  return prisma.user.findUnique({
+    where: { matricule: identifier.toUpperCase() },
+    select: userWithRoleSelect,
   });
 }
 
@@ -142,14 +161,16 @@ export class AuthService {
     input: LoginInput,
     context: { userAgent?: string; ipAddress?: string }
   ): Promise<{
-    accessToken: string;
-    refreshToken: string;
-    refreshTokenJti: string;
-    sessionId: string;
-    expiresAt: Date;
-    user: AuthenticatedUser;
+    accessToken?: string;
+    refreshToken?: string;
+    refreshTokenJti?: string;
+    sessionId?: string;
+    expiresAt?: Date;
+    user?: AuthenticatedUser;
+    requires2FA?: boolean;
+    tempToken?: string;
   }> {
-    const user = await getUserWithRoleByEmail(input.email);
+    const user = await getUserWithRoleByEmailOrMatricule(input.identifier);
 
     if (!user) {
       throw createError(401, "Identifiants invalides");
@@ -164,6 +185,110 @@ export class AuthService {
       throw createError(401, "Identifiants invalides");
     }
 
+    // Vérifier si la 2FA est activée
+    if (user.twoFactorEnabled) {
+      // Créer un token temporaire pour la vérification 2FA
+      const tempToken = signAccessToken({
+        sub: user.id,
+        roleId: user.roleId,
+        roleName: user.role.name,
+        permissions: [],
+        temp2FA: true,
+      });
+
+      return {
+        requires2FA: true,
+        tempToken,
+      };
+    }
+
+    const authenticated = buildAuthenticatedUser(user);
+
+    const accessToken = signAccessToken({
+      sub: authenticated.id,
+      roleId: authenticated.roleId,
+      roleName: authenticated.roleName,
+      permissions: authenticated.permissions,
+    });
+
+    const refresh = createRefreshToken(authenticated.id);
+    const refreshTokenHash = await hashSecret(refresh.jti);
+
+    await prisma.userSession.create({
+      data: {
+        id: refresh.sessionId,
+        userId: authenticated.id,
+        refreshTokenHash,
+        userAgent: context.userAgent,
+        ipAddress: context.ipAddress,
+        expiresAt: refresh.expiresAt,
+      },
+    });
+
+    return {
+      accessToken,
+      refreshToken: refresh.token,
+      refreshTokenJti: refresh.jti,
+      sessionId: refresh.sessionId,
+      expiresAt: refresh.expiresAt,
+      user: authenticated,
+    };
+  }
+
+  static async verify2FAAndCompleteLogin(
+    tempToken: string,
+    twoFactorToken: string,
+    context: { userAgent?: string; ipAddress?: string }
+  ): Promise<{
+    accessToken: string;
+    refreshToken: string;
+    refreshTokenJti: string;
+    sessionId: string;
+    expiresAt: Date;
+    user: AuthenticatedUser;
+  }> {
+    // Vérifier et décoder le token temporaire
+    let payload: AccessTokenClaims;
+    try {
+      payload = verifyAccessToken(tempToken);
+      
+      if (!payload.temp2FA) {
+        throw new Error("Invalid temp token");
+      }
+    } catch (error) {
+      throw createError(401, "Token temporaire invalide");
+    }
+
+    // Récupérer l'utilisateur
+    const user = await prisma.user.findUnique({
+      where: { id: payload.sub },
+      select: {
+        ...userWithRoleSelect,
+      },
+    });
+
+    if (!user) {
+      throw createError(401, "Utilisateur introuvable");
+    }
+
+    if (!user.twoFactorEnabled || !user.twoFactorSecret) {
+      throw createError(400, "L'authentification à deux facteurs n'est pas activée");
+    }
+
+    // Vérifier le code 2FA
+    const speakeasy = require("speakeasy");
+    const isValid = speakeasy.totp.verify({
+      secret: user.twoFactorSecret,
+      encoding: "base32",
+      token: twoFactorToken,
+      window: 2,
+    });
+
+    if (!isValid) {
+      throw createError(401, "Code de vérification invalide");
+    }
+
+    // Créer la session
     const authenticated = buildAuthenticatedUser(user);
 
     const accessToken = signAccessToken({

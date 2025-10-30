@@ -60,17 +60,25 @@ export const useAuthStore = defineStore("auth", () => {
     }
   }
 
-  async function login(credentials: { email: string; password: string }) {
+  async function login(credentials: { identifier: string; password: string }): Promise<{requires2FA?: boolean; tempToken?: string} | void> {
     loading.value = true;
     error.value = null;
 
     try {
-      await api.post("/auth/login", credentials, { withCredentials: true });
+      const response = await api.post("/auth/login", credentials, { withCredentials: true });
+      
+      // Si la 2FA est requise
+      if (response.data.requires2FA) {
+        return {
+          requires2FA: true,
+          tempToken: response.data.tempToken,
+        };
+      }
       
       // Fetch user data after successful login
       try {
-        const response = await api.get<{ user: UserInfo }>("/auth/me");
-        user.value = response.data.user;
+        const userResponse = await api.get<{ user: UserInfo }>("/auth/me");
+        user.value = userResponse.data.user;
         initialized.value = true;
       } catch (fetchErr) {
         // If fetching user data fails after login, clear session

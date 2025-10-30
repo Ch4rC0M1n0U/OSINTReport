@@ -3,6 +3,8 @@ import { reactive, computed, ref, onMounted } from "vue";
 import { useRouter, useRoute } from "vue-router";
 import { useAuthStore } from "@/stores/auth";
 import { useSystemSettings } from "@/composables/useSystemSettings";
+import { twoFactorApi } from "@/services/api/twoFactor";
+import TwoFactorModal from "@/components/TwoFactorModal.vue";
 import { HugeiconsIcon } from "@hugeicons/vue";
 import {
   SearchVisualIcon,
@@ -22,9 +24,13 @@ const route = useRoute();
 const { settings, logoUrl } = useSystemSettings();
 
 const form = reactive({
-  email: "",
+  identifier: "",
   password: "",
 });
+
+// État 2FA
+const show2FAModal = ref(false);
+const tempToken = ref("");
 
 // Message de succès après déconnexion
 const showLogoutSuccess = ref(false);
@@ -45,7 +51,14 @@ const serviceAddress = computed(() => {
 
 async function handleSubmit() {
   try {
-    await auth.login(form);
+    const result = await auth.login(form);
+    
+    // Si la 2FA est requise
+    if (result?.requires2FA && result?.tempToken) {
+      tempToken.value = result.tempToken;
+      show2FAModal.value = true;
+      return;
+    }
     
     // Laisser le router guard gérer la redirection (maintenance ou dashboard)
     const redirect = (route.query.redirect as string) ?? "/";
@@ -53,6 +66,31 @@ async function handleSubmit() {
   } catch (err) {
     // erreur déjà gérée dans le store
   }
+}
+
+async function handle2FAVerification(code: string) {
+  try {
+    const result = await twoFactorApi.verify2FA(tempToken.value, code);
+    
+    if (result && result.user) {
+      // Mettre à jour l'utilisateur dans le store
+      auth.updateUser(result.user);
+      auth.initialized = true;
+      
+      // Rediriger
+      const redirect = (route.query.redirect as string) ?? "/";
+      await router.push(redirect);
+      
+      show2FAModal.value = false;
+    }
+  } catch (err: any) {
+    auth.error = err.response?.data?.message || "Code de vérification invalide";
+  }
+}
+
+function cancel2FA() {
+  show2FAModal.value = false;
+  tempToken.value = "";
 }
 
 // Vérifier si on arrive après une déconnexion
@@ -178,19 +216,22 @@ onMounted(() => {
           <form class="space-y-5" @submit.prevent="handleSubmit">
             <label class="form-control">
               <div class="label">
-                <span class="label-text font-medium">Email professionnel</span>
+                <span class="label-text font-medium">Email ou Matricule</span>
               </div>
               <div class="relative">
                 <div class="absolute left-3 top-3.5 text-base-content/40">
                   <HugeiconsIcon :icon="Mail01Icon" :size="20" />
                 </div>
                 <input 
-                  v-model="form.email" 
-                  type="email" 
+                  v-model="form.identifier" 
+                  type="text" 
                   class="input input-bordered w-full pl-11" 
-                  placeholder="nom.prenom@police.belgium.eu"
+                  placeholder="nom.prenom@police.belgium.eu ou ABC123"
                   required 
                 />
+              </div>
+              <div class="label">
+                <span class="label-text-alt text-base-content/60">Utilisez votre email professionnel ou votre matricule</span>
               </div>
             </label>
 
@@ -264,5 +305,13 @@ onMounted(() => {
         </div>
       </div>
     </div>
+
+    <!-- Modal 2FA -->
+    <TwoFactorModal
+      :show="show2FAModal"
+      :tempToken="tempToken"
+      @verify="handle2FAVerification"
+      @cancel="cancel2FA"
+    />
   </div>
 </template>

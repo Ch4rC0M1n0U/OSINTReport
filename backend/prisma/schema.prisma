@@ -48,6 +48,10 @@ model User {
   dateFormat       String?  @default("24h")
   firstDayOfWeek   String?  @default("monday")
   
+  // 2FA
+  twoFactorEnabled Boolean  @default(false)
+  twoFactorSecret  String?
+  
   roleId       String
   status       UserStatus @default(PENDING)
   createdAt    DateTime   @default(now())

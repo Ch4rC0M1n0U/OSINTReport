@@ -20,6 +20,7 @@ import {
 } from "@hugeicons/core-free-icons";
 import SignaturePad from "@/components/SignaturePad.vue";
 import ProtectedSignature from "@/components/ProtectedSignature.vue";
+import TwoFactorSection from "@/components/profile/TwoFactorSection.vue";
 
 const authStore = useAuthStore();
 const saving = ref(false);
@@ -719,6 +720,9 @@ async function removeSignature() {
         </div>
       </div>
     </div>
+
+    <!-- 2FA Section -->
+    <TwoFactorSection />
 
     <!-- Read-only Info Section -->
     <div class="bg-base-200 border-l-4 border-success">

@@ -10,6 +10,7 @@ export type AccessTokenClaims = {
   roleId: string;
   roleName: string;
   permissions: PermissionCode[];
+  temp2FA?: boolean; // Pour les tokens temporaires de vérification 2FA
 };
 
 export type RefreshTokenClaims = {

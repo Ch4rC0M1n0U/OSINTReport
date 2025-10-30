@@ -50,6 +50,27 @@ export class SmtpService {
       data: input,
     });
 
+    // Envoyer un email de test si la configuration est active
+    if (config.active) {
+      try {
+        await EmailService.sendTestEmail(
+          {
+            host: config.host,
+            port: config.port,
+            secure: config.secure,
+            username: config.username,
+            password: config.password,
+            fromEmail: config.fromEmail,
+            fromName: config.fromName || undefined,
+          },
+          config.fromEmail // Envoyer l'email de test à l'adresse d'expédition
+        );
+      } catch (error) {
+        // Log l'erreur mais ne pas bloquer la création
+        console.error("Erreur lors de l'envoi de l'email de test:", error);
+      }
+    }
+
     const { password, ...safeConfig } = config;
     return safeConfig;
   }
@@ -76,6 +97,27 @@ export class SmtpService {
       where: { id },
       data: input,
     });
+
+    // Envoyer un email de test si la configuration est active (ou vient d'être activée)
+    if (config.active) {
+      try {
+        await EmailService.sendTestEmail(
+          {
+            host: config.host,
+            port: config.port,
+            secure: config.secure,
+            username: config.username,
+            password: config.password,
+            fromEmail: config.fromEmail,
+            fromName: config.fromName || undefined,
+          },
+          config.fromEmail // Envoyer l'email de test à l'adresse d'expédition
+        );
+      } catch (error) {
+        // Log l'erreur mais ne pas bloquer la mise à jour
+        console.error("Erreur lors de l'envoi de l'email de test:", error);
+      }
+    }
 
     const { password, ...safeConfig } = config;
     return safeConfig;
@@ -147,6 +189,25 @@ export class SmtpService {
       where: { id },
       data: { active: true },
     });
+
+    // Envoyer un email de test lors de l'activation
+    try {
+      await EmailService.sendTestEmail(
+        {
+          host: config.host,
+          port: config.port,
+          secure: config.secure,
+          username: config.username,
+          password: config.password,
+          fromEmail: config.fromEmail,
+          fromName: config.fromName || undefined,
+        },
+        config.fromEmail // Envoyer l'email de test à l'adresse d'expédition
+      );
+    } catch (error) {
+      // Log l'erreur mais ne pas bloquer l'activation
+      console.error("Erreur lors de l'envoi de l'email de test:", error);
+    }
 
     const { password, ...safeConfig } = config;
     return safeConfig;

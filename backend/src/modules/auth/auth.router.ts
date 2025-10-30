@@ -7,6 +7,7 @@ import { AuthController } from "@modules/auth/auth.controller";
 const authRouter = Router();
 
 authRouter.post("/login", AuthController.login);
+authRouter.post("/verify-2fa", AuthController.verify2FA);
 authRouter.post("/refresh", AuthController.refresh);
 authRouter.post("/logout", requireAuth, AuthController.logout);
 authRouter.patch("/password", requireAuth, AuthController.changePassword);

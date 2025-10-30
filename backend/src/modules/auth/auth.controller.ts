@@ -19,6 +19,7 @@ import {
   ResetPasswordInput,
   resetPasswordSchema,
 } from "@modules/auth/auth.validation";
+import { verify2FASchema } from "@modules/auth/auth2FA.validation";
 import { verifyRefreshToken } from "@shared/token";
 
 export class AuthController {
@@ -42,6 +43,36 @@ export class AuthController {
       userAgent: req.get("user-agent") ?? undefined,
       ipAddress: req.ip,
     });
+
+    // Si la 2FA est requise, retourner le tempToken
+    if (result.requires2FA) {
+      return res.status(200).json({ 
+        requires2FA: true, 
+        tempToken: result.tempToken 
+      });
+    }
+
+    // Sinon, compléter le login
+    if (!result.accessToken || !result.refreshToken || !result.user) {
+      throw createError(500, "Erreur lors de la connexion");
+    }
+
+    AuthController.writeAuthCookies(res, result.accessToken, result.refreshToken);
+
+    res.status(200).json({ user: result.user });
+  }
+
+  static async verify2FA(req: Request, res: Response) {
+    const payload = verify2FASchema.parse(req.body);
+
+    const result = await AuthService.verify2FAAndCompleteLogin(
+      payload.tempToken,
+      payload.token,
+      {
+        userAgent: req.get("user-agent") ?? undefined,
+        ipAddress: req.ip,
+      }
+    );
 
     AuthController.writeAuthCookies(res, result.accessToken, result.refreshToken);
 
