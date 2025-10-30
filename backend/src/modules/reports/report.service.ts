@@ -102,7 +102,7 @@ export class ReportService {
   }
 
   static async getDashboardSummary() {
-    const windowDays = 30;
+    const windowDays = 7;
     const now = new Date();
     const startDate = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
     startDate.setUTCDate(startDate.getUTCDate() - (windowDays - 1));
@@ -112,6 +112,11 @@ export class ReportService {
     const statusGroups = await prisma.report.groupBy({
       by: ["status"],
       _count: { _all: true },
+    });
+
+    // Compter les rapports validés (verrouillés)
+    const validatedCount = await prisma.report.count({
+      where: { isLocked: true },
     });
 
     const recentReports = (await prisma.report.findMany({
@@ -154,6 +159,7 @@ export class ReportService {
       draft: 0,
       published: 0,
       archived: 0,
+      validated: validatedCount,
     };
 
     for (const group of statusGroups) {

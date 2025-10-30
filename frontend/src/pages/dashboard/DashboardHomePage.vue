@@ -4,6 +4,7 @@ import { storeToRefs } from "pinia";
 import { RouterLink } from "vue-router";
 
 import { useDashboardStore, type DashboardStatus } from "@/stores/dashboard";
+import { useAuthStore } from "@/stores/auth";
 import { HugeiconsIcon } from '@hugeicons/vue';
 import { 
   TableIcon, 
@@ -22,6 +23,8 @@ import {
 
 const dashboardStore = useDashboardStore();
 const { summary, loading, error, lastUpdated } = storeToRefs(dashboardStore);
+const authStore = useAuthStore();
+const { user } = storeToRefs(authStore);
 
 onMounted(() => {
   if (!summary.value) {
@@ -74,6 +77,14 @@ const totalsCards = computed(() => {
       gradient: "from-emerald-500 to-green-600",
     },
     {
+      key: "validated",
+      label: "Validés",
+      value: summary.value.totals.validated,
+      accent: "success",
+      icon: CheckmarkCircle02Icon,
+      gradient: "from-green-600 to-teal-600",
+    },
+    {
       key: "archived",
       label: "Archivés",
       value: summary.value.totals.archived,
@@ -84,7 +95,7 @@ const totalsCards = computed(() => {
   ];
 });
 
-const timelineWindow = 14;
+const timelineWindow = 7;
 
 const timelineData = computed(() => {
   if (!summary.value) return [] as Array<{ date: string; count: number }>;
@@ -142,7 +153,7 @@ function refresh() {
           <div class="flex items-center gap-3 mb-2">
             <HugeiconsIcon :icon="SparklesIcon" :size="32" class="text-primary" />
             <h2 class="text-3xl font-bold">
-              {{ currentGreeting }} 👋
+              {{ currentGreeting }} {{ user?.firstName || '' }} 👋
             </h2>
           </div>
           <p class="text-sm text-base-content/60">
@@ -188,7 +199,7 @@ function refresh() {
     </div>
 
     <!-- Cartes de statistiques -->
-    <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+    <div class="grid gap-6 grid-cols-2 lg:grid-cols-5">
       <div 
         v-for="card in totalsCards" 
         :key="card.key"
@@ -196,7 +207,7 @@ function refresh() {
         :class="{
           'border-primary': card.key === 'all',
           'border-warning': card.key === 'draft',
-          'border-success': card.key === 'published',
+          'border-success': card.key === 'published' || card.key === 'validated',
           'border-info': card.key === 'archived'
         }"
       >
@@ -269,7 +280,33 @@ function refresh() {
                 ></div>
               </div>
             </div>
-            <div v-if="!summary?.statusDistribution?.length" class="text-center py-8">
+
+            <!-- Validés (état séparé) -->
+            <div v-if="summary">
+              <div class="flex items-center justify-between mb-2">
+                <div class="flex items-center gap-2">
+                  <HugeiconsIcon 
+                    :icon="CheckmarkCircle02Icon" 
+                    :size="18" 
+                    class="text-base-content/70"
+                  />
+                  <span class="text-sm font-semibold text-base-content/80">
+                    Validés
+                  </span>
+                </div>
+                <div class="text-right">
+                  <span class="text-sm font-bold text-base-content">{{ summary.totals.validated }}</span>
+                  <span class="text-xs text-base-content/50 ml-1">({{ summary.totals.all > 0 ? ((summary.totals.validated / summary.totals.all) * 100).toFixed(1) : 0 }}%)</span>
+                </div>
+              </div>
+              <div class="w-full bg-base-200 rounded-full h-2 overflow-hidden">
+                <div 
+                  class="h-full rounded-full bg-success transition-all duration-500"
+                  :style="{ width: `${summary.totals.all > 0 ? (summary.totals.validated / summary.totals.all) * 100 : 0}%` }"
+                ></div>
+              </div>
+            </div>
+```            <div v-if="!summary?.statusDistribution?.length" class="text-center py-8">
               <p class="text-sm text-base-content/50">Aucune donnée disponible</p>
             </div>
           </div>
@@ -282,7 +319,7 @@ function refresh() {
           <div class="flex items-center gap-3 mb-5">
             <HugeiconsIcon :icon="Calendar03Icon" :size="24" class="text-success" />
             <div>
-              <h3 class="font-bold text-lg">Production des 14 derniers jours</h3>
+              <h3 class="font-bold text-lg">Production des 7 derniers jours</h3>
               <p class="text-xs text-base-content/60">Nombre de rapports créés quotidiennement</p>
             </div>
           </div>

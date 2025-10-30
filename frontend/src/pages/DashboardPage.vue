@@ -76,14 +76,12 @@ const mainNavigation = computed(() => {
           to: { name: "reports.list" },
           icon: ViewIcon,
         },
+        {
+          label: "Entités",
+          to: { name: "entities" },
+          icon: UserGroupIcon,
+        },
       ],
-    },
-    {
-      label: "Entités",
-      to: { name: "entities" },
-      icon: UserGroupIcon,
-      badge: undefined,
-      children: null,
     },
     {
       label: "Recherche",

@@ -12,6 +12,7 @@ export interface DashboardSummary {
     draft: number;
     published: number;
     archived: number;
+    validated: number;
   };
   statusDistribution: Array<{
     status: DashboardStatus;

@@ -305,26 +305,6 @@
         </div>
       </div>
 
-      <!-- Lien vers gestion de recherche -->
-      <div class="bg-base-200 border-l-4 border-info p-5">
-        <div class="flex items-start justify-between gap-4 flex-wrap">
-          <div class="flex items-start gap-3 flex-1">
-            <HugeiconsIcon :icon="SearchAreaIcon" :size="24" class="text-info mt-1" />
-            <div>
-              <h3 class="font-semibold text-lg mb-1">Gestion de l'index de recherche</h3>
-              <p class="text-sm text-base-content/70">
-                Pour gérer l'index MeiliSearch, réindexer les rapports ou consulter les statistiques de recherche,
-                rendez-vous sur la page dédiée.
-              </p>
-            </div>
-          </div>
-          <router-link to="/admin/search" class="btn btn-info btn-sm gap-2 shrink-0">
-            <HugeiconsIcon :icon="SearchAreaIcon" :size="18" />
-            Gérer la recherche
-          </router-link>
-        </div>
-      </div>
-
       <!-- Actions -->
       <div class="flex justify-end gap-3 pt-4">
         <button
