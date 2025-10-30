@@ -306,7 +306,8 @@ function refresh() {
                 ></div>
               </div>
             </div>
-```            <div v-if="!summary?.statusDistribution?.length" class="text-center py-8">
+
+            <div v-if="!summary?.statusDistribution?.length" class="text-center py-8">
               <p class="text-sm text-base-content/50">Aucune donnée disponible</p>
             </div>
           </div>
