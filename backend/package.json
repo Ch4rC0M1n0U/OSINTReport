@@ -9,7 +9,8 @@
     "start": "node dist/server.js",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate deploy",
-    "test": "vitest run"
+    "test": "vitest run",
+    "db:seed-dummy": "docker exec -i osintreport-postgres-1 psql -U osint_admin -d osint_db < ../scripts/insert_dummy_report.sql"
   },
   "keywords": [],
   "author": "",
