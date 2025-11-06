@@ -45,6 +45,7 @@ export interface ReportModule {
   type: string;
   title: string;
   position: number;
+  includeInPdf: boolean;
   entityId?: string;
   payload: Record<string, any>;
   createdAt: string;
@@ -471,6 +472,14 @@ export const reportsApi = {
 
   async deleteModule(reportId: string, moduleId: string) {
     await api.delete(`/reports/${reportId}/modules/${moduleId}`);
+  },
+
+  async toggleModuleInPdf(reportId: string, moduleId: string, includeInPdf: boolean) {
+    const response = await api.patch<{ module: ReportModule }>(
+      `/reports/${reportId}/modules/${moduleId}`,
+      { includeInPdf }
+    );
+    return response.data.module;
   },
 
   async reorderModules(reportId: string, moduleIds: string[]) {

@@ -516,6 +516,7 @@ export class ReportService {
         headline: "headline" in input ? input.headline ?? null : undefined,
         entityId: "entityId" in input ? input.entityId ?? null : undefined,
         position: input.position ?? undefined,
+        includeInPdf: input.includeInPdf ?? undefined,
         payload: "payload" in input ? input.payload ?? undefined : undefined,
       },
     });

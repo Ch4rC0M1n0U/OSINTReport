@@ -214,14 +214,24 @@ export const createModuleSchema = z
     headline: z.string().trim().max(255).optional(),
     entityId: z.string().uuid().optional(),
     position: z.number().int().min(0).optional(),
+    includeInPdf: z.boolean().optional(),
     payload: z.record(z.string(), z.any()).optional(), // Validé séparément par validateModulePayload()
   })
   .strict();
 export type CreateModuleInput = z.infer<typeof createModuleSchema>;
 
-export const updateModuleSchema = createModuleSchema.partial().extend({
-  type: z.enum(REPORT_MODULE_TYPES).optional(),
-});
+export const updateModuleSchema = z
+  .object({
+    type: z.enum(REPORT_MODULE_TYPES).optional(),
+    slug: z.string().trim().min(1).max(120).optional(),
+    title: z.string().trim().max(255).optional(),
+    headline: z.string().trim().max(255).optional(),
+    entityId: z.string().uuid().optional(),
+    position: z.number().int().min(0).optional(),
+    includeInPdf: z.boolean().optional(),
+    payload: z.record(z.string(), z.any()).optional(),
+  })
+  .strict();
 export type UpdateModuleInput = z.infer<typeof updateModuleSchema>;
 
 export const registerAttachmentSchema = z

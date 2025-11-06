@@ -87,6 +87,21 @@ const editInfoForm = ref({
 
 const keywordInput = ref("");
 
+// Nouveau layout OneNote-style
+const activeTab = ref<'modules' | 'info' | 'entities'>('modules');
+const selectedModuleId = ref<string | null>(null);
+
+// Module actuellement sélectionné
+const selectedModule = computed(() => {
+  if (!selectedModuleId.value) return null;
+  return modules.value.find(m => m.id === selectedModuleId.value) || null;
+});
+
+// Helper pour obtenir le type de module de manière sûre
+const getModuleType = (module: ReportModule): ReportModuleType => {
+  return module.type as ReportModuleType;
+};
+
 // Construire la liste des types depuis MODULE_TYPE_METADATA
 const moduleTypes = (Object.keys(MODULE_TYPE_METADATA) as ReportModuleType[])
   .map((key) => ({
@@ -129,6 +144,11 @@ async function loadReport() {
     report.value = reportData;
     modules.value = modulesData;
     stats.value = statsData;
+    
+    // Auto-sélectionner le premier module si aucun n'est sélectionné
+    if (modulesData.length > 0 && !selectedModuleId.value) {
+      selectedModuleId.value = modulesData[0].id;
+    }
   } catch (err: any) {
     error.value = err.response?.data?.message || "Erreur lors du chargement";
     console.error(err);
@@ -230,11 +250,41 @@ async function handleDeleteModule(moduleId: string) {
 
   try {
     await reportsApi.deleteModule(reportId.value, moduleId);
+    
+    // Si le module supprimé était sélectionné, déselectionner
+    if (selectedModuleId.value === moduleId) {
+      selectedModuleId.value = null;
+    }
+    
     await loadReport();
   } catch (err) {
     await modal.showError(
       "Une erreur est survenue lors de la suppression du module.",
       "Erreur de suppression"
+    );
+    console.error(err);
+  }
+}
+
+// Sélectionner un module
+function selectModule(moduleId: string) {
+  selectedModuleId.value = moduleId;
+}
+
+// Toggle l'inclusion dans le PDF
+async function toggleIncludeInPdf(moduleId: string, includeInPdf: boolean) {
+  try {
+    await reportsApi.toggleModuleInPdf(reportId.value, moduleId, includeInPdf);
+    
+    // Mettre à jour localement
+    const module = modules.value.find(m => m.id === moduleId);
+    if (module) {
+      module.includeInPdf = includeInPdf;
+    }
+  } catch (err) {
+    await modal.showError(
+      "Erreur lors de la mise à jour du module.",
+      "Erreur"
     );
     console.error(err);
   }
@@ -402,6 +452,27 @@ async function handleDeleteReport() {
   }
 }
 
+async function handleRemoveValidation() {
+  const confirmed = await modal.showConfirm(
+    "Voulez-vous retirer la validation de ce rapport ?",
+    "Retirer la validation",
+    "Confirmer",
+    "Annuler"
+  );
+  if (!confirmed) return;
+
+  try {
+    await reportsApi.removeValidation(reportId.value);
+    await loadReport();
+  } catch (err) {
+    await modal.showError(
+      "Une erreur est survenue lors du retrait de la validation.",
+      "Erreur"
+    );
+    console.error(err);
+  }
+}
+
 function getModuleIcon(type: string) {
   return moduleTypes.find((t) => t.value === type)?.icon || "📋";
 }
@@ -465,6 +536,17 @@ function formatDate(date: string) {
   return new Intl.DateTimeFormat("fr-BE", {
     dateStyle: "medium",
     timeStyle: "short",
+  } as any).format(new Date(date));
+}
+
+function formatDateTime(date: string | Date | null | undefined) {
+  if (!date) return "N/A";
+  return new Intl.DateTimeFormat("fr-BE", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
   }).format(new Date(date));
 }
 
@@ -547,322 +629,325 @@ function getClassificationInfo(classif: string) {
 </script>
 
 <template>
-  <div>
-    <div class="space-y-6">
-    <!-- En-tête -->
-    <div class="bg-base-200 border-l-4 border-primary p-6">
-      <div class="flex items-start justify-between">
-        <div class="flex-1">
+  <div class="h-screen flex flex-col">
+    <!-- Header fixe -->
+    <div class="bg-base-200 border-b border-base-300 p-4 shadow-sm flex-shrink-0">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-4">
           <button
-            class="btn btn-ghost btn-sm mb-3"
+            class="btn btn-ghost btn-sm"
             @click="router.push({ name: 'reports.list' })"
           >
             ← Retour
           </button>
-          <div class="flex items-center justify-between mb-4">
-            <h2 v-if="report" class="text-3xl font-bold">
-              {{ report.title }}
-            </h2>
+          <div class="border-l border-base-content/20 pl-4">
+            <h2 v-if="report" class="text-2xl font-bold">{{ report.title }}</h2>
+            <div v-if="report" class="flex items-center gap-3 mt-1">
+              <span :class="`badge badge-sm ${statusColors[report.status]}`">{{ report.status }}</span>
+              <span v-if="report.caseNumber" class="text-xs text-base-content/60">Dossier: {{ report.caseNumber }}</span>
+              <span class="text-xs">
+                {{ report.urgencyLevel ? getUrgencyInfo(report.urgencyLevel).icon : '' }}
+                {{ report.urgencyLevel ? getUrgencyInfo(report.urgencyLevel).label : 'N/A' }}
+              </span>
+              <span class="text-xs">
+                {{ report.classification ? getClassificationInfo(report.classification).icon : '' }}
+                {{ report.classification ? getClassificationInfo(report.classification).label : 'N/A' }}
+              </span>
+            </div>
           </div>
+        </div>
+        
+        <!-- Actions rapides -->
+        <div class="flex items-center gap-2">
+          <button v-if="!report?.validatedById" class="btn btn-sm btn-warning" @click="showOfficerValidationModal = true">
+            ✅ Valider
+          </button>
+          <button v-else class="btn btn-sm btn-outline btn-warning" @click="handleRemoveValidation">
+            ❌ Retirer validation
+          </button>
+          <button class="btn btn-sm btn-primary" @click="handleExportPDF" :disabled="exportingPDF">
+            <span v-if="exportingPDF">⏳ Export...</span>
+            <span v-else>📄 PDF</span>
+          </button>
           
-          <!-- Métadonnées du rapport -->
-          <div v-if="report" class="grid grid-cols-1 md:grid-cols-5 gap-3">
-            <!-- Statut -->
-            <div class="flex items-center gap-2">
-              <div class="w-1 h-8 rounded-sm" :class="statusColors[report.status].replace('badge-', 'bg-')"></div>
-              <div>
-                <div class="text-xs text-base-content/60 uppercase tracking-wider">Statut</div>
-                <div class="font-semibold">{{ report.status }}</div>
-              </div>
-            </div>
+          <!-- Menu déroulant Actions -->
+          <div class="dropdown dropdown-end">
+            <label tabindex="0" class="btn btn-sm btn-ghost gap-2">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
+              </svg>
+              Actions
+            </label>
+            <ul tabindex="0" class="dropdown-content menu p-0 shadow-lg bg-base-100 w-64 z-10 border-l-4 border-primary mt-2">
+              <!-- Édition -->
+              <li class="border-b border-base-200">
+                <a @click="showEditInfoDialog = true" class="py-3 px-4 hover:bg-base-200 flex items-center gap-3 transition-colors">
+                  <span class="text-xl">✏️</span>
+                  <div>
+                    <div class="font-semibold">Modifier les informations</div>
+                    <div class="text-xs text-base-content/60">Éditer les métadonnées</div>
+                  </div>
+                </a>
+              </li>
 
-            <!-- Numéro de dossier -->
-            <div v-if="report.caseNumber" class="flex items-center gap-2">
-              <div class="w-1 h-8 rounded-sm bg-base-content/20"></div>
-              <div>
-                <div class="text-xs text-base-content/60 uppercase tracking-wider">Dossier</div>
-                <div class="font-semibold">{{ report.caseNumber }}</div>
-              </div>
-            </div>
+              <!-- Analyse -->
+              <li class="bg-base-50 px-3 py-1">
+                <span class="text-xs uppercase tracking-wider text-base-content/60 font-semibold">Analyse</span>
+              </li>
+              <li class="border-b border-base-200">
+                <a @click="showStatsModal = true" class="py-2 px-4 hover:bg-base-200 flex items-center gap-3 transition-colors">
+                  <span class="text-lg">📊</span>
+                  <span class="font-medium">Statistiques</span>
+                </a>
+              </li>
+              <li class="border-b border-base-200">
+                <a @click="loadCorrelations" class="py-2 px-4 hover:bg-base-200 flex items-center gap-3 transition-colors">
+                  <span class="text-lg">🔗</span>
+                  <span class="font-medium">Voir corrélations</span>
+                </a>
+              </li>
 
-            <!-- Niveau d'urgence -->
-            <div class="flex items-center gap-2">
-              <div class="w-1 h-8 rounded-sm" :class="getUrgencyInfo(report.urgencyLevel).color.replace('badge-', 'bg-')"></div>
-              <div>
-                <div class="text-xs text-base-content/60 uppercase tracking-wider">Urgence</div>
-                <div class="font-semibold">
-                  {{ getUrgencyInfo(report.urgencyLevel).icon }} {{ getUrgencyInfo(report.urgencyLevel).label }}
-                </div>
-              </div>
-            </div>
-
-            <!-- Classification -->
-            <div class="flex items-center gap-2">
-              <div class="w-1 h-8 rounded-sm bg-error"></div>
-              <div>
-                <div class="text-xs text-base-content/60 uppercase tracking-wider">Classification</div>
-                <div class="font-semibold">
-                  {{ getClassificationInfo(report.classification).icon }} {{ getClassificationInfo(report.classification).label }}
-                </div>
-              </div>
-            </div>
-
-            <!-- Validation -->
-            <div class="flex items-center gap-2">
-              <div class="w-1 h-8 rounded-sm" :class="report.isLocked ? 'bg-success' : 'bg-warning'"></div>
-              <div class="flex-1">
-                <div class="text-xs text-base-content/60 uppercase tracking-wider">Validation</div>
-                <button
-                  type="button"
-                  class="btn btn-xs gap-1 mt-1"
-                  :class="report.isLocked ? 'btn-success' : 'btn-warning'"
-                  @click="showOfficerValidationModal = true"
-                >
-                  <span v-if="report.isLocked">🔒</span>
-                  <span v-else>🔓</span>
-                  {{ report.isLocked ? 'Validé' : 'Valider' }}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="dropdown dropdown-end ml-4" v-if="report">
-          <label tabindex="0" class="btn btn-primary btn-sm gap-2">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
-            </svg>
-            Actions
-          </label>
-          <ul tabindex="0" class="dropdown-content menu p-0 shadow-lg bg-base-100 w-64 z-10 border-l-4 border-primary">
-            <!-- Édition -->
-            <li class="border-b border-base-200">
-              <a @click="openEditInfoDialog" class="py-3 px-4 hover:bg-base-200 flex items-center gap-3 transition-colors">
-                <span class="text-xl">✏️</span>
-                <div>
-                  <div class="font-semibold">Modifier les informations</div>
-                  <div class="text-xs text-base-content/60">Éditer les métadonnées</div>
-                </div>
-              </a>
-            </li>
-
-            <!-- Export -->
-            <li class="border-b border-base-200">
-              <a @click="handleExportPDF" :class="{ 'loading': exportingPDF }" class="py-3 px-4 hover:bg-base-200 flex items-center gap-3 transition-colors">
-                <span class="text-xl">📄</span>
-                <div>
-                  <div class="font-semibold">Exporter en PDF</div>
-                  <div class="text-xs text-base-content/60">Générer le document</div>
-                </div>
-              </a>
-            </li>
-
-            <!-- Analyse -->
-            <li class="bg-base-50 px-3 py-1">
-              <span class="text-xs uppercase tracking-wider text-base-content/60 font-semibold">Analyse</span>
-            </li>
-            <li class="border-b border-base-200">
-              <a @click="showStatsModal = true" class="py-2 px-4 hover:bg-base-200 flex items-center gap-3 transition-colors">
-                <span class="text-lg">📊</span>
-                <span class="font-medium">Statistiques</span>
-              </a>
-            </li>
-            <li class="border-b border-base-200">
-              <a @click="loadCorrelations" class="py-2 px-4 hover:bg-base-200 flex items-center gap-3 transition-colors">
-                <span class="text-lg">🔗</span>
-                <span class="font-medium">Voir corrélations</span>
-              </a>
-            </li>
-            <li class="border-b border-base-200">
-              <a @click="detectCorrelations" class="py-2 px-4 hover:bg-base-200 flex items-center gap-3 transition-colors">
-                <span class="text-lg">🔍</span>
-                <span class="font-medium">Détecter corrélations</span>
-              </a>
-            </li>
-
-            <!-- Gestion -->
-            <li class="bg-base-50 px-3 py-1">
-              <span class="text-xs uppercase tracking-wider text-base-content/60 font-semibold">Gestion</span>
-            </li>
-            <li v-if="report.status === 'DRAFT'" class="border-b border-base-200">
-              <a @click="handleChangeStatus('PUBLISHED')" class="py-2 px-4 hover:bg-success/10 flex items-center gap-3 transition-colors">
-                <span class="text-lg">✓</span>
-                <span class="font-medium text-success">Publier</span>
-              </a>
-            </li>
-            <li v-if="report.status === 'PUBLISHED'" class="border-b border-base-200">
-              <a @click="handleChangeStatus('ARCHIVED')" class="py-2 px-4 hover:bg-base-200 flex items-center gap-3 transition-colors">
-                <span class="text-lg">📦</span>
-                <span class="font-medium">Archiver</span>
-              </a>
-            </li>
-            <li class="border-b border-base-200">
-              <a @click="handleDuplicate" class="py-2 px-4 hover:bg-base-200 flex items-center gap-3 transition-colors">
-                <span class="text-lg">📋</span>
-                <span class="font-medium">Dupliquer</span>
-              </a>
-            </li>
-
-            <!-- Danger zone (admin only) -->
-            <li v-if="isAdmin" class="bg-error/5 px-3 py-1 border-t-2 border-error">
-              <span class="text-xs uppercase tracking-wider text-error font-semibold">Zone dangereuse</span>
-            </li>
-            <li v-if="isAdmin">
-              <a @click="handleDeleteReport" class="py-3 px-4 hover:bg-error/10 flex items-center gap-3 transition-colors">
-                <span class="text-xl">🗑️</span>
-                <div>
-                  <div class="font-semibold text-error">Supprimer le rapport</div>
-                  <div class="text-xs text-error/60">Action irréversible</div>
-                </div>
-              </a>
-            </li>
-        </ul>
-      </div>
-      </div>
-    </div>
-
-    <!-- Loading -->
-    <div v-if="loading" class="flex justify-center py-12">
-      <span class="loading loading-spinner loading-lg"></span>
-    </div>
-
-    <!-- Error -->
-    <div v-else-if="error" class="alert alert-error">
-      <span>{{ error }}</span>
-    </div>
-
-    <!-- Contenu -->
-    <template v-else-if="report">
-      <!-- Informations -->
-      <div class="bg-base-100 border-l-4 border-info shadow-sm">
-        <div class="p-6">
-          <h3 class="text-xl font-bold mb-6 flex items-center gap-2">
-            <span class="text-2xl">ℹ️</span>
-            <span>Informations</span>
-          </h3>
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <div class="text-xs uppercase tracking-wider text-base-content/60 mb-2">Service enquêteur</div>
-              <div class="font-semibold text-base">
-                {{ report.requestingService || "—" }}
-              </div>
-            </div>
-            <div class="md:col-span-2">
-              <LegalBasisDisplay
-                :legal-basis="report.legalBasis"
-                :clickable="true"
-                @click-article="openArticleDetail"
-              />
-            </div>
-            <div class="md:col-span-2">
-              <div class="text-xs uppercase tracking-wider text-base-content/60 mb-2">Contexte</div>
-              <p class="text-sm leading-relaxed">{{ report.investigationContext || 'Non renseigné' }}</p>
-            </div>
-            <div v-if="report.keywords && report.keywords.length > 0" class="md:col-span-2">
-              <div class="text-xs uppercase tracking-wider text-base-content/60 mb-3">Mots-clés</div>
-              <div class="flex flex-wrap gap-2">
-                <span v-for="keyword in report.keywords" :key="keyword" 
-                      class="px-3 py-1 bg-base-200 text-sm font-medium border-l-2 border-primary">
-                  {{ keyword }}
-                </span>
-              </div>
-            </div>
+              <!-- Danger Zone -->
+              <li v-if="isAdmin" class="bg-error/5 px-3 py-1 mt-2">
+                <span class="text-xs uppercase tracking-wider text-error font-semibold">Zone de danger</span>
+              </li>
+              
+              <li v-if="isAdmin" class="border-b border-base-200">
+                <a @click="handleDeleteReport" class="py-3 px-4 hover:bg-error/10 flex items-center gap-3 transition-colors">
+                  <span class="text-xl text-error">🗑️</span>
+                  <div>
+                    <div class="font-semibold text-error">Supprimer le rapport</div>
+                    <div class="text-xs text-base-content/60">Action irréversible</div>
+                  </div>
+                </a>
+              </li>
+            </ul>
           </div>
         </div>
       </div>
+    </div>
 
-      <!-- Modules -->
-      <div class="bg-base-100 border-l-4 border-success shadow-sm">
-        <div class="p-6">
-          <div class="flex items-center justify-between mb-6">
-            <h3 class="text-xl font-bold flex items-center gap-2">
-              <span class="text-2xl">📦</span>
+    <!-- Layout principal : Sidebar + Contenu -->
+    <div class="flex flex-1 overflow-hidden">
+      <!-- Sidebar des modules (style OneNote) -->
+      <div class="w-80 bg-base-100 border-r border-base-300 flex flex-col">
+        <!-- Header de la sidebar -->
+        <div class="p-4 border-b border-base-300 bg-base-200">
+          <div class="flex items-center justify-between mb-3">
+            <h3 class="font-bold text-lg flex items-center gap-2">
+              <span>📦</span>
               <span>Modules</span>
-              <span class="text-base font-normal text-base-content/60">({{ modules.length }})</span>
+              <span class="text-sm font-normal text-base-content/60">({{ modules.length }})</span>
             </h3>
-            <button class="btn btn-primary btn-sm" @click="openModuleDialog">
-              + Ajouter un module
+            <button class="btn btn-primary btn-xs" @click="openModuleDialog">
+              + Ajouter
             </button>
           </div>
-
-          <div v-if="modules.length === 0" class="text-center py-12 text-base-content/60">
-            Aucun module. Commencez par en ajouter un.
+          
+          <!-- Onglets : Modules / Infos / Entités -->
+          <div class="tabs tabs-boxed tabs-xs">
+            <a class="tab" :class="{ 'tab-active': activeTab === 'modules' }" @click="activeTab = 'modules'">Modules</a>
+            <a class="tab" :class="{ 'tab-active': activeTab === 'info' }" @click="activeTab = 'info'">Infos</a>
+            <a class="tab" :class="{ 'tab-active': activeTab === 'entities' }" @click="activeTab = 'entities'">Entités</a>
           </div>
+        </div>
 
+        <!-- Liste des modules -->
+        <div v-show="activeTab === 'modules'" class="flex-1 overflow-y-auto">
+          <div v-if="modules.length === 0" class="p-4 text-center text-base-content/60 text-sm">
+            Aucun module.<br>Cliquez sur "+ Ajouter" pour commencer.
+          </div>
+          
           <VueDraggable
             v-else
             v-model="modules"
             item-key="id"
-            class="space-y-4"
             handle=".drag-handle"
             @end="handleReorderModules"
+            class="divide-y divide-base-200"
           >
             <template #item="{ element: module }">
               <div
-                class="border-l-4 border-base-300 bg-base-50 hover:border-primary transition-all duration-200 shadow-sm hover:shadow-md"
+                class="group p-3 cursor-pointer transition-colors hover:bg-base-200"
+                :class="{ 'bg-primary/10 border-l-4 border-primary': selectedModuleId === module.id }"
+                @click="selectModule(module.id)"
               >
-                <!-- En-tête du module -->
-                <div class="flex items-start justify-between p-4 bg-base-100">
-                  <div class="flex items-center gap-3 flex-1">
-                    <!-- Poignée de drag -->
-                    <div class="drag-handle cursor-move p-2 hover:bg-base-200 transition-colors" title="Glisser pour réordonner">
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke-width="1.5"
-                        stroke="currentColor"
-                        class="w-5 h-5 text-base-content/40"
-                      >
-                        <path
-                          stroke-linecap="round"
-                          stroke-linejoin="round"
-                          d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5"
-                        />
-                      </svg>
+                <div class="flex items-start gap-2">
+                  <!-- Drag handle -->
+                  <div class="drag-handle cursor-move mt-1 opacity-50 hover:opacity-100">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+                    </svg>
+                  </div>
+                  
+                  <div class="flex-1 min-w-0">
+                    <div class="flex items-center gap-2 mb-1">
+                      <span class="text-lg">{{ getModuleIcon(module.type) }}</span>
+                      <span class="font-semibold text-sm truncate">{{ module.title }}</span>
                     </div>
-                    <div class="flex-1">
-                      <div class="flex items-center gap-2 mb-1">
-                        <span class="text-2xl">{{ getModuleIcon(module.type) }}</span>
-                        <h4 class="font-bold text-lg">{{ module.title }}</h4>
-                      </div>
-                      <div class="text-xs uppercase tracking-wider text-base-content/60">
-                        {{ MODULE_TYPE_METADATA[module.type as ReportModuleType]?.label || module.type }}
-                      </div>
-                      <div v-if="module.entity" class="text-sm mt-2">
-                        Entité: <span class="px-2 py-0.5 bg-base-200 text-xs font-medium border-l-2 border-accent">{{ module.entity.label }}</span>
-                      </div>
+                    <div class="text-xs text-base-content/60 truncate">
+                      {{ MODULE_TYPE_METADATA[getModuleType(module)]?.label || module.type }}
+                    </div>
+                    <div v-if="module.entity" class="text-xs text-accent mt-1">
+                      📌 {{ module.entity.label }}
                     </div>
                   </div>
+                  
+                  <!-- Checkbox pour inclure dans le PDF -->
+                  <div class="flex items-center gap-1">
+                    <input
+                      type="checkbox"
+                      :checked="module.includeInPdf"
+                      @click.stop="toggleIncludeInPdf(module.id, !module.includeInPdf)"
+                      class="checkbox checkbox-sm"
+                      :title="module.includeInPdf ? 'Inclus dans le PDF' : 'Exclu du PDF'"
+                    />
+                    <span class="text-xs opacity-60" title="Inclure dans le PDF">📄</span>
+                  </div>
+                  
+                  <!-- Bouton supprimer -->
                   <button
-                    class="btn btn-ghost btn-sm btn-circle hover:bg-error/10 hover:text-error transition-colors"
-                    @click="handleDeleteModule(module.id)"
-                    title="Supprimer ce module"
+                    class="btn btn-ghost btn-xs btn-circle opacity-0 group-hover:opacity-100 hover:text-error"
+                    @click.stop="handleDeleteModule(module.id)"
+                    title="Supprimer"
                   >
                     🗑️
                   </button>
-                </div>
-
-                <!-- Contenu du module (composant dynamique) -->
-                <div class="p-6 pt-4 bg-base-100">
-                  <component
-                    v-if="getModuleComponent(module.type as ReportModuleType)"
-                    :is="getModuleComponent(module.type as ReportModuleType)"
-                    :model-value="module.payload || {}"
-                    :report-id="reportId"
-                    @update:model-value="(payload: any) => handleUpdateModule(module.id, payload)"
-                  />
-                  <div v-else class="text-sm text-base-content/60 italic">
-                    Composant non disponible pour le type "{{ module.type }}"
-                  </div>
                 </div>
               </div>
             </template>
           </VueDraggable>
         </div>
-      </div>
-    </template>
 
+        <!-- Onglet Informations -->
+        <div v-show="activeTab === 'info'" class="flex-1 overflow-y-auto p-4 space-y-4">
+          <div v-if="report">
+            <button class="btn btn-sm btn-outline w-full mb-4" @click="showEditInfoDialog = true">
+              ✏️ Modifier les informations
+            </button>
+            
+            <div class="space-y-3 text-sm">
+              <div>
+                <div class="text-xs text-base-content/60 uppercase mb-1">Service enquêteur</div>
+                <div class="font-semibold">{{ report.requestingService || "—" }}</div>
+              </div>
+              
+              <div>
+                <div class="text-xs text-base-content/60 uppercase mb-1">Base légale</div>
+                <LegalBasisDisplay
+                  :legal-basis="report.legalBasis"
+                  :clickable="true"
+                  @click-article="openArticleDetail"
+                />
+              </div>
+              
+              <div>
+                <div class="text-xs text-base-content/60 uppercase mb-1">Contexte</div>
+                <p class="text-sm leading-relaxed">{{ report.investigationContext || 'Non renseigné' }}</p>
+              </div>
+              
+              <div v-if="report.keywords && report.keywords.length > 0">
+                <div class="text-xs text-base-content/60 uppercase mb-2">Mots-clés</div>
+                <div class="flex flex-wrap gap-1">
+                  <span v-for="keyword in report.keywords" :key="keyword" 
+                        class="badge badge-sm badge-outline">
+                    {{ keyword }}
+                  </span>
+                </div>
+              </div>
+
+              <div v-if="report.validatedById">
+                <div class="text-xs text-base-content/60 uppercase mb-1">Validé par</div>
+                <div class="font-semibold">{{ report.validator?.firstName }} {{ report.validator?.lastName }}</div>
+                <div class="text-xs text-base-content/60">
+                  {{ formatDateTime(report.validatedAt) }}
+                </div>
+                <div v-if="report.validatorNotes" class="text-xs mt-1 italic">{{ report.validatorNotes }}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Onglet Entités -->
+        <div v-show="activeTab === 'entities'" class="flex-1 overflow-y-auto p-4">
+          <div class="text-sm text-base-content/60">
+            Liste des entités liées à ce rapport ({{ stats?.entities || 0 }} entités)
+          </div>
+          <!-- TODO: Ajouter une liste d'entités si nécessaire -->
+        </div>
+      </div>
+
+      <!-- Zone de contenu principale -->
+      <div class="flex-1 bg-base-50 overflow-y-auto">
+        <!-- État de chargement -->
+        <div v-if="loading" class="flex items-center justify-center h-full">
+          <span class="loading loading-spinner loading-lg"></span>
+        </div>
+
+        <!-- Erreur -->
+        <div v-else-if="error" class="flex items-center justify-center h-full">
+          <div class="alert alert-error max-w-md">
+            <span>{{ error }}</span>
+          </div>
+        </div>
+
+        <!-- Aucun module sélectionné -->
+        <div v-else-if="!selectedModuleId && modules.length > 0" class="flex items-center justify-center h-full text-center">
+          <div class="max-w-md space-y-4">
+            <div class="text-6xl">📋</div>
+            <h3 class="text-2xl font-bold">Sélectionnez un module</h3>
+            <p class="text-base-content/60">Cliquez sur un module dans la sidebar pour afficher son contenu</p>
+          </div>
+        </div>
+
+        <!-- Affichage du module sélectionné -->
+        <div v-else-if="selectedModule" class="p-4">
+          <div class="bg-base-100 shadow-lg border border-base-300 p-6">
+            <!-- Header du module -->
+            <div class="flex items-start justify-between mb-6 pb-4 border-b border-base-200">
+              <div>
+                <div class="flex items-center gap-3 mb-2">
+                  <span class="text-3xl">{{ getModuleIcon(selectedModule.type) }}</span>
+                  <h3 class="text-2xl font-bold">{{ selectedModule.title }}</h3>
+                </div>
+                <div class="text-sm text-base-content/60">
+                  {{ MODULE_TYPE_METADATA[getModuleType(selectedModule)]?.label || selectedModule.type }}
+                </div>
+                <div v-if="selectedModule.entity" class="mt-2">
+                  <span class="badge badge-accent badge-sm">📌 {{ selectedModule.entity.label }}</span>
+                </div>
+              </div>
+              
+              <div class="flex items-center gap-2">
+                <label class="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    :checked="selectedModule.includeInPdf"
+                    @change="toggleIncludeInPdf(selectedModule.id, !selectedModule.includeInPdf)"
+                    class="checkbox checkbox-sm"
+                  />
+                  <span class="text-sm">Inclure dans PDF</span>
+                </label>
+              </div>
+            </div>
+
+            <!-- Contenu du module -->
+            <div>
+              <component
+                v-if="selectedModule && getModuleComponent(getModuleType(selectedModule))"
+                :is="getModuleComponent(getModuleType(selectedModule))"
+                :model-value="selectedModule.payload || {}"
+                :report-id="reportId"
+                @update:modelValue="handleUpdateModule(selectedModule.id, $event)"
+              />
+              <div v-else class="text-sm text-base-content/60 italic">
+                Composant non disponible pour le type "{{ selectedModule?.type }}"
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
     <!-- Modal: Créer module -->
     <div v-if="showModuleDialog" class="modal modal-open">
       <div class="modal-box w-11/12 max-w-2xl">
@@ -1153,6 +1238,51 @@ function getClassificationInfo(classif: string) {
       <div class="modal-backdrop" @click="showCorrelationsModal = false"></div>
     </div>
 
+    <!-- Modal de génération PDF -->
+    <Transition
+      enter-active-class="transition-opacity duration-200"
+      leave-active-class="transition-opacity duration-200"
+      enter-from-class="opacity-0"
+      leave-to-class="opacity-0"
+    >
+      <div v-if="exportingPDF" class="fixed inset-0 z-50 flex items-center justify-center">
+        <!-- Overlay sombre -->
+        <div class="absolute inset-0 bg-black bg-opacity-60 backdrop-blur-sm"></div>
+        
+        <!-- Modal de chargement -->
+        <div class="relative bg-base-100 rounded-2xl shadow-2xl p-8 max-w-md mx-4 transform transition-all duration-300 scale-100">
+          <div class="flex flex-col items-center gap-6">
+            <!-- Spinner -->
+            <div class="relative">
+              <svg class="animate-spin h-16 w-16 text-primary" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              <div class="absolute inset-0 flex items-center justify-center">
+                <span class="text-2xl animate-pulse">📄</span>
+              </div>
+            </div>
+            
+            <!-- Message -->
+            <div class="text-center">
+              <h3 class="text-xl font-bold mb-2">Génération du PDF en cours</h3>
+              <p class="text-sm opacity-70">
+                Veuillez patienter pendant que nous générons votre rapport...
+              </p>
+              <p class="text-xs opacity-50 mt-2">
+                Cette opération peut prendre quelques secondes
+              </p>
+            </div>
+            
+            <!-- Barre de progression indéterminée -->
+            <div class="w-full bg-base-300 rounded-full h-2 overflow-hidden">
+              <div class="h-full bg-gradient-to-r from-primary to-secondary animate-pulse" style="width: 70%"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </Transition>
+
     <EntityDialog
       :show="showEntityDialog"
       @close="showEntityDialog = false"
@@ -1178,7 +1308,6 @@ function getClassificationInfo(classif: string) {
       @confirm="modal.handleConfirm"
       @cancel="modal.handleCancel"
     />
-    </div>
 
     <!-- Modal de validation officier -->
     <OfficerValidationModal

@@ -177,17 +177,18 @@ model ReportVersion {
 }
 
 model ReportModule {
-  id        String   @id @default(uuid())
-  reportId  String
-  type      String
-  slug      String?
-  title     String?
-  headline  String?
-  entityId  String?
-  position  Int      @default(0)
-  payload   Json?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id           String   @id @default(uuid())
+  reportId     String
+  type         String
+  slug         String?
+  title        String?
+  headline     String?
+  entityId     String?
+  position     Int      @default(0)
+  includeInPdf Boolean  @default(true)
+  payload      Json?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
   report        Report             @relation(fields: [reportId], references: [id])
   entity        Entity?            @relation(fields: [entityId], references: [id])

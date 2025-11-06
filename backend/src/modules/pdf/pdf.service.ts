@@ -115,6 +115,7 @@ export class PDFService {
           },
         },
         modules: {
+          where: { includeInPdf: true }, // Filtrer uniquement les modules à inclure dans le PDF
           orderBy: { position: "asc" },
           include: {
             entity: true,
