@@ -4,6 +4,11 @@ import { useSystemSettings } from "@/composables/useSystemSettings";
 import { useAuthStore } from "@/stores/auth";
 import { api } from "@/services/http";
 
+// Props pour permettre aux pages de désactiver les marges
+defineProps<{
+  noContainer?: boolean;
+}>();
+
 const systemSettings = useSystemSettings();
 const authStore = useAuthStore();
 
@@ -210,7 +215,10 @@ const showLockBanner = computed(() => {
           </div>
         </div>
 
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div v-if="noContainer">
+          <slot />
+        </div>
+        <div v-else class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <slot />
         </div>
       </main>

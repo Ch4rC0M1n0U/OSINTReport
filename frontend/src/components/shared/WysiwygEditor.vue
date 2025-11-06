@@ -1,9 +1,9 @@
 <template>
-  <div class="wysiwyg-editor border border-gray-300 dark:border-gray-600 rounded-md overflow-hidden">
+  <div class="wysiwyg-editor border-2 border-base-300 dark:border-gray-600 rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-all duration-200 bg-base-100 w-full">
     <!-- Toolbar -->
     <div
       v-if="editor"
-      class="flex flex-wrap gap-1 p-2 border-b border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800"
+      class="flex flex-wrap gap-1.5 px-3 py-2.5 border-b-2 border-base-300 dark:border-gray-600 bg-gradient-to-r from-base-200 to-base-100 dark:bg-gradient-to-r dark:from-gray-800 dark:to-gray-750"
     >
       <button
         type="button"
@@ -31,6 +31,72 @@
         title="Barré"
       >
         <s>S</s>
+      </button>
+      <button
+        type="button"
+        @click="editor.chain().focus().toggleUnderline().run()"
+        :class="{ 'is-active': editor.isActive('underline') }"
+        class="toolbar-btn"
+        title="Souligné (Ctrl+U)"
+      >
+        <u>U</u>
+      </button>
+      <button
+        type="button"
+        @click="editor.chain().focus().toggleCode().run()"
+        :class="{ 'is-active': editor.isActive('code') }"
+        class="toolbar-btn"
+        title="Code inline"
+      >
+        &lt;/&gt;
+      </button>
+
+      <div class="w-px h-6 bg-gray-300 dark:bg-gray-600 mx-1"></div>
+
+      <!-- Alignement -->
+      <button
+        type="button"
+        @click="editor.chain().focus().setTextAlign('left').run()"
+        :class="{ 'is-active': editor.isActive({ textAlign: 'left' }) }"
+        class="toolbar-btn"
+        title="Aligner à gauche"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h10M4 18h16" />
+        </svg>
+      </button>
+      <button
+        type="button"
+        @click="editor.chain().focus().setTextAlign('center').run()"
+        :class="{ 'is-active': editor.isActive({ textAlign: 'center' }) }"
+        class="toolbar-btn"
+        title="Centrer"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M7 12h10M4 18h16" />
+        </svg>
+      </button>
+      <button
+        type="button"
+        @click="editor.chain().focus().setTextAlign('right').run()"
+        :class="{ 'is-active': editor.isActive({ textAlign: 'right' }) }"
+        class="toolbar-btn"
+        title="Aligner à droite"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M10 12h10M4 18h16" />
+        </svg>
+      </button>
+      <button
+        type="button"
+        @click="editor.chain().focus().setTextAlign('justify').run()"
+        :class="{ 'is-active': editor.isActive({ textAlign: 'justify' }) }"
+        class="toolbar-btn"
+        title="Justifier"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+        </svg>
       </button>
 
       <div class="w-px h-6 bg-gray-300 dark:bg-gray-600 mx-1"></div>
@@ -95,6 +161,83 @@
 
       <div class="w-px h-6 bg-gray-300 dark:bg-gray-600 mx-1"></div>
 
+      <!-- Tableaux -->
+      <button
+        type="button"
+        @click="editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()"
+        class="toolbar-btn"
+        title="Insérer un tableau 3x3"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+        </svg>
+      </button>
+      <button
+        v-if="editor.isActive('table')"
+        type="button"
+        @click="editor.chain().focus().addColumnBefore().run()"
+        class="toolbar-btn"
+        title="Ajouter une colonne avant"
+      >
+        ⬅️➕
+      </button>
+      <button
+        v-if="editor.isActive('table')"
+        type="button"
+        @click="editor.chain().focus().addColumnAfter().run()"
+        class="toolbar-btn"
+        title="Ajouter une colonne après"
+      >
+        ➕➡️
+      </button>
+      <button
+        v-if="editor.isActive('table')"
+        type="button"
+        @click="editor.chain().focus().deleteColumn().run()"
+        class="toolbar-btn"
+        title="Supprimer la colonne"
+      >
+        ❌📊
+      </button>
+      <button
+        v-if="editor.isActive('table')"
+        type="button"
+        @click="editor.chain().focus().addRowBefore().run()"
+        class="toolbar-btn"
+        title="Ajouter une ligne avant"
+      >
+        ⬆️➕
+      </button>
+      <button
+        v-if="editor.isActive('table')"
+        type="button"
+        @click="editor.chain().focus().addRowAfter().run()"
+        class="toolbar-btn"
+        title="Ajouter une ligne après"
+      >
+        ⬇️➕
+      </button>
+      <button
+        v-if="editor.isActive('table')"
+        type="button"
+        @click="editor.chain().focus().deleteRow().run()"
+        class="toolbar-btn"
+        title="Supprimer la ligne"
+      >
+        ❌📋
+      </button>
+      <button
+        v-if="editor.isActive('table')"
+        type="button"
+        @click="editor.chain().focus().deleteTable().run()"
+        class="toolbar-btn btn-error"
+        title="Supprimer le tableau"
+      >
+        🗑️
+      </button>
+
+      <div class="w-px h-6 bg-gray-300 dark:bg-gray-600 mx-1"></div>
+
       <button
         type="button"
         @click="editor.chain().focus().setHorizontalRule().run()"
@@ -104,7 +247,7 @@
         ―
       </button>
 
-      <div class="w-px h-6 bg-gray-300 dark:bg-gray-600 mx-1"></div>
+      <div v-if="enableEntityInsertion" class="w-px h-6 bg-gray-300 dark:bg-gray-600 mx-1"></div>
 
       <button
         v-if="enableEntityInsertion"
@@ -150,7 +293,7 @@
     <!-- Editor content -->
     <editor-content
       :editor="editor"
-      class="prose dark:prose-invert max-w-none p-4 min-h-[150px] focus:outline-none dark:bg-gray-700 dark:text-white"
+      class="prose dark:prose-invert max-w-none p-5 min-h-[180px] focus:outline-none bg-base-100 dark:bg-gray-700 dark:text-white transition-colors duration-150"
     />
   </div>
 </template>
@@ -161,6 +304,8 @@ import { useEditor, EditorContent } from "@tiptap/vue-3";
 import StarterKit from "@tiptap/starter-kit";
 import Placeholder from "@tiptap/extension-placeholder";
 import Image from "@tiptap/extension-image";
+import Underline from "@tiptap/extension-underline";
+import TextAlign from "@tiptap/extension-text-align";
 import { Table } from "@tiptap/extension-table";
 import { TableRow } from "@tiptap/extension-table-row";
 import { TableCell } from "@tiptap/extension-table-cell";
@@ -194,6 +339,10 @@ const isEntityModalOpen = ref(false);
 const editor = useEditor({
   extensions: [
     StarterKit,
+    Underline,
+    TextAlign.configure({
+      types: ['heading', 'paragraph'],
+    }),
     Image.configure({
       HTMLAttributes: {
         class: 'max-w-full h-auto rounded',
@@ -302,58 +451,84 @@ function handleEntitySelect(entity: Entity | Finding, htmlContent?: string) {
 
 <style scoped>
 .toolbar-btn {
-  padding: 0.25rem 0.75rem;
+  padding: 0.375rem 0.875rem;
   font-size: 0.875rem;
   font-weight: 500;
   color: rgb(55 65 81);
-  background-color: white;
-  border: 1px solid rgb(209 213 219);
-  border-radius: 0.375rem;
-  transition: all 0.15s;
+  background: linear-gradient(135deg, white 0%, rgb(249 250 251) 100%);
+  border: 1.5px solid rgb(209 213 219);
+  border-radius: 0.5rem;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 }
 
 .toolbar-btn:hover {
-  background-color: rgb(243 244 246);
+  background: linear-gradient(135deg, rgb(249 250 251) 0%, rgb(243 244 246) 100%);
+  border-color: rgb(156 163 175);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  transform: translateY(-1px);
 }
 
 :deep(.dark) .toolbar-btn {
   color: rgb(209 213 219);
-  background-color: rgb(55 65 81);
+  background: linear-gradient(135deg, rgb(55 65 81) 0%, rgb(45 55 71) 100%);
   border-color: rgb(75 85 99);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
 }
 
 :deep(.dark) .toolbar-btn:hover {
-  background-color: rgb(75 85 99);
+  background: linear-gradient(135deg, rgb(75 85 99) 0%, rgb(65 75 89) 100%);
+  border-color: rgb(107 114 128);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
 }
 
 .toolbar-btn.is-active {
-  background-color: rgb(219 234 254);
+  background: linear-gradient(135deg, rgb(219 234 254) 0%, rgb(191 219 254) 100%);
   color: rgb(29 78 216);
   border-color: rgb(59 130 246);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1), 0 2px 4px rgba(29, 78, 216, 0.2);
 }
 
 :deep(.dark) .toolbar-btn.is-active {
-  background-color: rgb(30 58 138);
+  background: linear-gradient(135deg, rgb(30 58 138) 0%, rgb(30 64 175) 100%);
   color: rgb(147 197 253);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2), 0 2px 4px rgba(30, 58, 138, 0.3);
 }
 
 .toolbar-btn:disabled {
-  opacity: 0.5;
+  opacity: 0.4;
   cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
 }
 
 /* Styles pour le contenu de l'éditeur */
 :deep(.ProseMirror) {
   outline: none;
-  min-height: 150px;
+  min-height: 180px;
+  line-height: 1.7;
+  color: rgb(31 41 55);
+}
+
+:deep(.dark .ProseMirror) {
+  color: rgb(229 231 235);
+}
+
+:deep(.ProseMirror:focus) {
+  outline: none;
 }
 
 :deep(.ProseMirror p.is-editor-empty:first-child::before) {
   content: attr(data-placeholder);
   float: left;
-  color: #adb5bd;
+  color: rgb(156 163 175);
   pointer-events: none;
   height: 0;
+  font-style: italic;
+}
+
+:deep(.dark .ProseMirror p.is-editor-empty:first-child::before) {
+  color: rgb(107 114 128);
 }
 
 :deep(.ProseMirror h1) {
@@ -375,6 +550,24 @@ function handleEntitySelect(entity: Entity | Finding, htmlContent?: string) {
   font-weight: bold;
   margin-top: 0.5rem;
   margin-bottom: 0.25rem;
+}
+
+:deep(.ProseMirror u) {
+  text-decoration: underline;
+}
+
+:deep(.ProseMirror code) {
+  background-color: rgb(243 244 246);
+  color: rgb(220 38 38);
+  padding: 0.125rem 0.25rem;
+  border-radius: 0.25rem;
+  font-family: 'Courier New', monospace;
+  font-size: 0.875em;
+}
+
+:deep(.dark .ProseMirror code) {
+  background-color: rgb(55 65 81);
+  color: rgb(252 165 165);
 }
 
 :deep(.ProseMirror ul) {

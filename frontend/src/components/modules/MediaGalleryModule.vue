@@ -1,5 +1,5 @@
 <template>
-  <div class="media-gallery-module">
+  <div class="media-gallery-module max-w-7xl mx-auto">
     <!-- En-tête -->
     <div class="flex items-center justify-between mb-4">
       <div class="flex items-center gap-2">

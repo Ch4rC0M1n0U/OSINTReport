@@ -5,4 +5,99 @@
 body {
   font-family: "Inter", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
     sans-serif;
+  margin: 0;
+  padding: 0;
 }
+
+#app {
+  min-height: 100vh;
+  width: 100%;
+}
+
+/* Amélioration globale des inputs et textareas */
+@layer components {
+  /* Inputs standard */
+  .input-bordered {
+    @apply border-2 border-base-300 bg-base-100 shadow-sm;
+    @apply hover:border-base-content/30 hover:shadow-md;
+    @apply focus:border-primary focus:ring-2 focus:ring-primary/20 focus:shadow-lg;
+    @apply transition-all duration-200 ease-in-out;
+    @apply rounded-lg;
+  }
+
+  .input-bordered:focus {
+    @apply outline-none;
+  }
+
+  /* Textareas */
+  .textarea-bordered {
+    @apply border-2 border-base-300 bg-base-100 shadow-sm;
+    @apply hover:border-base-content/30 hover:shadow-md;
+    @apply focus:border-primary focus:ring-2 focus:ring-primary/20 focus:shadow-lg;
+    @apply transition-all duration-200 ease-in-out;
+    @apply rounded-lg;
+    @apply resize-y min-h-[100px];
+    max-width: 100%;
+  }
+
+  /* Limitation de largeur pour textareas en pleine largeur */
+  .textarea-bordered.w-full {
+    max-width: 1024px;
+  }
+
+  .textarea-bordered:focus {
+    @apply outline-none;
+  }
+
+  /* Inputs petits */
+  .input-sm.input-bordered {
+    @apply rounded-md;
+  }
+
+  /* Textareas petits */
+  .textarea-sm.textarea-bordered {
+    @apply rounded-md min-h-[80px];
+  }
+
+  /* Cards avec effet hover */
+  .card {
+    @apply transition-all duration-200 ease-in-out;
+  }
+
+  .card:hover {
+    @apply shadow-lg;
+  }
+
+  /* Labels de formulaire */
+  .label-text {
+    @apply font-medium text-base-content/80;
+  }
+
+  /* Badges améliorés */
+  .badge {
+    @apply shadow-sm transition-all duration-200;
+  }
+
+  .badge:hover {
+    @apply shadow-md scale-105;
+  }
+
+  /* Boutons avec transitions */
+  .btn {
+    @apply transition-all duration-200 ease-in-out;
+  }
+
+  .btn:hover:not(:disabled) {
+    @apply shadow-md transform scale-[1.02];
+  }
+
+  .btn:active:not(:disabled) {
+    @apply scale-[0.98];
+  }
+
+  /* Focus visible pour l'accessibilité */
+  *:focus-visible {
+    @apply outline-2 outline-offset-2 outline-primary;
+  }
+}
+

@@ -1,5 +1,5 @@
 <template>
-  <div class="identifier-lookup-module">
+  <div class="identifier-lookup-module max-w-5xl mx-auto">
     <!-- En-tête avec actions -->
     <div class="flex items-center justify-between mb-4">
       <div class="flex items-center gap-2">

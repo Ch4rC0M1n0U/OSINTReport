@@ -164,6 +164,11 @@ const adminNavigation = computed(() => {
   };
 });
 
+// Déterminer si on est sur une page qui ne doit pas avoir de container
+const isFullWidthPage = computed(() => {
+  return router.currentRoute.value.name === 'reports.detail';
+});
+
 async function handleLogout() {
   await auth.logout();
   logoutSuccess.value = true;
@@ -180,7 +185,7 @@ async function handleLogout() {
   <div v-if="!auth.user" class="min-h-screen flex items-center justify-center">
     <span class="loading loading-spinner loading-lg"></span>
   </div>
-  <AppShell v-else>
+  <AppShell v-else :no-container="isFullWidthPage">
     <template #sidebar>
       <!-- Navigation principale -->
       <div class="space-y-1">

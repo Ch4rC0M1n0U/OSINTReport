@@ -290,6 +290,55 @@ async function toggleIncludeInPdf(moduleId: string, includeInPdf: boolean) {
   }
 }
 
+// Sélectionner tous les modules pour le PDF
+async function selectAllForPdf() {
+  try {
+    const promises = modules.value
+      .filter(m => !m.includeInPdf)
+      .map(m => reportsApi.toggleModuleInPdf(reportId.value, m.id, true));
+    
+    await Promise.all(promises);
+    
+    // Mettre à jour localement
+    modules.value.forEach(m => {
+      m.includeInPdf = true;
+    });
+  } catch (err) {
+    await modal.showError(
+      "Erreur lors de la sélection de tous les modules.",
+      "Erreur"
+    );
+    console.error(err);
+  }
+}
+
+// Désélectionner tous les modules pour le PDF
+async function deselectAllForPdf() {
+  try {
+    const promises = modules.value
+      .filter(m => m.includeInPdf)
+      .map(m => reportsApi.toggleModuleInPdf(reportId.value, m.id, false));
+    
+    await Promise.all(promises);
+    
+    // Mettre à jour localement
+    modules.value.forEach(m => {
+      m.includeInPdf = false;
+    });
+  } catch (err) {
+    await modal.showError(
+      "Erreur lors de la désélection de tous les modules.",
+      "Erreur"
+    );
+    console.error(err);
+  }
+}
+
+// Compter les modules inclus dans le PDF
+const pdfModulesCount = computed(() => {
+  return modules.value.filter(m => m.includeInPdf).length;
+});
+
 async function handleChangeStatus(newStatus: "DRAFT" | "PUBLISHED" | "ARCHIVED") {
   const statusLabels = {
     DRAFT: "Brouillon",
@@ -629,9 +678,9 @@ function getClassificationInfo(classif: string) {
 </script>
 
 <template>
-  <div class="h-screen flex flex-col">
+  <div class="h-screen w-full flex flex-col overflow-hidden">
     <!-- Header fixe -->
-    <div class="bg-base-200 border-b border-base-300 p-4 shadow-sm flex-shrink-0">
+    <div class="bg-base-200 border-b border-base-300 px-4 py-3 shadow-sm flex-shrink-0">
       <div class="flex items-center justify-between">
         <div class="flex items-center gap-4">
           <button
@@ -667,7 +716,7 @@ function getClassificationInfo(classif: string) {
           </button>
           <button class="btn btn-sm btn-primary" @click="handleExportPDF" :disabled="exportingPDF">
             <span v-if="exportingPDF">⏳ Export...</span>
-            <span v-else>📄 PDF</span>
+            <span v-else>📄 Export PDF</span>
           </button>
           
           <!-- Menu déroulant Actions -->
@@ -681,7 +730,7 @@ function getClassificationInfo(classif: string) {
             <ul tabindex="0" class="dropdown-content menu p-0 shadow-lg bg-base-100 w-64 z-10 border-l-4 border-primary mt-2">
               <!-- Édition -->
               <li class="border-b border-base-200">
-                <a @click="showEditInfoDialog = true" class="py-3 px-4 hover:bg-base-200 flex items-center gap-3 transition-colors">
+                <a @click="openEditInfoDialog()" class="py-3 px-4 hover:bg-base-200 flex items-center gap-3 transition-colors">
                   <span class="text-xl">✏️</span>
                   <div>
                     <div class="font-semibold">Modifier les informations</div>
@@ -732,7 +781,7 @@ function getClassificationInfo(classif: string) {
       <!-- Sidebar des modules (style OneNote) -->
       <div class="w-80 bg-base-100 border-r border-base-300 flex flex-col">
         <!-- Header de la sidebar -->
-        <div class="p-4 border-b border-base-300 bg-base-200">
+        <div class="px-4 py-3 border-b border-base-300 bg-base-200">
           <div class="flex items-center justify-between mb-3">
             <h3 class="font-bold text-lg flex items-center gap-2">
               <span>📦</span>
@@ -756,6 +805,35 @@ function getClassificationInfo(classif: string) {
         <div v-show="activeTab === 'modules'" class="flex-1 overflow-y-auto">
           <div v-if="modules.length === 0" class="p-4 text-center text-base-content/60 text-sm">
             Aucun module.<br>Cliquez sur "+ Ajouter" pour commencer.
+          </div>
+          
+          <!-- Boutons de sélection/désélection de tous -->
+          <div v-if="modules.length > 0" class="sticky top-0 z-10 bg-base-100 border-b border-base-200 p-2 space-y-1">
+            <div class="text-xs text-base-content/60 text-center mb-2">
+              {{ pdfModulesCount }}/{{ modules.length }} module(s) pour le PDF
+            </div>
+            <div class="flex gap-1">
+              <button
+                @click="selectAllForPdf"
+                class="btn btn-xs btn-outline btn-success flex-1 gap-1"
+                :disabled="pdfModulesCount === modules.length"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                </svg>
+                Tout
+              </button>
+              <button
+                @click="deselectAllForPdf"
+                class="btn btn-xs btn-outline btn-error flex-1 gap-1"
+                :disabled="pdfModulesCount === 0"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+                Aucun
+              </button>
+            </div>
           </div>
           
           <VueDraggable
@@ -822,7 +900,7 @@ function getClassificationInfo(classif: string) {
         <!-- Onglet Informations -->
         <div v-show="activeTab === 'info'" class="flex-1 overflow-y-auto p-4 space-y-4">
           <div v-if="report">
-            <button class="btn btn-sm btn-outline w-full mb-4" @click="showEditInfoDialog = true">
+            <button class="btn btn-sm btn-outline w-full mb-4" @click="openEditInfoDialog()">
               ✏️ Modifier les informations
             </button>
             
@@ -878,7 +956,7 @@ function getClassificationInfo(classif: string) {
       </div>
 
       <!-- Zone de contenu principale -->
-      <div class="flex-1 bg-base-50 overflow-y-auto">
+      <div class="flex-1 bg-base-100 overflow-y-auto">
         <!-- État de chargement -->
         <div v-if="loading" class="flex items-center justify-center h-full">
           <span class="loading loading-spinner loading-lg"></span>
@@ -901,19 +979,19 @@ function getClassificationInfo(classif: string) {
         </div>
 
         <!-- Affichage du module sélectionné -->
-        <div v-else-if="selectedModule" class="p-4">
-          <div class="bg-base-100 shadow-lg border border-base-300 p-6">
+        <div v-else-if="selectedModule" class="h-full">
+          <div class="h-full p-4">
             <!-- Header du module -->
-            <div class="flex items-start justify-between mb-6 pb-4 border-b border-base-200">
+            <div class="flex items-start justify-between mb-3 pb-2 border-b border-base-200">
               <div>
-                <div class="flex items-center gap-3 mb-2">
-                  <span class="text-3xl">{{ getModuleIcon(selectedModule.type) }}</span>
-                  <h3 class="text-2xl font-bold">{{ selectedModule.title }}</h3>
+                <div class="flex items-center gap-2 mb-1">
+                  <span class="text-2xl">{{ getModuleIcon(selectedModule.type) }}</span>
+                  <h3 class="text-xl font-bold">{{ selectedModule.title }}</h3>
                 </div>
                 <div class="text-sm text-base-content/60">
                   {{ MODULE_TYPE_METADATA[getModuleType(selectedModule)]?.label || selectedModule.type }}
                 </div>
-                <div v-if="selectedModule.entity" class="mt-2">
+                <div v-if="selectedModule.entity" class="mt-1">
                   <span class="badge badge-accent badge-sm">📌 {{ selectedModule.entity.label }}</span>
                 </div>
               </div>
