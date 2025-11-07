@@ -2,55 +2,55 @@
   <div class="space-y-4 max-w-5xl mx-auto">
     <!-- Mode lecture -->
     <div v-if="!isEditing" class="space-y-3">
-      <div class="flex items-center justify-between">
-        <div class="flex items-center gap-3">
-          <span class="text-lg font-semibold">✍️ Signature du rédacteur</span>
+      <!-- Carte de contenu -->
+      <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border-2 border-gray-200 dark:border-gray-700 p-6">
+        <div class="flex items-center gap-3 mb-4 pb-4 border-b-2 border-gray-100 dark:border-gray-700">
+          <div class="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg">
+            <svg class="w-5 h-5 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/>
+            </svg>
+          </div>
+          <h2 class="text-xl font-bold text-gray-900 dark:text-white">Signature du rédacteur</h2>
         </div>
-        <button
-          v-if="!readonly"
-          type="button"
-          class="btn btn-sm btn-primary"
-          @click="startEditing"
-        >
-          ✏️ {{ hasSignature ? 'Modifier' : 'Signer le rapport' }}
-        </button>
-      </div>
 
-      <div class="card bg-base-200 shadow-sm">
-        <div class="card-body">
+        <div class="space-y-4">
           <!-- Date -->
-          <div class="mb-3">
-            <span class="text-sm opacity-70">Date de signature:</span>
-            <div class="text-lg font-semibold">
-              {{ modelValue.date ? new Date(modelValue.date).toLocaleDateString('fr-FR') : 'Non signé' }}
+          <div class="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700/30 rounded-lg">
+            <svg class="w-5 h-5 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+            </svg>
+            <div>
+              <span class="text-sm text-gray-600 dark:text-gray-400">Date de signature</span>
+              <div class="text-lg font-semibold text-gray-900 dark:text-white">
+                {{ modelValue.date ? new Date(modelValue.date).toLocaleDateString('fr-FR') : 'Non signé' }}
+              </div>
             </div>
           </div>
 
           <!-- Informations du rédacteur -->
-          <div v-if="modelValue.officer" class="divider my-2"></div>
           <div v-if="modelValue.officer" class="grid grid-cols-2 gap-4">
-            <div>
-              <span class="text-sm opacity-70">Nom:</span>
-              <div class="font-medium">{{ modelValue.officer.name || '—' }}</div>
+            <div class="space-y-1">
+              <span class="text-sm font-medium text-gray-600 dark:text-gray-400">Nom</span>
+              <div class="text-base font-semibold text-gray-900 dark:text-white">{{ modelValue.officer.name || '—' }}</div>
             </div>
-            <div>
-              <span class="text-sm opacity-70">Grade:</span>
-              <div class="font-medium">{{ modelValue.officer.rank || '—' }}</div>
+            <div class="space-y-1">
+              <span class="text-sm font-medium text-gray-600 dark:text-gray-400">Grade</span>
+              <div class="text-base font-semibold text-gray-900 dark:text-white">{{ modelValue.officer.rank || '—' }}</div>
             </div>
-            <div>
-              <span class="text-sm opacity-70">Unité:</span>
-              <div class="font-medium">{{ modelValue.officer.unit || '—' }}</div>
+            <div class="space-y-1">
+              <span class="text-sm font-medium text-gray-600 dark:text-gray-400">Unité</span>
+              <div class="text-base font-semibold text-gray-900 dark:text-white">{{ modelValue.officer.unit || '—' }}</div>
             </div>
-            <div v-if="modelValue.officer.badgeNumber">
-              <span class="text-sm opacity-70">Matricule:</span>
-              <div class="font-medium font-mono">{{ modelValue.officer.badgeNumber }}</div>
+            <div v-if="modelValue.officer.badgeNumber" class="space-y-1">
+              <span class="text-sm font-medium text-gray-600 dark:text-gray-400">Matricule</span>
+              <div class="text-base font-semibold font-mono text-gray-900 dark:text-white">{{ modelValue.officer.badgeNumber }}</div>
             </div>
           </div>
 
           <!-- Signature manuscrite -->
-          <div v-if="currentUserSignatureUrl" class="mt-4 pt-4 border-t border-base-300">
-            <span class="text-sm opacity-70">Signature manuscrite:</span>
-            <div class="mt-2 inline-block max-w-md w-full bg-base-100 p-4 rounded-lg">
+          <div v-if="currentUserSignatureUrl" class="pt-4 border-t border-gray-200 dark:border-gray-700">
+            <span class="text-sm font-medium text-gray-600 dark:text-gray-400 block mb-3">Signature manuscrite</span>
+            <div class="inline-block max-w-md w-full bg-gray-50 dark:bg-gray-700/30 p-4 rounded-lg border border-gray-200 dark:border-gray-600">
               <ProtectedSignature 
                 :src="currentUserSignatureUrl"
                 alt="Signature du rédacteur"
@@ -60,11 +60,34 @@
           </div>
 
           <!-- Notes additionnelles -->
-          <div v-if="modelValue.additionalNotes" class="mt-4 pt-4 border-t border-base-300">
-            <span class="text-sm opacity-70">Notes:</span>
-            <p class="mt-1 whitespace-pre-wrap">{{ modelValue.additionalNotes }}</p>
+          <div v-if="modelValue.additionalNotes" class="pt-4 border-t border-gray-200 dark:border-gray-700">
+            <span class="text-sm font-medium text-gray-600 dark:text-gray-400 block mb-2">Notes</span>
+            <p class="text-gray-700 dark:text-gray-300 whitespace-pre-wrap">{{ modelValue.additionalNotes }}</p>
+          </div>
+
+          <!-- Message si non signé -->
+          <div v-if="!modelValue.date && !modelValue.officer" class="text-center py-8">
+            <svg class="w-16 h-16 mx-auto text-gray-300 dark:text-gray-600 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/>
+            </svg>
+            <p class="text-gray-500 dark:text-gray-400 italic">Ce rapport n'a pas encore été signé</p>
           </div>
         </div>
+      </div>
+
+      <!-- Bouton édition -->
+      <div class="flex justify-end">
+        <button
+          v-if="!readonly"
+          type="button"
+          @click="startEditing"
+          class="flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-sm hover:shadow-md font-medium"
+        >
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/>
+          </svg>
+          {{ hasSignature ? 'Modifier' : 'Signer le rapport' }}
+        </button>
       </div>
     </div>
 

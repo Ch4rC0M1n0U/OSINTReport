@@ -807,43 +807,43 @@ function getClassificationInfo(classif: string) {
             Aucun module.<br>Cliquez sur "+ Ajouter" pour commencer.
           </div>
           
-          <!-- Boutons de sélection/désélection de tous -->
-          <div v-if="modules.length > 0" class="sticky top-0 z-10 bg-base-100 border-b border-base-200 p-2 space-y-1">
-            <div class="text-xs text-base-content/60 text-center mb-2">
-              {{ pdfModulesCount }}/{{ modules.length }} module(s) pour le PDF
+          <template v-else>
+            <!-- Boutons de sélection/désélection de tous -->
+            <div class="sticky top-0 z-10 bg-base-100 border-b border-base-200 p-2 space-y-1">
+              <div class="text-xs text-base-content/60 text-center mb-2">
+                {{ pdfModulesCount }}/{{ modules.length }} module(s) pour le PDF
+              </div>
+              <div class="flex gap-1">
+                <button
+                  @click="selectAllForPdf"
+                  class="btn btn-xs btn-outline btn-success flex-1 gap-1"
+                  :disabled="pdfModulesCount === modules.length"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                  </svg>
+                  Tout
+                </button>
+                <button
+                  @click="deselectAllForPdf"
+                  class="btn btn-xs btn-outline btn-error flex-1 gap-1"
+                  :disabled="pdfModulesCount === 0"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                  Aucun
+                </button>
+              </div>
             </div>
-            <div class="flex gap-1">
-              <button
-                @click="selectAllForPdf"
-                class="btn btn-xs btn-outline btn-success flex-1 gap-1"
-                :disabled="pdfModulesCount === modules.length"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-                </svg>
-                Tout
-              </button>
-              <button
-                @click="deselectAllForPdf"
-                class="btn btn-xs btn-outline btn-error flex-1 gap-1"
-                :disabled="pdfModulesCount === 0"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                </svg>
-                Aucun
-              </button>
-            </div>
-          </div>
-          
-          <VueDraggable
-            v-else
-            v-model="modules"
-            item-key="id"
-            handle=".drag-handle"
-            @end="handleReorderModules"
-            class="divide-y divide-base-200"
-          >
+            
+            <VueDraggable
+              v-model="modules"
+              item-key="id"
+              handle=".drag-handle"
+              @end="handleReorderModules"
+              class="divide-y divide-base-200"
+            >
             <template #item="{ element: module }">
               <div
                 class="group p-3 cursor-pointer transition-colors hover:bg-base-200"
@@ -895,6 +895,7 @@ function getClassificationInfo(classif: string) {
               </div>
             </template>
           </VueDraggable>
+          </template>
         </div>
 
         <!-- Onglet Informations -->

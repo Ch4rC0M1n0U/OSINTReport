@@ -2,19 +2,38 @@
   <div class="space-y-6 max-w-5xl mx-auto">
     <!-- Mode lecture -->
     <div v-if="!isEditing" class="space-y-4">
-      <div v-if="safeStatements.length > 0">
-        <!-- Convertir le tableau en liste Markdown pour le rendu -->
-        <MarkdownRenderer :content="statementsAsMarkdown" />
+      <!-- Carte de contenu -->
+      <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border-2 border-gray-200 dark:border-gray-700 p-6">
+        <div class="flex items-center gap-3 mb-4 pb-4 border-b-2 border-gray-100 dark:border-gray-700">
+          <div class="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg">
+            <svg class="w-5 h-5 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+          </div>
+          <h2 class="text-xl font-bold text-gray-900 dark:text-white">Conclusions et recommandations</h2>
+        </div>
+        
+        <div v-if="safeStatements.length > 0" class="prose dark:prose-invert max-w-none">
+          <MarkdownRenderer :content="statementsAsMarkdown" />
+        </div>
+        <div v-else class="text-center py-8">
+          <svg class="w-16 h-16 mx-auto text-gray-300 dark:text-gray-600 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+          </svg>
+          <p class="text-gray-500 dark:text-gray-400 italic">Aucune conclusion n'a été ajoutée</p>
+        </div>
       </div>
-      <p v-else class="text-gray-500 dark:text-gray-400 italic">Aucune conclusion</p>
 
       <!-- Bouton édition -->
       <div class="flex justify-end">
         <button
           @click="startEditing"
-          class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+          class="flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-sm hover:shadow-md font-medium"
         >
-          ✏️ Modifier
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+          </svg>
+          Modifier
         </button>
       </div>
     </div>

@@ -2,76 +2,110 @@
   <div class="space-y-6 max-w-5xl mx-auto">
     <!-- Mode lecture -->
     <div v-if="!isEditing" class="space-y-4">
-      <!-- Blocs de texte enrichi -->
-      <RichTextBlockList
-        v-if="richTextBlocks.length > 0"
-        :blocks="richTextBlocks"
-        :readonly="true"
-        :report-id="reportId"
-        :findings="findings"
-        placeholder="Informations complémentaires..."
-        class="mb-4"
-      />
-      
-      <!-- Résumé global -->
-      <section v-if="safePayload.summary" class="card bg-base-100 shadow">
-        <div class="card-body">
-          <h3 class="card-title text-lg">📊 Résumé global des recherches</h3>
-          <div class="prose max-w-none">
-            <MarkdownRenderer :content="safePayload.summary" />
+      <!-- Carte de contenu -->
+      <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border-2 border-gray-200 dark:border-gray-700 p-6">
+        <div class="flex items-center gap-3 mb-4 pb-4 border-b-2 border-gray-100 dark:border-gray-700">
+          <div class="p-2 bg-orange-100 dark:bg-orange-900/30 rounded-lg">
+            <svg class="w-5 h-5 text-orange-600 dark:text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/>
+            </svg>
+          </div>
+          <h2 class="text-xl font-bold text-gray-900 dark:text-white">Résumé de la recherche</h2>
+        </div>
+
+        <div class="space-y-6">
+          <!-- Blocs de texte enrichi -->
+          <RichTextBlockList
+            v-if="richTextBlocks.length > 0"
+            :blocks="richTextBlocks"
+            :readonly="true"
+            :report-id="reportId"
+            :findings="findings"
+            placeholder="Informations complémentaires..."
+            class="mb-4"
+          />
+          
+          <!-- Résumé global -->
+          <section v-if="safePayload.summary" class="space-y-2">
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+              <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+              </svg>
+              Résumé global des recherches
+            </h3>
+            <div class="prose dark:prose-invert max-w-none pl-7">
+              <MarkdownRenderer :content="safePayload.summary" />
+            </div>
+          </section>
+
+          <!-- Méthodologie -->
+          <section v-if="safePayload.methodology" class="space-y-2 pt-4 border-t border-gray-200 dark:border-gray-700">
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+              <svg class="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
+              </svg>
+              Méthodologie
+            </h3>
+            <div class="prose dark:prose-invert max-w-none pl-7">
+              <MarkdownRenderer :content="safePayload.methodology" />
+            </div>
+          </section>
+
+          <!-- Éléments non trouvés -->
+          <section v-if="safePayload.notFound && safePayload.notFound.length > 0" class="space-y-2 pt-4 border-t border-gray-200 dark:border-gray-700">
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+              <svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+              </svg>
+              Éléments non trouvés
+            </h3>
+            <ul class="list-disc list-inside space-y-1 pl-7 text-gray-700 dark:text-gray-300">
+              <li v-for="(item, index) in safePayload.notFound" :key="index">
+                {{ item }}
+              </li>
+            </ul>
+          </section>
+
+          <!-- Notes -->
+          <section v-if="safePayload.notes" class="space-y-2 pt-4 border-t border-gray-200 dark:border-gray-700">
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+              <svg class="w-5 h-5 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+              </svg>
+              Notes complémentaires
+            </h3>
+            <div class="prose dark:prose-invert max-w-none pl-7">
+              <MarkdownRenderer :content="safePayload.notes" />
+            </div>
+          </section>
+
+          <!-- Message si vide -->
+          <div v-if="!richTextBlocks.length && !safePayload.summary && !safePayload.methodology && (!safePayload.notFound || safePayload.notFound.length === 0) && !safePayload.notes" class="text-center py-8">
+            <svg class="w-16 h-16 mx-auto text-gray-300 dark:text-gray-600 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/>
+            </svg>
+            <p class="text-gray-500 dark:text-gray-400 italic">Aucun contenu pour ce module</p>
           </div>
         </div>
-      </section>
-
-      <!-- Méthodologie -->
-      <section v-if="safePayload.methodology" class="card bg-base-100 shadow">
-        <div class="card-body">
-          <h3 class="card-title text-lg">🔬 Méthodologie</h3>
-          <div class="prose max-w-none">
-            <MarkdownRenderer :content="safePayload.methodology" />
-          </div>
-        </div>
-      </section>
-
-      <!-- Éléments non trouvés -->
-      <section v-if="safePayload.notFound && safePayload.notFound.length > 0" class="card bg-warning/10 border border-warning/30 shadow">
-        <div class="card-body">
-          <h3 class="card-title text-lg">⚠️ Éléments non trouvés</h3>
-          <ul class="list-disc list-inside space-y-1 text-sm">
-            <li v-for="(item, index) in safePayload.notFound" :key="index" class="text-base-content/80">
-              {{ item }}
-            </li>
-          </ul>
-        </div>
-      </section>
-
-      <!-- Notes -->
-      <section v-if="safePayload.notes" class="card bg-info/10 border border-info/30 shadow">
-        <div class="card-body">
-          <h3 class="card-title text-lg">📝 Notes complémentaires</h3>
-          <div class="prose max-w-none">
-            <MarkdownRenderer :content="safePayload.notes" />
-          </div>
-        </div>
-      </section>
-
-      <!-- Message si vide -->
-      <div v-if="!richTextBlocks.length && !safePayload.summary && !safePayload.methodology && (!safePayload.notFound || safePayload.notFound.length === 0) && !safePayload.notes" class="text-center py-8 text-base-content/60 italic">
-        Aucun contenu pour ce module
       </div>
 
       <!-- Bouton édition -->
       <div class="flex justify-end gap-2">
         <button
           v-if="richTextBlocks.length > 0"
-          @click="() => {}"
-          class="btn btn-ghost btn-sm"
           disabled
+          class="px-4 py-2 text-sm text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 rounded-lg cursor-not-allowed"
         >
           {{ richTextBlocks.length }} bloc{{ richTextBlocks.length > 1 ? 's' : '' }} de texte
         </button>
-        <button @click="startEditing" class="btn btn-primary">
-          ✏️ Modifier
+        <button
+          @click="startEditing"
+          class="flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-sm hover:shadow-md font-medium"
+        >
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+          </svg>
+          Modifier
         </button>
       </div>
     </div>

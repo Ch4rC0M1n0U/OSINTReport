@@ -2,37 +2,58 @@
   <div class="space-y-6 max-w-5xl mx-auto">
     <!-- Mode lecture -->
     <div v-if="!isEditing" class="space-y-4">
-      <!-- Blocs de texte enrichi -->
-      <RichTextBlockList
-        v-if="richTextBlocks.length > 0"
-        :blocks="richTextBlocks"
-        :readonly="true"
-        :report-id="reportId"
-        :findings="findings"
-        placeholder="Ajoutez des informations sur les objectifs OSINT..."
-      />
-      
-      <div v-if="safeObjectives.length > 0">
-        <!-- Convertir le tableau en liste Markdown pour le rendu -->
-        <MarkdownRenderer :content="objectivesAsMarkdown" />
+      <!-- Carte de contenu -->
+      <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border-2 border-gray-200 dark:border-gray-700 p-6">
+        <div class="flex items-center gap-3 mb-4 pb-4 border-b-2 border-gray-100 dark:border-gray-700">
+          <div class="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
+            <svg class="w-5 h-5 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
+            </svg>
+          </div>
+          <h2 class="text-xl font-bold text-gray-900 dark:text-white">Objectifs OSINT</h2>
+        </div>
+        
+        <div class="space-y-4">
+          <!-- Blocs de texte enrichi -->
+          <RichTextBlockList
+            v-if="richTextBlocks.length > 0"
+            :blocks="richTextBlocks"
+            :readonly="true"
+            :report-id="reportId"
+            :findings="findings"
+            placeholder="Ajoutez des informations sur les objectifs OSINT..."
+          />
+          
+          <div v-if="safeObjectives.length > 0" class="prose dark:prose-invert max-w-none">
+            <MarkdownRenderer :content="objectivesAsMarkdown" />
+          </div>
+          
+          <div v-if="!richTextBlocks.length && !safeObjectives.length" class="text-center py-8">
+            <svg class="w-16 h-16 mx-auto text-gray-300 dark:text-gray-600 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
+            </svg>
+            <p class="text-gray-500 dark:text-gray-400 italic">Aucun objectif n'a été défini</p>
+          </div>
+        </div>
       </div>
-      <p v-else class="text-base-content/60 italic">Aucun objectif défini</p>
 
       <!-- Bouton édition -->
       <div class="flex justify-end gap-2">
         <button
           v-if="richTextBlocks.length > 0"
-          @click="() => {}"
-          class="btn btn-ghost btn-sm"
           disabled
+          class="px-4 py-2 text-sm text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 rounded-lg cursor-not-allowed"
         >
           {{ richTextBlocks.length }} bloc{{ richTextBlocks.length > 1 ? 's' : '' }} de texte
         </button>
         <button
           @click="startEditing"
-          class="btn btn-primary"
+          class="flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-sm hover:shadow-md font-medium"
         >
-          ✏️ Modifier
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+          </svg>
+          Modifier
         </button>
       </div>
     </div>

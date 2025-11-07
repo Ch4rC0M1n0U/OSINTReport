@@ -2,110 +2,115 @@
   <div class="space-y-4 max-w-5xl mx-auto">
     <!-- Mode lecture -->
     <div v-if="!isEditing" class="space-y-3">
-      <div class="flex items-center justify-between">
-        <div class="flex items-center gap-2">
-          <span class="text-lg font-semibold">🔎 Pistes d'enquête</span>
-          <span class="badge badge-neutral">{{ leads.length }}</span>
-          <span v-if="richTextBlocks.length > 0" class="badge badge-info">
-            {{ richTextBlocks.length }} bloc{{ richTextBlocks.length > 1 ? 's' : '' }} de texte
+      <!-- Carte de contenu -->
+      <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border-2 border-gray-200 dark:border-gray-700 p-6">
+        <div class="flex items-center gap-3 mb-4 pb-4 border-b-2 border-gray-100 dark:border-gray-700">
+          <div class="p-2 bg-cyan-100 dark:bg-cyan-900/30 rounded-lg">
+            <svg class="w-5 h-5 text-cyan-600 dark:text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+            </svg>
+          </div>
+          <h2 class="text-xl font-bold text-gray-900 dark:text-white">Pistes d'enquête</h2>
+          <span class="ml-auto px-3 py-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-full text-sm font-semibold">
+            {{ leads.length }} piste{{ leads.length > 1 ? 's' : '' }}
           </span>
         </div>
-        <div class="flex items-center gap-2">
-          <button
-            v-if="!readonly"
-            type="button"
-            class="btn btn-sm btn-outline gap-2"
-            @click="addRichTextBlock"
-            title="Ajouter un bloc de texte enrichi"
-          >
-            <span>📝</span>
-            <span>Ajouter un texte</span>
-          </button>
-          <button
-            v-if="!readonly"
-            type="button"
-            class="btn btn-sm btn-primary"
-            @click="startEditing"
-          >
-            ✏️ Modifier
-          </button>
-        </div>
-      </div>
 
-      <!-- Blocs de texte enrichi -->
-      <RichTextBlockList
-        v-if="richTextBlocks.length > 0"
-        :blocks="richTextBlocks"
-        :readonly="readonly"
-        :report-id="reportId"
-        :findings="findings"
-        placeholder="Ajoutez des informations sur les pistes d'enquête... Utilisez le bouton 👤 pour insérer des entités."
-        @update="emitUpdate"
-        @delete="deleteBlock"
-        @move-up="moveBlockUp"
-        @move-down="moveBlockDown"
-      />
+        <div class="space-y-4">
+          <!-- Blocs de texte enrichi -->
+          <RichTextBlockList
+            v-if="richTextBlocks.length > 0"
+            :blocks="richTextBlocks"
+            :readonly="readonly"
+            :report-id="reportId"
+            :findings="findings"
+            placeholder="Ajoutez des informations sur les pistes d'enquête... Utilisez le bouton 👤 pour insérer des entités."
+            @update="emitUpdate"
+            @delete="deleteBlock"
+            @move-up="moveBlockUp"
+            @move-down="moveBlockDown"
+          />
 
-      <!-- Liste des pistes -->
-      <div v-if="leads.length > 0" class="space-y-3">
-        <div
-          v-for="(lead, index) in leads"
-          :key="index"
-          class="card bg-base-200 shadow-sm"
-        >
-          <div class="card-body p-4">
-            <div class="flex items-start justify-between gap-2">
-              <div class="flex-1">
-                <div class="flex items-center gap-2 mb-2">
-                  <span class="badge badge-sm" :class="getPriorityClass(lead.priority)">
-                    {{ getPriorityLabel(lead.priority) }}
-                  </span>
-                  <span class="badge badge-outline badge-sm">{{ getTypeLabel(lead.type) }}</span>
-                </div>
-
-                <div v-if="lead.platform" class="text-sm mb-1">
-                  <span class="opacity-70">Plateforme:</span>
-                  <span class="ml-1 font-medium">{{ lead.platform }}</span>
-                </div>
-
-                <div v-if="lead.legalBasis" class="text-sm mb-1">
-                  <span class="opacity-70">Base légale:</span>
-                  <span class="ml-1 font-mono text-xs">{{ lead.legalBasis }}</span>
-                </div>
-
-                <div v-if="lead.dataTargeted?.length" class="text-sm mb-1">
-                  <span class="opacity-70">Données ciblées:</span>
-                  <div class="flex flex-wrap gap-1 mt-1">
-                    <span
-                      v-for="(data, i) in lead.dataTargeted"
-                      :key="i"
-                      class="badge badge-ghost badge-xs"
-                    >
-                      {{ data }}
+          <!-- Liste des pistes -->
+          <div v-if="leads.length > 0" class="space-y-3">
+            <div
+              v-for="(lead, index) in leads"
+              :key="index"
+              class="p-4 bg-gray-50 dark:bg-gray-700/30 rounded-lg border border-gray-200 dark:border-gray-600"
+            >
+              <div class="flex items-start justify-between gap-2">
+                <div class="flex-1 space-y-2">
+                  <div class="flex items-center gap-2 mb-2">
+                    <span class="px-2 py-1 text-xs font-semibold rounded" :class="getPriorityClass(lead.priority)">
+                      {{ getPriorityLabel(lead.priority) }}
+                    </span>
+                    <span class="px-2 py-1 text-xs font-medium bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300 rounded">
+                      {{ getTypeLabel(lead.type) }}
                     </span>
                   </div>
-                </div>
 
-                <div v-if="lead.notes" class="text-sm opacity-80 mt-2">
-                  {{ lead.notes }}
+                  <div v-if="lead.platform" class="text-sm">
+                    <span class="font-medium text-gray-600 dark:text-gray-400">Plateforme:</span>
+                    <span class="ml-2 text-gray-900 dark:text-white font-semibold">{{ lead.platform }}</span>
+                  </div>
+
+                  <div v-if="lead.legalBasis" class="text-sm">
+                    <span class="font-medium text-gray-600 dark:text-gray-400">Base légale:</span>
+                    <span class="ml-2 font-mono text-xs text-gray-900 dark:text-white">{{ lead.legalBasis }}</span>
+                  </div>
+
+                  <div v-if="lead.dataTargeted?.length" class="text-sm">
+                    <span class="font-medium text-gray-600 dark:text-gray-400 block mb-1">Données ciblées:</span>
+                    <div class="flex flex-wrap gap-1">
+                      <span
+                        v-for="(data, i) in lead.dataTargeted"
+                        :key="i"
+                        class="px-2 py-0.5 text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded"
+                      >
+                        {{ data }}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div v-if="lead.notes" class="text-sm text-gray-700 dark:text-gray-300 mt-2 pt-2 border-t border-gray-200 dark:border-gray-600">
+                    {{ lead.notes }}
+                  </div>
                 </div>
               </div>
             </div>
           </div>
+
+          <!-- État vide -->
+          <div v-else-if="!richTextBlocks.length" class="text-center py-8">
+            <svg class="w-16 h-16 mx-auto text-gray-300 dark:text-gray-600 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+            </svg>
+            <p class="text-gray-500 dark:text-gray-400 italic">Aucune piste d'enquête définie</p>
+          </div>
         </div>
       </div>
 
-      <!-- État vide -->
-      <div v-else class="text-center py-12 opacity-60">
-        <div class="text-5xl mb-3">🔎</div>
-        <p>Aucune piste d'enquête</p>
+      <!-- Boutons -->
+      <div class="flex items-center justify-between">
+        <button
+          v-if="!readonly && richTextBlocks.length > 0"
+          type="button"
+          class="px-4 py-2 text-sm text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 rounded-lg cursor-not-allowed"
+          disabled
+        >
+          {{ richTextBlocks.length }} bloc{{ richTextBlocks.length > 1 ? 's' : '' }} de texte
+        </button>
+        <div class="flex-1"></div>
         <button
           v-if="!readonly"
           type="button"
-          class="btn btn-sm btn-ghost mt-3"
           @click="startEditing"
+          class="flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-sm hover:shadow-md font-medium"
         >
-          Ajouter une piste
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+          </svg>
+          Modifier
         </button>
       </div>
     </div>
