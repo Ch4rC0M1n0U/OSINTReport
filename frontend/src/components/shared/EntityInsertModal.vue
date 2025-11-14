@@ -544,7 +544,7 @@ function generateFindingTable(finding: Finding): string {
       unknown: '#6b7280'
     };
     const color = confidenceColors[finding.confidence] || '#6b7280';
-    rows.push(`<tr><td style="font-weight: 600; padding: 10px; border: 1px solid #cbd5e1; background-color: #f8fafc;">⭐ Niveau de confiance</td><td style="padding: 10px; border: 1px solid #cbd5e1;"><span style="display: inline-block; padding: 4px 12px; border-radius: 12px; background-color: ${color}; color: white; font-size: 0.875rem; font-weight: 600;">${getConfidenceLabel(finding.confidence)}</span></td></tr>`);
+    rows.push(`<tr><td style="font-weight: 600; padding: 10px; border: 1px solid #cbd5e1; background-color: #f8fafc;">✅ Niveau de confiance</td><td style="padding: 10px; border: 1px solid #cbd5e1;"><span style="display: inline-block; padding: 4px 12px; border-radius: 12px; background-color: ${color}; color: white; font-size: 0.875rem; font-weight: 600;">${getConfidenceLabel(finding.confidence)}</span></td></tr>`);
   }
   
   // Sources avec liens cliquables

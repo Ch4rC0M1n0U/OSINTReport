@@ -73,6 +73,21 @@ export class PDFService {
     handlebars.registerHelper("hasItems", function (arr: any[]) {
       return arr && Array.isArray(arr) && arr.length > 0;
     });
+
+    // Helper pour nettoyer le HTML de TipTap (pas de conversion Markdown)
+    handlebars.registerHelper("markdown", function (text: string) {
+      if (!text) return "";
+      
+      // TipTap génère déjà du HTML, on ne fait que nettoyer
+      let html = text
+        // Nettoyer les caractères de contrôle invisibles
+        .replace(/[\u200B-\u200D\uFEFF]/g, '')
+        // Supprimer les spans vides
+        .replace(/<span[^>]*>\s*<\/span>/gi, '')
+        .replace(/<span[^>]*>[\s\u200B-\u200D\uFEFF]*<\/span>/gi, '');
+
+      return new handlebars.SafeString(html);
+    });
   }
 
   /**
@@ -344,6 +359,25 @@ export class PDFService {
         position: module.position,
       })),
 
+      // Extraire les données du module sign_off pour la signature
+      signOffData: (() => {
+        const signOffModule = report.modules.find((m: any) => m.type === "sign_off");
+        if (signOffModule && signOffModule.payload) {
+          return {
+            hasSignOff: true,
+            date: signOffModule.payload.date 
+              ? new Date(signOffModule.payload.date).toLocaleDateString("fr-BE", {
+                  year: "numeric",
+                  month: "long",
+                  day: "numeric",
+                })
+              : null,
+            officer: signOffModule.payload.officer || null,
+          };
+        }
+        return { hasSignOff: false, date: null, officer: null };
+      })(),
+
       // Corrélations
       correlations: report.correlations.map((corr: any) => ({
         type: corr.type,
@@ -394,15 +428,145 @@ export class PDFService {
       case "investigation_leads":
         return this.renderInvestigationLeads(payload);
       case "sign_off":
-        return this.renderSignOff(payload);
+        // Le module sign_off n'est plus rendu dans le contenu,
+        // il est utilisé uniquement pour la signature en pied de page
+        return "";
       default:
         return this.renderGeneric(payload);
     }
   }
 
+  /**
+   * Rendre les blocs de texte enrichi (richTextBlocks)
+   */
+  private static renderRichTextBlocks(richTextBlocks: any[]): string {
+    if (!richTextBlocks || richTextBlocks.length === 0) return "";
+
+    let html = '<div class="rich-text-blocks">';
+    richTextBlocks.forEach((block: any, index: number) => {
+      html += '<div class="rich-text-block">';
+      
+      if (block.title) {
+        html += `<h4 class="block-title">${block.title}</h4>`;
+      } else {
+        html += `<h4 class="block-title">Bloc de texte ${index + 1}</h4>`;
+      }
+      
+      // Nettoyer le HTML de TipTap
+      if (block.content) {
+        html += `<div class="block-content">${this.cleanTipTapHtml(block.content)}</div>`;
+      }
+      
+      html += '</div>';
+    });
+    html += '</div>';
+    
+    return html;
+  }
+
+  /**
+   * Convertir les émojis Unicode en images Twemoji base64
+   * Télécharge les images PNG depuis le CDN et les convertit en base64
+   */
+  private static async convertEmojisToBase64Images(html: string): Promise<string> {
+    if (!html) return "";
+    
+    const emojiRegex = /[\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{1F000}-\u{1F02F}\u{1F0A0}-\u{1F0FF}\u{1F100}-\u{1F64F}\u{1F680}-\u{1F6FF}\u{1F910}-\u{1F96B}\u{1F980}-\u{1F9E0}]/gu;
+    const emojis = html.match(emojiRegex) || [];
+    
+    // Dédupliquer les emojis
+    const uniqueEmojis = [...new Set(emojis)];
+    
+    // Créer un cache emoji -> base64
+    const emojiCache = new Map<string, string>();
+    
+    // Télécharger et convertir chaque emoji unique
+    for (const emoji of uniqueEmojis) {
+      const codePoints = [];
+      for (let i = 0; i < emoji.length; i++) {
+        const code = emoji.codePointAt(i);
+        if (code !== undefined) {
+          codePoints.push(code.toString(16));
+          if (code > 0xFFFF) i++;
+        }
+      }
+      
+      const twemojiUrl = `https://cdn.jsdelivr.net/gh/twitter/twemoji@latest/assets/72x72/${codePoints.join('-')}.png`;
+      
+      try {
+        const response = await fetch(twemojiUrl);
+        if (response.ok) {
+          const buffer = await response.arrayBuffer();
+          const base64 = Buffer.from(buffer).toString('base64');
+          emojiCache.set(emoji, `data:image/png;base64,${base64}`);
+        }
+      } catch (error) {
+        console.warn(`Impossible de charger l'emoji ${emoji}:`, error);
+      }
+    }
+    
+    // Remplacer tous les emojis par leurs versions base64
+    let result = html;
+    for (const [emoji, base64] of emojiCache.entries()) {
+      const imgTag = `<img src="${base64}" alt="${emoji}" class="emoji-inline" style="display:inline-block;width:16px;height:16px;vertical-align:-3px;margin:0 2px;" />`;
+      result = result.split(emoji).join(imgTag);
+    }
+    
+    return result;
+  }
+
+
+
+  /**
+   * Nettoyer le HTML généré par TipTap pour le PDF
+   * TipTap génère du HTML, pas du Markdown - on nettoie uniquement les attributs techniques
+   * Les emojis seront convertis en images base64 plus tard dans le processus
+   */
+  private static cleanTipTapHtml(content: string): string {
+    if (!content) return "";
+    
+    // Le contenu vient de TipTap qui génère déjà du HTML VALIDE
+    // On nettoie UNIQUEMENT les attributs techniques de TipTap, RIEN d'autre
+    let html = content
+      // Convertir les entités de personnes <span data-entity-id="..."> AVANT de nettoyer
+      .replace(/<span[^>]*data-entity-id="([^"]*)"[^>]*>([^<]*)<\/span>/gi, '<strong class="entity-mention">$2</strong>')
+      // Nettoyer UNIQUEMENT les attributs data-* de TipTap (pas les balises)
+      .replace(/\sdata-[a-z-]+="[^"]*"/gi, '')
+      // Nettoyer UNIQUEMENT les classes ProseMirror (garder les autres classes)
+      .replace(/\sclass="ProseMirror[^"]*"/gi, '')
+      .replace(/\sProseMirror-[\w-]+/gi, '')
+      // Supprimer UNIQUEMENT les spans vides SANS contenu
+      .replace(/<span(?:\s+style="[^"]*")?(?:\s+dir="[^"]*")?(?:\s+role="[^"]*")?\s*>\s*<\/span>/gi, '')
+      // Nettoyer UNIQUEMENT les caractères de contrôle invisibles (zero-width spaces)
+      .replace(/[\u200B-\u200D\uFEFF]/g, '')
+      // Supprimer les paragraphes vides qui créent des sauts de lignes parasites
+      .replace(/<p>\s*<\/p>/gi, '')
+      .replace(/<p><br\s*\/?><\/p>/gi, '')
+      // Supprimer les <br> multiples consécutifs
+      .replace(/(<br\s*\/?>){3,}/gi, '<br><br>')
+      // Supprimer les <br> au début et à la fin
+      .replace(/^(<br\s*\/?>)+/gi, '')
+      .replace(/(<br\s*\/?>)+$/gi, '');
+    
+    // Ne pas convertir les emojis ici - ce sera fait globalement sur le HTML complet
+    return html;
+  }
+
   /** Renderer pour module Summary */
   private static renderSummary(payload: any): string {
-    return payload.content ? `<div class="content">${payload.content}</div>` : "";
+    let html = "";
+    
+    // Blocs de texte enrichi
+    if (payload.richTextBlocks && payload.richTextBlocks.length > 0) {
+      html += this.renderRichTextBlocks(payload.richTextBlocks);
+    }
+    
+    // Contenu principal
+    if (payload.content) {
+      html += `<div class="content">${this.cleanTipTapHtml(payload.content)}</div>`;
+    }
+    
+    return html || "<p><em>Aucun résumé disponible</em></p>";
   }
 
   /** Renderer pour module Entities */
@@ -503,22 +667,43 @@ export class PDFService {
 
   /** Renderer pour module Objectives */
   private static renderObjectives(payload: any): string {
-    if (!payload.objectives || payload.objectives.length === 0) return "";
-
-    let html = '<ul class="objectives-list">';
-    payload.objectives.forEach((obj: string) => {
-      html += `<li>${obj}</li>`;
-    });
-    html += '</ul>';
-    return html;
+    let html = "";
+    
+    // Blocs de texte enrichi
+    if (payload.richTextBlocks && payload.richTextBlocks.length > 0) {
+      html += this.renderRichTextBlocks(payload.richTextBlocks);
+    }
+    
+    // Liste des objectifs
+    if (payload.objectives && payload.objectives.length > 0) {
+      html += '<ul class="objectives-list">';
+      payload.objectives.forEach((obj: string) => {
+        html += `<li>${obj}</li>`;
+      });
+      html += '</ul>';
+    }
+    
+    return html || "<p><em>Aucun objectif défini</em></p>";
   }
 
   /** Renderer pour module Research Summary */
   private static renderResearchSummary(payload: any): string {
     let html = "";
     
+    // Blocs de texte enrichi
+    if (payload.richTextBlocks && payload.richTextBlocks.length > 0) {
+      html += this.renderRichTextBlocks(payload.richTextBlocks);
+    }
+    
     if (payload.summary) {
-      html += `<div class="summary-text">${payload.summary}</div>`;
+      html += `<div class="summary-text">${this.cleanTipTapHtml(payload.summary)}</div>`;
+    }
+    
+    if (payload.methodology) {
+      html += '<div class="methodology">';
+      html += '<h4>Méthodologie</h4>';
+      html += `<div>${this.cleanTipTapHtml(payload.methodology)}</div>`;
+      html += '</div>';
     }
     
     if (payload.notFound && payload.notFound.length > 0) {
@@ -532,27 +717,28 @@ export class PDFService {
       html += '</div>';
     }
     
-    if (payload.methodology) {
-      html += `<div class="methodology"><h4>Méthodologie</h4><p>${payload.methodology}</p></div>`;
-    }
-    
     if (payload.notes) {
-      html += `<p class="notes">${payload.notes}</p>`;
+      html += `<div class="notes-section"><h4>Notes complémentaires</h4><div>${this.cleanTipTapHtml(payload.notes)}</div></div>`;
     }
     
-    return html;
+    return html || "<p><em>Aucun contenu</em></p>";
   }
 
   /** Renderer pour module Entity Overview */
   private static renderEntityOverview(payload: any, entity: any): string {
     let html = "";
     
+    // Blocs de texte enrichi
+    if (payload.richTextBlocks && payload.richTextBlocks.length > 0) {
+      html += this.renderRichTextBlocks(payload.richTextBlocks);
+    }
+    
     if (entity) {
       html += `<div class="entity-header"><h4>${entity.name}</h4></div>`;
     }
     
     if (payload.context) {
-      html += `<div class="context">${payload.context}</div>`;
+      html += `<div class="context">${this.cleanTipTapHtml(payload.context)}</div>`;
     }
     
     if (payload.findings && payload.findings.length > 0) {
@@ -560,15 +746,20 @@ export class PDFService {
     }
     
     if (payload.notes) {
-      html += `<p class="notes">${payload.notes}</p>`;
+      html += `<p class="notes">${this.cleanTipTapHtml(payload.notes)}</p>`;
     }
     
-    return html;
+    return html || "<p><em>Aucune information</em></p>";
   }
 
   /** Renderer pour module Identifier Lookup */
   private static renderIdentifierLookup(payload: any): string {
     let html = "";
+    
+    // Blocs de texte enrichi
+    if (payload.richTextBlocks && payload.richTextBlocks.length > 0) {
+      html += this.renderRichTextBlocks(payload.richTextBlocks);
+    }
     
     if (payload.identifierValue) {
       html += `<p><strong>${payload.identifierType || "Identifiant"}:</strong> ${payload.identifierValue}</p>`;
@@ -579,15 +770,20 @@ export class PDFService {
     }
     
     if (payload.notes) {
-      html += `<p class="notes">${payload.notes}</p>`;
+      html += `<p class="notes">${this.cleanTipTapHtml(payload.notes)}</p>`;
     }
     
-    return html;
+    return html || "<p><em>Aucune recherche effectuée</em></p>";
   }
 
   /** Renderer pour module Platform Analysis */
   private static renderPlatformAnalysis(payload: any): string {
     let html = "";
+    
+    // Blocs de texte enrichi
+    if (payload.richTextBlocks && payload.richTextBlocks.length > 0) {
+      html += this.renderRichTextBlocks(payload.richTextBlocks);
+    }
     
     if (payload.platform) {
       html += `<p><strong>Plateforme:</strong> ${payload.platform.toUpperCase()}</p>`;
@@ -620,10 +816,10 @@ export class PDFService {
     }
     
     if (payload.notes) {
-      html += `<p class="notes">${payload.notes}</p>`;
+      html += `<p class="notes">${this.cleanTipTapHtml(payload.notes)}</p>`;
     }
     
-    return html;
+    return html || "<p><em>Aucune analyse de plateforme</em></p>";
   }
 
   /** Renderer pour module Media Gallery */
@@ -651,56 +847,93 @@ export class PDFService {
 
   /** Renderer pour module Data Retention */
   private static renderDataRetention(payload: any): string {
-    if (!payload.datasets || payload.datasets.length === 0) return "";
-
-    let html = '<div class="datasets-list">';
-    payload.datasets.forEach((dataset: any) => {
-      html += '<div class="dataset-card">';
-      html += `<h4>${dataset.label}</h4>`;
-      html += `<p>${dataset.description}</p>`;
-      html += `<p class="retention-policy"><strong>Rétention:</strong> ${dataset.retentionPolicy}</p>`;
-      if (dataset.location) {
-        html += `<p class="location"><strong>Emplacement:</strong> ${dataset.location}</p>`;
-      }
+    let html = "";
+    
+    // Blocs de texte enrichi
+    if (payload.richTextBlocks && payload.richTextBlocks.length > 0) {
+      html += this.renderRichTextBlocks(payload.richTextBlocks);
+    }
+    
+    // Liste des datasets
+    if (payload.datasets && payload.datasets.length > 0) {
+      html += '<div class="datasets-list">';
+      payload.datasets.forEach((dataset: any) => {
+        html += '<div class="dataset-card">';
+        html += `<h4>${dataset.label}</h4>`;
+        html += `<p>${dataset.description}</p>`;
+        html += `<p class="retention-policy"><strong>Rétention:</strong> ${dataset.retentionPolicy}</p>`;
+        if (dataset.location) {
+          html += `<p class="location"><strong>Emplacement:</strong> ${dataset.location}</p>`;
+        }
+        html += '</div>';
+      });
       html += '</div>';
-    });
-    html += '</div>';
-    return html;
+    }
+    
+    return html || "<p><em>Aucun dataset enregistré</em></p>";
   }
 
   /** Renderer pour module Conclusions */
   private static renderConclusions(payload: any): string {
-    if (!payload.statements || payload.statements.length === 0) return "";
-
-    let html = '<ul class="conclusions-list">';
-    payload.statements.forEach((statement: string) => {
-      html += `<li>${statement}</li>`;
-    });
-    html += '</ul>';
-    return html;
+    let html = "";
+    
+    // Blocs de texte enrichi
+    if (payload.richTextBlocks && payload.richTextBlocks.length > 0) {
+      html += this.renderRichTextBlocks(payload.richTextBlocks);
+    }
+    
+    // Contenu principal (Markdown from WysiwygEditor)
+    if (payload.content) {
+      html += `<div class="conclusions-content">${this.cleanTipTapHtml(payload.content)}</div>`;
+    }
+    
+    // Anciennes "statements" (pour compatibilité)
+    if (payload.statements && payload.statements.length > 0) {
+      html += '<ul class="conclusions-list">';
+      payload.statements.forEach((statement: string) => {
+        html += `<li>${statement}</li>`;
+      });
+      html += '</ul>';
+    }
+    
+    return html || "<p><em>Aucune conclusion</em></p>";
   }
 
   /** Renderer pour module Investigation Leads */
   private static renderInvestigationLeads(payload: any): string {
-    if (!payload.leads || payload.leads.length === 0) return "";
-
-    let html = '<div class="leads-list">';
-    payload.leads.forEach((lead: any) => {
-      html += '<div class="lead-card">';
-      html += `<h4>${lead.type || "Piste"}</h4>`;
-      if (lead.platform) html += `<p><strong>Plateforme:</strong> ${lead.platform}</p>`;
-      if (lead.legalBasis) html += `<p><strong>Base légale:</strong> ${lead.legalBasis}</p>`;
-      if (lead.dataTargeted && lead.dataTargeted.length > 0) {
-        html += `<p><strong>Données visées:</strong> ${lead.dataTargeted.join(", ")}</p>`;
-      }
-      if (lead.priority) {
-        html += `<p class="priority priority-${lead.priority}"><strong>Priorité:</strong> ${lead.priority.toUpperCase()}</p>`;
-      }
-      if (lead.notes) html += `<p class="notes">${lead.notes}</p>`;
+    let html = "";
+    
+    // Blocs de texte enrichi
+    if (payload.richTextBlocks && payload.richTextBlocks.length > 0) {
+      html += this.renderRichTextBlocks(payload.richTextBlocks);
+    }
+    
+    // Liste des pistes
+    if (payload.leads && payload.leads.length > 0) {
+      html += '<div class="leads-list">';
+      payload.leads.forEach((lead: any, index: number) => {
+        html += '<div class="lead-card">';
+        html += `<h4>Piste ${index + 1}: ${lead.type || "Piste d'enquête"}</h4>`;
+        if (lead.platform) html += `<p><strong>Plateforme:</strong> ${lead.platform}</p>`;
+        if (lead.legalBasis) html += `<p><strong>Base légale:</strong> ${lead.legalBasis}</p>`;
+        if (lead.dataTargeted && lead.dataTargeted.length > 0) {
+          html += `<p><strong>Données visées:</strong> ${lead.dataTargeted.join(", ")}</p>`;
+        }
+        if (lead.priority) {
+          const priorityLabels: Record<string, string> = {
+            high: "Haute",
+            medium: "Moyenne",
+            low: "Basse"
+          };
+          html += `<p class="priority priority-${lead.priority}"><strong>Priorité:</strong> ${priorityLabels[lead.priority] || lead.priority}</p>`;
+        }
+        if (lead.notes) html += `<p class="notes">${lead.notes}</p>`;
+        html += '</div>';
+      });
       html += '</div>';
-    });
-    html += '</div>';
-    return html;
+    }
+    
+    return html || "<p><em>Aucune piste d'enquête</em></p>";
   }
 
   /** Renderer pour module Sign Off */
@@ -730,6 +963,43 @@ export class PDFService {
     return html;
   }
 
+  /**
+   * Mapper les labels de champs vers leurs émojis correspondants
+   */
+  private static getEmojiForLabel(label: string): string {
+    const emojiMap: Record<string, string> = {
+      "Nom du profil / Username": "👤",
+      "Username": "👤",
+      "Niveau de confiance": "✅",
+      "Statut de vérification": "🔒",
+      "Type d'entité": "🏷️",
+      "Type": "🏷️",
+      "Date de naissance": "📅",
+      "Localisation": "📍",
+      "Email": "📧",
+      "Téléphone": "📞",
+      "Site web": "🌐",
+      "Plateforme": "📱",
+      "URL du profil": "🔗",
+      "Statut du compte": "💼",
+      "Abonnés": "👥",
+      "Abonnements": "👥",
+      "Compte créé le": "📅",
+      "Numéro de Registre National": "🆔",
+      "Adresse physique": "📍",
+      "Sources": "📚",
+      "Pièces jointes": "📎"
+    };
+    
+    for (const [key, emoji] of Object.entries(emojiMap)) {
+      if (label.includes(key) || key.includes(label)) {
+        return emoji + " ";
+      }
+    }
+    
+    return "";
+  }
+
   /** Renderer générique pour Finding[] */
   private static renderFindings(findings: any[]): string {
     let html = '<div class="findings-section">';
@@ -737,10 +1007,23 @@ export class PDFService {
     findings.forEach((finding: any) => {
       html += '<div class="finding-card">';
       
-      // Titre et description
-      html += `<h4>${finding.label}</h4>`;
+      // Titre
+      html += `<h4>${finding.label || "Finding"}</h4>`;
+      
+      // Description
       if (finding.description) {
-        html += `<p>${finding.description}</p>`;
+        html += `<p class="finding-description">${finding.description}</p>`;
+      }
+      
+      // Tableau des métadonnées
+      html += '<table class="finding-table">';
+      
+      // Type d'entité (pour les profils)
+      if (finding.type) {
+        html += '<tr>';
+        html += `<td class="label-col">${this.getEmojiForLabel("Type d'entité")}Type d\'entité</td>`;
+        html += `<td>${finding.type}</td>`;
+        html += '</tr>';
       }
       
       // Métadonnées structurées
@@ -749,98 +1032,180 @@ export class PDFService {
         
         // Plateforme
         if (meta.platform) {
-          html += `<div class="field-label">Plateforme</div>`;
-          html += `<div class="field-value">${meta.platform.toUpperCase()}</div>`;
+          html += '<tr>';
+          html += `<td class="label-col">${this.getEmojiForLabel("Plateforme")}Plateforme</td>`;
+          html += `<td>${meta.platform.toUpperCase()}</td>`;
+          html += '</tr>';
         }
         
         // URL du profil
         if (meta.profileUrl) {
-          html += `<div class="field-label">URL du profil</div>`;
-          html += `<div class="field-value"><a href="${meta.profileUrl}">${meta.profileUrl}</a></div>`;
+          html += '<tr>';
+          html += `<td class="label-col">${this.getEmojiForLabel("URL du profil")}URL du profil</td>`;
+          html += `<td><a href="${meta.profileUrl}">${meta.profileUrl}</a></td>`;
+          html += '</tr>';
         }
         
         // Statut du compte
         if (meta.accountStatus) {
-          html += `<div class="field-label">Statut du compte</div>`;
-          html += `<div class="field-value">${meta.accountStatus}</div>`;
+          html += '<tr>';
+          html += `<td class="label-col">${this.getEmojiForLabel("Statut du compte")}Statut du compte</td>`;
+          html += `<td>${meta.accountStatus}</td>`;
+          html += '</tr>';
+        }
+        
+        // Username / Nom du profil
+        if (meta.username) {
+          html += '<tr>';
+          html += `<td class="label-col">${this.getEmojiForLabel("Nom du profil / Username")}Nom du profil / Username</td>`;
+          html += `<td>${meta.username}</td>`;
+          html += '</tr>';
+        }
+        
+        // Niveau de confiance
+        if (finding.confidence || meta.confidence) {
+          const conf = finding.confidence || meta.confidence;
+          html += '<tr>';
+          html += `<td class="label-col">${this.getEmojiForLabel("Niveau de confiance")}Niveau de confiance</td>`;
+          html += `<td><span class="confidence-badge confidence-${conf}">${conf}</span></td>`;
+          html += '</tr>';
+        }
+        
+        // Statut de vérification
+        if (meta.verified !== undefined) {
+          html += '<tr>';
+          html += `<td class="label-col">${this.getEmojiForLabel("Statut de vérification")}Statut de vérification</td>`;
+          html += `<td>${meta.verified ? 'Vérifié' : 'Non vérifié'}</td>`;
+          html += '</tr>';
+        }
+        
+        // Date de naissance
+        if (meta.dateOfBirth) {
+          html += '<tr>';
+          html += `<td class="label-col">${this.getEmojiForLabel("Date de naissance")}Date de naissance</td>`;
+          html += `<td>${meta.dateOfBirth}</td>`;
+          html += '</tr>';
         }
         
         // Statistiques de followers/abonnés
         if (meta.followersCount !== undefined) {
-          html += `<div class="field-label">Abonnés</div>`;
-          html += `<div class="field-value">${meta.followersCount}</div>`;
+          html += '<tr>';
+          html += `<td class="label-col">${this.getEmojiForLabel("Abonnés")}Abonnés</td>`;
+          html += `<td>${meta.followersCount}</td>`;
+          html += '</tr>';
         }
         if (meta.followingCount !== undefined) {
-          html += `<div class="field-label">Abonnements</div>`;
-          html += `<div class="field-value">${meta.followingCount}</div>`;
+          html += '<tr>';
+          html += `<td class="label-col">${this.getEmojiForLabel("Abonnements")}Abonnements</td>`;
+          html += `<td>${meta.followingCount}</td>`;
+          html += '</tr>';
         }
         
-        // Date de création
+        // Date de création du compte
         if (meta.accountCreationDate) {
-          html += `<div class="field-label">Compte créé le</div>`;
-          html += `<div class="field-value">${meta.accountCreationDate}</div>`;
+          html += '<tr>';
+          html += `<td class="label-col">${this.getEmojiForLabel("Compte créé le")}Compte créé le</td>`;
+          html += `<td>${meta.accountCreationDate}</td>`;
+          html += '</tr>';
         }
         
         // Localisation
         if (meta.location) {
-          html += `<div class="field-label">Localisation</div>`;
-          html += `<div class="field-value">${meta.location}</div>`;
+          html += '<tr>';
+          html += `<td class="label-col">${this.getEmojiForLabel("Localisation")}Localisation</td>`;
+          html += `<td>${meta.location}</td>`;
+          html += '</tr>';
         }
         
         // Données de contact
         if (meta.contactInfo) {
           const contact = meta.contactInfo;
           if (contact.email) {
-            html += `<div class="field-label">Email</div>`;
-            html += `<div class="field-value">${contact.email}</div>`;
+            html += '<tr>';
+            html += `<td class="label-col">${this.getEmojiForLabel("Email")}Email</td>`;
+            html += `<td>${contact.email}</td>`;
+            html += '</tr>';
           }
           if (contact.phone) {
-            html += `<div class="field-label">Téléphone</div>`;
-            html += `<div class="field-value">${contact.phone}</div>`;
+            html += '<tr>';
+            html += `<td class="label-col">${this.getEmojiForLabel("Téléphone")}Téléphone</td>`;
+            html += `<td>${contact.phone}</td>`;
+            html += '</tr>';
           }
           if (contact.website) {
-            html += `<div class="field-label">Site web</div>`;
-            html += `<div class="field-value"><a href="${contact.website}">${contact.website}</a></div>`;
+            html += '<tr>';
+            html += `<td class="label-col">${this.getEmojiForLabel("Site web")}Site web</td>`;
+            html += `<td><a href="${contact.website}">${contact.website}</a></td>`;
+            html += '</tr>';
+          }
+        }
+        
+        // Informations personnelles
+        if (meta.personDetails) {
+          const pd = meta.personDetails;
+          
+          if (pd.dateOfBirth) {
+            html += '<tr>';
+            html += `<td class="label-col">${this.getEmojiForLabel("Date de naissance")}Date de naissance</td>`;
+            html += `<td>${pd.dateOfBirth}</td>`;
+            html += '</tr>';
+          }
+          
+          if (pd.nationalRegistryNumber) {
+            html += '<tr>';
+            html += `<td class="label-col">${this.getEmojiForLabel("Numéro de Registre National")}Numéro de Registre National</td>`;
+            html += `<td>${pd.nationalRegistryNumber}</td>`;
+            html += '</tr>';
+          }
+          
+          if (pd.physicalAddress) {
+            html += '<tr>';
+            html += `<td class="label-col">${this.getEmojiForLabel("Adresse physique")}Adresse physique</td>`;
+            html += `<td>${pd.physicalAddress}</td>`;
+            html += '</tr>';
+          }
+          
+          if (pd.phoneNumbers && pd.phoneNumbers.length > 0) {
+            html += '<tr>';
+            html += `<td class="label-col">${this.getEmojiForLabel("Téléphone")}Téléphones</td>`;
+            html += `<td>${pd.phoneNumbers.join(", ")}</td>`;
+            html += '</tr>';
           }
         }
       }
       
-      // Confiance
-      if (finding.confidence) {
-        html += `<div class="field-label">Niveau de confiance</div>`;
-        html += `<div class="field-value confidence-${finding.confidence}">${finding.confidence}</div>`;
-      }
-      
       // Sources
       if (finding.sources && finding.sources.length > 0) {
-        html += '<div class="field-label">Sources</div>';
-        html += '<div class="field-value"><ul style="margin: 0; padding-left: 20px;">';
+        html += '<tr>';
+        html += `<td class="label-col">${this.getEmojiForLabel("Sources")}Sources</td>`;
+        html += '<td><ul class="sources-list">';
         finding.sources.forEach((source: any) => {
           html += `<li>${source.type}: ${source.value}${source.note ? ` (${source.note})` : ""}</li>`;
         });
-        html += '</ul></div>';
+        html += '</ul></td>';
+        html += '</tr>';
       }
       
-      // Pièces jointes (images)
+      html += '</table>';
+      
+      // Pièces jointes (images) - en dehors du tableau
       if (finding.attachments && finding.attachments.length > 0) {
-        html += `<div class="field-label">Pièces jointes (${finding.attachments.length})</div>`;
-        html += '<div class="field-value" style="display: flex; flex-wrap: wrap; gap: 10px;">';
+        html += `<div class="attachments-section">`;
+        html += `<h5>${this.getEmojiForLabel("Pièces jointes")}Pièces jointes (${finding.attachments.length})</h5>`;
+        html += '<div class="attachments-grid">';
         finding.attachments.forEach((attachment: string) => {
-          html += `<img src="${attachment}" style="max-width: 200px; max-height: 150px; object-fit: cover; border: 1px solid #ddd; border-radius: 4px;" alt="Pièce jointe" />`;
+          html += `<img src="${attachment}" class="attachment-image" alt="Pièce jointe" />`;
         });
         html += '</div>';
-      }
-      
-      // Entités liées
-      if (finding.relatedEntities && finding.relatedEntities.length > 0) {
-        html += `<div class="field-label">Entités liées</div>`;
-        html += `<div class="field-value">${finding.relatedEntities.length} entité(s)</div>`;
+        html += '</div>';
       }
       
       html += '</div>';
     });
     
     html += '</div>';
+    
+    // Les emojis seront convertis globalement plus tard
     return html;
   }
 
@@ -959,6 +1324,10 @@ export class PDFService {
       // 3.5 Convertir toutes les images en base64 pour Puppeteer
       html = await this.convertImagesToBase64(html);
       logger.debug("✅ Images converties en base64");
+
+      // 3.6 Convertir tous les emojis en images base64 Twemoji
+      html = await this.convertEmojisToBase64Images(html);
+      logger.debug("✅ Emojis convertis en images base64");
 
       // 4. Générer le PDF avec Puppeteer
       const browser = await puppeteer.launch({
