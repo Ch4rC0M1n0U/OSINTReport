@@ -24,6 +24,10 @@ const form = ref<CreateReportData>({
   classification: "CONFIDENTIAL",
   legalBasis: "",
   keywords: [],
+  isEmbargoed: false,
+  magistrateName: "",
+  investigatorName: "",
+  investigatorContact: "",
 });
 
 const keywordInput = ref("");
@@ -101,6 +105,9 @@ async function handleSubmit() {
       requestingService: form.value.requestingService || undefined,
       investigationContext: form.value.investigationContext || undefined,
       legalBasis: form.value.legalBasis || undefined,
+      magistrateName: form.value.magistrateName || undefined,
+      investigatorName: form.value.investigatorName || undefined,
+      investigatorContact: form.value.investigatorContact || undefined,
     });
 
     // Rediriger vers la page de détail du rapport
@@ -183,6 +190,62 @@ function handleCancel() {
                 v-model="form.requestingService"
                 type="text"
                 placeholder="Ex: Brigade Cyber Crime"
+                class="input input-bordered"
+              />
+            </div>
+          </div>
+
+          <div class="form-control">
+            <label class="label cursor-pointer justify-start gap-3">
+              <input
+                v-model="form.isEmbargoed"
+                type="checkbox"
+                class="checkbox checkbox-primary"
+              />
+              <span class="label-text">
+                🔒 Dossier sous embargo (confidentiel)
+              </span>
+            </label>
+            <div class="label">
+              <span class="label-text-alt text-base-content/60">
+                Un dossier sous embargo nécessite une autorisation magistrat pour consultation
+              </span>
+            </div>
+          </div>
+
+          <div v-if="form.isEmbargoed" class="form-control">
+            <label class="label">
+              <span class="label-text">Nom du magistrat instructeur</span>
+            </label>
+            <input
+              v-model="form.magistrateName"
+              type="text"
+              placeholder="Ex: Juge Martin Dubois"
+              class="input input-bordered"
+            />
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="form-control">
+              <label class="label">
+                <span class="label-text">Enquêteur demandeur</span>
+              </label>
+              <input
+                v-model="form.investigatorName"
+                type="text"
+                placeholder="Ex: Inspecteur Jean Dupont"
+                class="input input-bordered"
+              />
+            </div>
+
+            <div class="form-control">
+              <label class="label">
+                <span class="label-text">Coordonnées enquêteur</span>
+              </label>
+              <input
+                v-model="form.investigatorContact"
+                type="text"
+                placeholder="Ex: jean.dupont@police.be / 02 123 45 67"
                 class="input input-bordered"
               />
             </div>
@@ -326,6 +389,21 @@ function handleCancel() {
                 <div v-if="form.requestingService">
                   <span class="opacity-70">Service:</span>
                   <span class="ml-2 font-medium">{{ form.requestingService }}</span>
+                </div>
+                <div v-if="form.isEmbargoed" class="col-span-2">
+                  <span class="opacity-70">Embargo:</span>
+                  <span class="ml-2 badge badge-error badge-sm">🔒 Confidentiel</span>
+                  <span v-if="form.magistrateName" class="ml-2 text-xs">
+                    ({{ form.magistrateName }})
+                  </span>
+                </div>
+                <div v-if="form.investigatorName">
+                  <span class="opacity-70">Enquêteur:</span>
+                  <span class="ml-2 font-medium">{{ form.investigatorName }}</span>
+                </div>
+                <div v-if="form.investigatorContact">
+                  <span class="opacity-70">Contact:</span>
+                  <span class="ml-2 font-medium">{{ form.investigatorContact }}</span>
                 </div>
               </div>
             </div>

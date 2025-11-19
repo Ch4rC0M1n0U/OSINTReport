@@ -130,7 +130,12 @@ export class PDFService {
           },
         },
         modules: {
-          where: { includeInPdf: true }, // Filtrer uniquement les modules à inclure dans le PDF
+          where: {
+            OR: [
+              { includeInPdf: true }, // Modules marqués pour inclusion
+              { type: "sign_off" }     // Module sign_off toujours inclus pour la signature
+            ]
+          },
           orderBy: { position: "asc" },
           include: {
             entity: true,
@@ -140,6 +145,7 @@ export class PDFService {
                 researchType: true,
               },
             },
+            attachments: true, // Charger les pièces jointes (screenshots, etc.)
           },
         },
         correlations: {
@@ -228,6 +234,40 @@ export class PDFService {
     
     // Récupérer les paramètres système
     const systemSettings = await SettingsService.getSettings();
+    
+    // Pré-charger toutes les entités référencées dans les modules
+    const entityIds: string[] = [];
+    report.modules.forEach((module: any) => {
+      if (module.type === 'entities' && module.payload?.entities) {
+        module.payload.entities.forEach((entry: any) => {
+          if (entry.entityId && !entityIds.includes(entry.entityId)) {
+            entityIds.push(entry.entityId);
+          }
+        });
+      }
+    });
+    
+    // Charger les entités depuis la base de données
+    const entitiesMap = new Map();
+    if (entityIds.length > 0) {
+      const entities = await prisma.entity.findMany({
+        where: { id: { in: entityIds } },
+      });
+      entities.forEach(entity => {
+        entitiesMap.set(entity.id, entity);
+      });
+    }
+    
+    // Enrichir les modules avec les entités complètes
+    report.modules.forEach((module: any) => {
+      if (module.type === 'entities' && module.payload?.entities) {
+        module.payload.entities.forEach((entry: any) => {
+          if (entry.entityId) {
+            entry.entity = entitiesMap.get(entry.entityId);
+          }
+        });
+      }
+    });
     
     // Construire l'adresse complète du service
     const serviceAddressParts = [];
@@ -348,7 +388,7 @@ export class PDFService {
 
       // Service
       requestingService: report.requestingService || "PJF Bruxelles",
-      reportingUnit: report.reportingUnit || "DRS - Data Management & Analysis",
+      reportingUnit: report.reportingUnit || "DR5 - OSINT",
 
       // Modules
       modules: report.modules.map((module: any) => ({
@@ -408,7 +448,7 @@ export class PDFService {
       case "summary":
         return this.renderSummary(payload);
       case "entities":
-        return this.renderEntities(payload, module.entity);
+        return this.renderEntities(payload, module.entity, module.attachments);
       case "objectives":
         return this.renderObjectives(payload);
       case "research_summary":
@@ -570,7 +610,7 @@ export class PDFService {
   }
 
   /** Renderer pour module Entities */
-  private static renderEntities(payload: any, linkedEntity: any): string {
+  private static renderEntities(payload: any, linkedEntity: any, attachments: any[] = []): string {
     if (!payload.entities || payload.entities.length === 0) return "";
 
     let html = '<div class="entities-list">';
@@ -625,21 +665,71 @@ export class PDFService {
         if (meta.companyDetails) {
           const cd = meta.companyDetails;
           
+          // Raison sociale
+          if (cd.legalName) {
+            html += `<div class="field-label">Raison sociale</div>`;
+            html += `<div class="field-value">${cd.legalName}</div>`;
+          }
+          
+          // Nom commercial
+          if (cd.tradeName) {
+            html += `<div class="field-label">Nom commercial</div>`;
+            html += `<div class="field-value">${cd.tradeName}</div>`;
+          }
+          
+          // Numéro BCE
           if (cd.bceNumber) {
             html += `<div class="field-label">Numéro BCE</div>`;
             html += `<div class="field-value">${cd.bceNumber}</div>`;
           }
           
+          // Numéro d'entreprise (registrationNumber)
+          if (cd.registrationNumber) {
+            html += `<div class="field-label">Numéro d'entreprise</div>`;
+            html += `<div class="field-value">${cd.registrationNumber}</div>`;
+          }
+          
+          // Numéro TVA
+          if (cd.vatNumber) {
+            html += `<div class="field-label">Numéro de TVA</div>`;
+            html += `<div class="field-value">${cd.vatNumber}</div>`;
+          }
+          
+          // Secteur d'activité
+          if (cd.industry) {
+            html += `<div class="field-label">Secteur d'activité</div>`;
+            html += `<div class="field-value">${cd.industry}</div>`;
+          }
+          
+          // Siège social
           if (cd.headquartersAddress) {
             html += `<div class="field-label">Siège social</div>`;
             html += `<div class="field-value">${cd.headquartersAddress}</div>`;
           }
           
+          // Adresses d'exploitation (array)
+          if (cd.operationalAddresses && cd.operationalAddresses.length > 0) {
+            html += `<div class="field-label">Adresses d'exploitation</div>`;
+            html += `<div class="field-value">`;
+            cd.operationalAddresses.forEach((addr: string, idx: number) => {
+              html += `<div style="margin-bottom: 4px;">📍 ${addr}</div>`;
+            });
+            html += `</div>`;
+          }
+          
+          // Site web
           if (cd.website) {
             html += `<div class="field-label">Site web</div>`;
             html += `<div class="field-value"><a href="${cd.website}">${cd.website}</a></div>`;
           }
           
+          // Email de l'entreprise
+          if (cd.email) {
+            html += `<div class="field-label">Email</div>`;
+            html += `<div class="field-value"><a href="mailto:${cd.email}">${cd.email}</a></div>`;
+          }
+          
+          // Téléphones
           if (cd.phoneNumbers && cd.phoneNumbers.length > 0) {
             html += `<div class="field-label">Téléphones</div>`;
             html += `<div class="field-value">${cd.phoneNumbers.join(", ")}</div>`;
@@ -661,6 +751,31 @@ export class PDFService {
       
       html += '</div>';
     });
+    
+    // Captures d'écran / Pièces jointes (en dehors de la boucle d'entités)
+    if (attachments && attachments.length > 0) {
+      html += `<div class="attachments-section">`;
+      html += `<h5>${this.getEmojiForLabel("Pièces jointes")}Pièces jointes (${attachments.length})</h5>`;
+      html += '<div class="attachments-grid">';
+      
+      attachments.forEach((attachment: any) => {
+        // Construire l'URL complète de la pièce jointe
+        const imageUrl = `${process.env.BACKEND_URL || 'http://localhost:4000'}/uploads/${attachment.storageKey}`;
+        
+        html += '<div style="border: 1px solid #ddd; border-radius: 4px; overflow: hidden; margin-bottom: 10px;">';
+        html += `<img src="${imageUrl}" class="attachment-image" style="width: 100%; height: auto; display: block;" alt="${attachment.caption || 'Pièce jointe'}" />`;
+        
+        if (attachment.caption) {
+          html += `<p style="padding: 8px; margin: 0; font-size: 12px; background: #f5f5f5;">${attachment.caption}</p>`;
+        }
+        
+        html += '</div>';
+      });
+      
+      html += '</div>';
+      html += '</div>';
+    }
+    
     html += '</div>';
     return html;
   }

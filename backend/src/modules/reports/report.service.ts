@@ -47,7 +47,7 @@ export class ReportService {
     };
   }
 
-  static async listReports(query: ListReportsQuery) {
+  static async listReports(query: ListReportsQuery, userId?: string) {
     const { limit, offset, orderBy, order, status, search } = query;
 
     const where = {
@@ -62,6 +62,16 @@ export class ReportService {
             ],
           }
         : {}),
+      // Filtrer les rapports sous embargo : seul le propriétaire peut les voir
+      ...(userId
+        ? {
+            OR: [
+              { isEmbargoed: false },
+              { isEmbargoed: null },
+              { AND: [{ isEmbargoed: true }, { ownerId: userId }] },
+            ],
+          }
+        : { OR: [{ isEmbargoed: false }, { isEmbargoed: null }] }),
     };
 
     const orderByField = orderBy ?? "issuedAt";
@@ -268,7 +278,19 @@ export class ReportService {
       keywords: input.keywords ?? [],
     };
 
-    const report = await prisma.report.create({ data });
+    const report = await prisma.report.create({
+      data,
+      include: {
+        owner: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            email: true,
+          },
+        },
+      },
+    });
     
     // Indexer le rapport dans Meilisearch (async, sans bloquer)
     SearchService.indexReport(report.id).catch((error) => {
@@ -278,7 +300,7 @@ export class ReportService {
     return report;
   }
 
-  static async getReport(reportId: string) {
+  static async getReport(reportId: string, userId?: string) {
     const report = await prisma.report.findUnique({
       where: { id: reportId },
       include: {
@@ -320,6 +342,11 @@ export class ReportService {
 
     if (!report) {
       throw createError(404, "Rapport introuvable");
+    }
+
+    // Vérifier l'accès pour les rapports sous embargo
+    if (report.isEmbargoed && report.ownerId !== userId) {
+      throw createError(403, "Accès refusé : ce dossier est sous embargo et vous n'en êtes pas le propriétaire");
     }
 
     const [reportLevelAttachments, moduleWithSecrets] = await Promise.all([

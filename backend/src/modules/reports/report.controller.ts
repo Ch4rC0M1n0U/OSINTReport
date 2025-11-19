@@ -34,7 +34,7 @@ export class ReportController {
   static async list(req: Request, res: Response, next: NextFunction) {
     try {
       const query = listReportsQuerySchema.parse(req.query);
-      const result = await ReportService.listReports(query);
+      const result = await ReportService.listReports(query, req.user?.id);
       res.json(result);
     } catch (error) {
       next(error);
@@ -69,7 +69,7 @@ export class ReportController {
 
   static async detail(req: Request, res: Response, next: NextFunction) {
     try {
-      const report = await ReportService.getReport(req.params.reportId);
+      const report = await ReportService.getReport(req.params.reportId, req.user?.id);
       res.json({ report });
     } catch (error) {
       next(error);
@@ -104,7 +104,7 @@ export class ReportController {
       const reportId = req.params.reportId;
       
       // Récupérer le titre avant suppression pour le log
-      const report = await ReportService.getReport(reportId);
+      const report = await ReportService.getReport(reportId, req.user?.id);
       
       await ReportService.deleteReport(reportId);
 
@@ -210,7 +210,7 @@ export class ReportController {
       const payload = updateReportStatusSchema.parse(req.body);
       
       // Récupérer le rapport avant modification pour connaître l'ancien statut
-      const reportBefore = await ReportService.getReport(req.params.reportId);
+      const reportBefore = await ReportService.getReport(req.params.reportId, req.user?.id);
       const oldStatus = reportBefore.status;
       
       const report = await ReportService.updateStatus(req.params.reportId, payload.status);
@@ -246,7 +246,7 @@ export class ReportController {
       }
       
       // Récupérer le rapport original
-      const originalReport = await ReportService.getReport(req.params.reportId);
+      const originalReport = await ReportService.getReport(req.params.reportId, req.user.id);
       
       const report = await ReportService.duplicate(req.params.reportId, req.user.id);
 
@@ -462,7 +462,7 @@ export class ReportController {
       const reportId = req.params.reportId;
       
       // Récupérer les infos du rapport avant suppression de validation
-      const reportBefore = await ReportService.getReport(reportId);
+      const reportBefore = await ReportService.getReport(reportId, req.user?.id);
       
       const report = await ReportService.removeValidation(reportId);
 

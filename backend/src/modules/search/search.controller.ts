@@ -36,7 +36,7 @@ export class SearchController {
         sort,
         limit: params.limit,
         offset: params.offset,
-      });
+      }, req.user?.id);
 
       return res.status(200).json(results);
     } catch (error) {

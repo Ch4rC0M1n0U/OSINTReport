@@ -915,7 +915,7 @@
     <div class="document-title">
       <h1>Rapport OSINT</h1>
       <p class="subtitle">
-        Dossier <strong>{{caseNumber}}</strong> – Rapport n° <strong>{{reportNumber}}</strong>
+        <strong>{{title}}</strong>{{#if reportNumber}} – Rapport n° <strong>{{reportNumber}}</strong>{{/if}}
       </p>
     </div>
   </div>
@@ -945,6 +945,18 @@
       <div class="metadata-label">Grade :</div>
       <div class="metadata-value">{{officerRank}}</div>
     </div>
+    {{#if requestingService}}
+    <div class="metadata-row">
+      <div class="metadata-label">Service demandeur :</div>
+      <div class="metadata-value">{{requestingService}}</div>
+    </div>
+    {{/if}}
+    {{#if caseNumber}}
+    <div class="metadata-row">
+      <div class="metadata-label">N° PV / Notice d'origine :</div>
+      <div class="metadata-value"><strong>{{caseNumber}}</strong></div>
+    </div>
+    {{/if}}
     <div class="metadata-row">
       <div class="metadata-label">Classification :</div>
       <div class="metadata-value"><strong>{{classification}}</strong></div>
@@ -986,6 +998,7 @@
   <!-- Section : Modules détaillés -->
   {{#if modules.length}}
     {{#each modules}}
+      {{#unless (eq this.type "sign_off")}}
       <section>
         <h2>{{this.title}}</h2>
         {{#if this.headline}}
@@ -993,6 +1006,7 @@
         {{/if}}
         <div>{{{this.content}}}</div>
       </section>
+      {{/unless}}
     {{/each}}
   {{/if}}
 

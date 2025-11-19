@@ -131,6 +131,12 @@ model Report {
   urgencyLevel         String? // ROUTINE, URGENT, CRITICAL
   classification       String? // PUBLIC, RESTRICTED, CONFIDENTIAL, SECRET
   keywords             String[] // Mots-clés pour recherche
+  
+  // Informations complémentaires
+  isEmbargoed          Boolean? @default(false) // Dossier sous embargo
+  magistrateName       String?  // Nom du magistrat en charge
+  investigatorName     String?  // Nom de l'enquêteur demandeur
+  investigatorContact  String?  // Coordonnées de l'enquêteur (téléphone, email, etc.)
 
   // Validation officier
   validatedAt          DateTime? // Date de validation par l'officier

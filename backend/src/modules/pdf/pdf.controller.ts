@@ -26,6 +26,7 @@ export class PDFController {
           caseNumber: true,
           reportNumber: true,
           ownerId: true,
+          isEmbargoed: true,
         },
       });
 
@@ -36,8 +37,13 @@ export class PDFController {
         });
       }
 
-      // Vérifier les permissions (optionnel : seulement le propriétaire ou admin)
-      // Pour l'instant, on autorise tous les utilisateurs authentifiés avec REPORTS_READ
+      // Vérifier l'accès pour les rapports sous embargo
+      if (report.isEmbargoed && report.ownerId !== req.user?.id) {
+        return res.status(403).json({
+          status: 403,
+          message: "Accès refusé : ce dossier est sous embargo et vous n'en êtes pas le propriétaire",
+        });
+      }
 
       // Générer le PDF
       logger.info({ reportId }, "🚀 Lancement génération PDF");
@@ -114,6 +120,8 @@ export class PDFController {
           reportNumber: true,
           classification: true,
           status: true,
+          ownerId: true,
+          isEmbargoed: true,
           _count: {
             select: {
               modules: true,
@@ -127,6 +135,14 @@ export class PDFController {
         return res.status(404).json({
           status: 404,
           message: "Rapport introuvable",
+        });
+      }
+
+      // Vérifier l'accès pour les rapports sous embargo
+      if (report.isEmbargoed && report.ownerId !== req.user?.id) {
+        return res.status(403).json({
+          status: 403,
+          message: "Accès refusé : ce dossier est sous embargo et vous n'en êtes pas le propriétaire",
         });
       }
 

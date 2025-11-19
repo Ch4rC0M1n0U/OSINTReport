@@ -26,6 +26,7 @@ interface SearchableReport {
   ownerName: string;
   ownerEmail: string;
   ownerId: string;
+  isEmbargoed: boolean;
   createdAt: string;
   updatedAt: string;
   issuedAt: string | undefined;
@@ -706,6 +707,7 @@ export class SearchService {
         ownerName: `${report.owner.firstName} ${report.owner.lastName}`,
         ownerEmail: report.owner.email,
         ownerId: report.ownerId,
+        isEmbargoed: report.isEmbargoed || false,
         createdAt: report.createdAt.toISOString(),
         updatedAt: report.updatedAt.toISOString(),
         modulesCount: report._count.modules,
@@ -822,6 +824,7 @@ export class SearchService {
           ownerName: `${report.owner.firstName} ${report.owner.lastName}`,
           ownerEmail: report.owner.email,
           ownerId: report.ownerId,
+          isEmbargoed: report.isEmbargoed || false,
           createdAt: report.createdAt.toISOString(),
           updatedAt: report.updatedAt.toISOString(),
           modulesCount: report._count.modules,
@@ -861,7 +864,8 @@ export class SearchService {
    */
   static async search(
     query: string,
-    options: SearchOptions = {}
+    options: SearchOptions = {},
+    userId?: string
   ): Promise<SearchResult> {
     try {
       const index = await this.getIndex();
@@ -874,8 +878,23 @@ export class SearchService {
         highlightPostTag: "</mark>",
       };
 
+      // Construire les filtres
+      const filters: string[] = [];
+
+      // Filtrer les rapports sous embargo
+      if (userId) {
+        filters.push(`(isEmbargoed = false OR ownerId = "${userId}")`);
+      } else {
+        filters.push(`isEmbargoed = false`);
+      }
+
+      // Ajouter les filtres personnalisés
       if (options.filter) {
-        searchParams.filter = options.filter;
+        filters.push(options.filter);
+      }
+
+      if (filters.length > 0) {
+        searchParams.filter = filters.join(" AND ");
       }
 
       if (options.sort) {

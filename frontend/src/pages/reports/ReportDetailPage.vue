@@ -871,8 +871,8 @@ function getClassificationInfo(classif: string) {
                     </div>
                   </div>
                   
-                  <!-- Checkbox pour inclure dans le PDF -->
-                  <div class="flex items-center gap-1">
+                  <!-- Checkbox pour inclure dans le PDF (ne pas afficher pour sign_off) -->
+                  <div v-if="module.type !== 'sign_off'" class="flex items-center gap-1">
                     <input
                       type="checkbox"
                       :checked="module.includeInPdf"
@@ -997,7 +997,8 @@ function getClassificationInfo(classif: string) {
                 </div>
               </div>
               
-              <div class="flex items-center gap-2">
+              <!-- Ne pas afficher la case à cocher pour le module sign_off -->
+              <div v-if="selectedModule.type !== 'sign_off'" class="flex items-center gap-2">
                 <label class="flex items-center gap-2 cursor-pointer">
                   <input
                     type="checkbox"

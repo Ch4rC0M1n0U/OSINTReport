@@ -74,6 +74,10 @@ export interface CreateReportData {
   classification: "PUBLIC" | "RESTRICTED" | "CONFIDENTIAL" | "SECRET";
   legalBasis?: string;
   keywords?: string[];
+  isEmbargoed?: boolean;
+  magistrateName?: string;
+  investigatorName?: string;
+  investigatorContact?: string;
 }
 
 export interface UpdateReportData extends Partial<CreateReportData> {}
