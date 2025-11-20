@@ -38,7 +38,22 @@
     /* Configuration page */
     @page {
       size: A4;
-      margin: 1.5cm;
+      margin: 1.5cm 1.5cm 2.5cm 1.5cm;
+      @bottom-center {
+        content: "Page " counter(page) " sur " counter(pages);
+        font-size: 9pt;
+        color: #666;
+      }
+      @bottom-left {
+        content: "{{caseNumber}}";
+        font-size: 9pt;
+        color: #666;
+      }
+      @bottom-right {
+        content: "{{title}}";
+        font-size: 9pt;
+        color: #666;
+      }
     }
 
     /* Header institutionnel */
@@ -198,10 +213,12 @@
     }
 
     .entity-card {
-      background: #fafafa;
-      padding: 15px;
+      background: white;
+      padding: 12px;
       margin-bottom: 15px;
+      border: 1px solid #ddd;
       border-left: 4px solid {{secondaryColor}};
+      border-radius: 3px;
       page-break-inside: avoid;
     }
 
@@ -209,9 +226,40 @@
       color: {{primaryColor}};
       font-size: 13pt;
       font-weight: bold;
-      margin-bottom: 12px;
-      border-bottom: 1px solid #e0e0e0;
-      padding-bottom: 5px;
+      margin-bottom: 10px;
+      border-bottom: 2px solid {{primaryColor}};
+      padding-bottom: 6px;
+      display: flex;
+      align-items: center;
+    }
+
+    .entity-number {
+      display: inline-block;
+      background: {{primaryColor}};
+      color: white;
+      padding: 3px 8px;
+      border-radius: 3px;
+      font-size: 10pt;
+      margin-right: 8px;
+      min-width: 25px;
+      text-align: center;
+    }
+
+    .field-label {
+      font-weight: 700;
+      color: #555;
+      font-size: 10pt;
+      margin-top: 12px;
+      margin-bottom: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .field-value {
+      color: #333;
+      font-size: 11pt;
+      margin-bottom: 10px;
+      line-height: 1.6;
     }
 
     /* Findings */
@@ -220,20 +268,36 @@
     }
 
     .finding-card {
-      background: #fafafa;
-      padding: 15px;
+      background: white;
+      padding: 12px;
       margin-bottom: 15px;
-      border-left: 4px solid {{primaryColor}};
+      border: 1px solid #ddd;
+      border-left: 4px solid #28a745;
+      border-radius: 3px;
       page-break-inside: avoid;
     }
 
     .finding-card h4 {
-      color: {{primaryColor}};
+      color: #155724;
       font-size: 13pt;
       font-weight: bold;
-      margin-bottom: 12px;
-      border-bottom: 1px solid #e0e0e0;
-      padding-bottom: 5px;
+      margin-bottom: 10px;
+      border-bottom: 2px solid #28a745;
+      padding-bottom: 6px;
+      display: flex;
+      align-items: center;
+    }
+
+    .finding-number {
+      display: inline-block;
+      background: #28a745;
+      color: white;
+      padding: 3px 8px;
+      border-radius: 3px;
+      font-size: 10pt;
+      margin-right: 8px;
+      min-width: 25px;
+      text-align: center;
     }
 
     /* Objectives & Conclusions */
@@ -315,86 +379,132 @@
     }
 
     .finding-table td {
-      padding: 8px;
+      padding: 8px 10px;
       border: 1px solid #ddd;
       vertical-align: top;
+      line-height: 1.6;
     }
 
     .finding-table .label-col {
-      font-weight: 600;
-      background-color: #f5f5f5;
-      width: 35%;
-      color: #333;
+      font-weight: 700;
+      background-color: #e9ecef;
+      width: 30%;
+      color: #495057;
+      text-transform: uppercase;
+      font-size: 9pt;
+      letter-spacing: 0.5px;
+    }
+
+    .finding-table .value-col {
+      background-color: #fff;
     }
 
     .finding-table .sources-list {
-      margin: 0;
+      margin: 5px 0;
       padding-left: 20px;
       list-style-type: disc;
     }
 
     .finding-table .sources-list li {
-      margin-bottom: 3px;
+      margin-bottom: 5px;
+      line-height: 1.5;
     }
 
     /* Badges de confiance */
     .confidence-badge {
       display: inline-block;
-      padding: 3px 8px;
-      border-radius: 3px;
-      font-size: 9pt;
-      font-weight: 600;
+      padding: 5px 12px;
+      border-radius: 4px;
+      font-size: 10pt;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
     }
 
+    .confidence,
     .confidence-confirmed,
     .confidence-Confirmed {
       background: #d4edda;
       color: #155724;
+      border: 1px solid #28a745;
     }
 
     .confidence-probable,
     .confidence-Probable {
       background: #d1ecf1;
       color: #0c5460;
+      border: 1px solid #17a2b8;
     }
 
     .confidence-possible,
     .confidence-Possible {
       background: #fff3cd;
       color: #856404;
+      border: 1px solid #ffc107;
     }
 
     .confidence-unknown,
     .confidence-Unknown {
       background: #f8d7da;
       color: #721c24;
+      border: 1px solid #dc3545;
     }
 
     /* Pièces jointes */
     .attachments-section {
-      margin-top: 15px;
-      padding-top: 10px;
-      border-top: 1px solid #e0e0e0;
+      margin-top: 20px;
+      padding-top: 15px;
+      border-top: 2px solid #e0e0e0;
+      page-break-inside: avoid;
     }
 
     .attachments-section h5 {
-      font-size: 10pt;
-      color: #666;
-      margin-bottom: 8px;
+      font-size: 11pt;
+      font-weight: bold;
+      color: {{primaryColor}};
+      margin-bottom: 15px;
+      padding-bottom: 5px;
+      border-bottom: 1px solid #e0e0e0;
     }
 
     .attachments-grid {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
+      display: block;
+      margin-top: 10px;
+    }
+
+    .attachment-container {
+      margin-bottom: 15px;
+      page-break-inside: avoid;
+      border: 1px solid #ccc;
+      border-radius: 3px;
+      overflow: hidden;
+      background: white;
     }
 
     .attachment-image {
-      max-width: 200px;
-      max-height: 150px;
-      object-fit: cover;
-      border: 1px solid #ddd;
-      border-radius: 4px;
+      width: 100%;
+      height: auto;
+      display: block;
+      border-bottom: 1px solid #e0e0e0;
+    }
+
+    .attachment-caption {
+      padding: 10px 15px;
+      font-size: 10pt;
+      color: #555;
+      background: #f8f9fa;
+      font-style: italic;
+    }
+
+    .attachment-number {
+      display: inline-block;
+      background: {{primaryColor}};
+      color: white;
+      padding: 2px 8px;
+      border-radius: 3px;
+      font-weight: bold;
+      font-style: normal;
+      margin-right: 8px;
     }
 
     .confidence {

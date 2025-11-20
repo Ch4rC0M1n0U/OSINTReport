@@ -34,7 +34,14 @@ const upload = multer({
   },
 });
 
-// Toutes les routes nécessitent une authentification
+/**
+ * GET /api/media/screenshot/:filename
+ * Récupération d'un screenshot via URL signée
+ * ⚠️ DOIT être AVANT requireAuth car utilise sa propre authentification par signature
+ */
+router.get('/screenshot/:filename', mediaController.getScreenshot);
+
+// Toutes les autres routes nécessitent une authentification
 router.use(requireAuth);
 router.use(checkMaintenanceMode);
 
@@ -43,12 +50,6 @@ router.use(checkMaintenanceMode);
  * Upload d'une capture d'écran avec traitement sécurisé
  */
 router.post('/upload', upload.single('file'), mediaController.uploadScreenshot);
-
-/**
- * GET /api/media/screenshot/:filename
- * Récupération d'un screenshot via URL signée
- */
-router.get('/screenshot/:filename', mediaController.getScreenshot);
 
 /**
  * GET /api/media/screenshots/list

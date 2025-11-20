@@ -45,7 +45,9 @@ app.set("trust proxy", 1);
 app.disable("x-powered-by");
 
 app.use(pinoHttp({ logger }));
-app.use(helmet());
+app.use(helmet({
+  crossOriginResourcePolicy: { policy: "cross-origin" }, // Autoriser le chargement d'images cross-origin
+}));
 app.use(cors(corsOptions));
 app.use(cookieParser());
 app.use(express.json({ limit: "10mb" }));

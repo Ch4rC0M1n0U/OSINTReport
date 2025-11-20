@@ -1,7 +1,7 @@
 import cron from 'node-cron';
 import * as fs from 'fs/promises';
 import * as path from 'path';
-import { generateSignedUrl } from '../media/media.service';
+import { generateSignedUrl, getPublicBackendUrl } from '../media/media.service';
 import { prisma } from '@/shared/prisma';
 
 /**
@@ -219,7 +219,11 @@ export function startScreenshotUrlCron(): void {
     console.log(`⏰ [CRON] Déclenchement à ${new Date().toLocaleString('fr-FR')}`);
     console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
     
+    // Régénérer les URLs des screenshots sur le filesystem
     await regenerateExpiringUrls();
+    
+    // Régénérer les URLs dans les Finding.attachments des modules
+    await regenerateFindingAttachmentUrls();
     
     console.log('\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
     console.log('⏰ [CRON] Prochaine exécution: demain à 03:00');
@@ -305,7 +309,11 @@ async function regenerateFindingAttachmentUrls(): Promise<void> {
               const filePath = path.join(uploadsDir, filename);
               if (await fileExists(filePath)) {
                 // Générer nouvelle URL signée (6 mois)
-                const newUrl = await generateSignedUrl(filename, NEW_EXPIRATION_DAYS * 24 * 60 * 60);
+                // IMPORTANT: Calculer expiresAt en timestamp (millisecondes)
+                const expiresAt = Date.now() + (NEW_EXPIRATION_DAYS * 24 * 60 * 60 * 1000);
+                
+                // L'URL publique est automatiquement détectée par generateSignedUrl()
+                const newUrl = generateSignedUrl(filename, expiresAt);
                 updatedAttachments.push(newUrl);
                 urlsRegenerated++;
                 

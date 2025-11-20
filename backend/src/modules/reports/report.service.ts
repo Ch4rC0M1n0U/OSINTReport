@@ -47,7 +47,7 @@ export class ReportService {
     };
   }
 
-  static async listReports(query: ListReportsQuery, userId?: string) {
+  static async listReports(query: ListReportsQuery, userId?: string, isAdmin: boolean = false) {
     const { limit, offset, orderBy, order, status, search } = query;
 
     const where = {
@@ -72,6 +72,17 @@ export class ReportService {
             ],
           }
         : { OR: [{ isEmbargoed: false }, { isEmbargoed: null }] }),
+      // Filtrer les brouillons : seuls le propriétaire et les admins peuvent les voir
+      ...(!isAdmin && userId
+        ? {
+            OR: [
+              { status: { not: "DRAFT" } },
+              { AND: [{ status: "DRAFT" }, { ownerId: userId }] },
+            ],
+          }
+        : !isAdmin
+        ? { status: { not: "DRAFT" } }
+        : {}),
     };
 
     const orderByField = orderBy ?? "issuedAt";
@@ -300,7 +311,7 @@ export class ReportService {
     return report;
   }
 
-  static async getReport(reportId: string, userId?: string) {
+  static async getReport(reportId: string, userId?: string, isAdmin: boolean = false) {
     const report = await prisma.report.findUnique({
       where: { id: reportId },
       include: {
@@ -347,6 +358,11 @@ export class ReportService {
     // Vérifier l'accès pour les rapports sous embargo
     if (report.isEmbargoed && report.ownerId !== userId) {
       throw createError(403, "Accès refusé : ce dossier est sous embargo et vous n'en êtes pas le propriétaire");
+    }
+
+    // Vérifier l'accès pour les brouillons : seul le propriétaire et les admins peuvent les consulter
+    if (report.status === "DRAFT" && !isAdmin && report.ownerId !== userId) {
+      throw createError(403, "Accès refusé : ce brouillon n'est accessible qu'à son rédacteur");
     }
 
     const [reportLevelAttachments, moduleWithSecrets] = await Promise.all([

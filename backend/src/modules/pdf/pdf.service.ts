@@ -198,11 +198,50 @@ export class PDFService {
     for (const url of urls) {
       try {
         logger.debug(`Téléchargement image: ${url.substring(0, 80)}...`);
-        const response = await axios.get(url, { responseType: 'arraybuffer' });
-        const buffer = Buffer.from(response.data, 'binary');
         
-        // Détecter le type MIME
-        const contentType = response.headers['content-type'] || 'image/png';
+        let buffer: Buffer;
+        let contentType: string;
+        
+        // Détecter si c'est une URL de screenshot local (avec signature)
+        // Format: /api/media/screenshot/filename.png?signature=...&expires=...
+        if (url.includes('/api/media/screenshot/') || url.includes('/media/screenshot/')) {
+          // Extraire le filename de l'URL
+          const urlObj = new URL(url, 'http://localhost'); // Base URL pour parser les chemins relatifs
+          const pathParts = urlObj.pathname.split('/');
+          const filename = pathParts[pathParts.length - 1];
+          
+          logger.debug(`🔍 Screenshot détecté: ${filename}`);
+          
+          // Charger directement depuis le filesystem au lieu de passer par l'URL signée
+          const fs = require('fs');
+          const path = require('path');
+          const screenshotPath = path.join(process.cwd(), 'uploads', 'screenshots', filename);
+          
+          if (fs.existsSync(screenshotPath)) {
+            buffer = fs.readFileSync(screenshotPath);
+            
+            // Détecter le type MIME depuis l'extension
+            const ext = filename.split('.').pop()?.toLowerCase();
+            contentType = ext === 'png' ? 'image/png' :
+                         ext === 'jpg' || ext === 'jpeg' ? 'image/jpeg' :
+                         ext === 'webp' ? 'image/webp' :
+                         ext === 'gif' ? 'image/gif' : 'image/png';
+            
+            logger.debug(`✅ Screenshot chargé depuis filesystem (${contentType}, ${(buffer.length / 1024).toFixed(2)} KB)`);
+          } else {
+            logger.warn(`⚠️ Fichier screenshot absent: ${screenshotPath}`);
+            // Essayer quand même avec l'URL (cas où le fichier a été déplacé)
+            const response = await axios.get(url, { responseType: 'arraybuffer' });
+            buffer = Buffer.from(response.data, 'binary');
+            contentType = response.headers['content-type'] || 'image/png';
+          }
+        } else {
+          // URL classique (externe ou upload standard)
+          const response = await axios.get(url, { responseType: 'arraybuffer' });
+          buffer = Buffer.from(response.data, 'binary');
+          contentType = response.headers['content-type'] || 'image/png';
+        }
+        
         const base64 = buffer.toString('base64');
         const dataUri = `data:${contentType};base64,${base64}`;
         
@@ -611,23 +650,37 @@ export class PDFService {
 
   /** Renderer pour module Entities */
   private static renderEntities(payload: any, linkedEntity: any, attachments: any[] = []): string {
-    if (!payload.entities || payload.entities.length === 0) return "";
+    // Le module peut contenir soit des "entities" (anciennes données), soit des "findings" (nouvelles données)
+    const dataSource = payload.findings || payload.entities || [];
+    if (dataSource.length === 0) return "";
 
     let html = '<div class="entities-list">';
-    payload.entities.forEach((entry: any) => {
-      const entity = entry.entity || linkedEntity;
-      if (!entity) return;
+    dataSource.forEach((entry: any, index: number) => {
+      // Pour les findings: entry.label et entry.metadata
+      // Pour les entities: entry.entity.name et entry.entity.metadata
+      const entityName = entry.label || entry.entity?.name || entry.name || "Entité";
+      const meta = entry.metadata || entry.entity?.metadata;
+      
+      if (!meta) return; // Pas de métadonnées, on skip
 
       html += '<div class="entity-card">';
-      html += `<h4>${entity.name || "Entité"}</h4>`;
+      html += `<h4><span class="entity-number">${index + 1}</span>${entityName}</h4>`;
       
-      if (entity.metadata) {
-        const meta = entity.metadata;
+      if (meta) {
         
-        // Type d'entité
+        // Type d'entité (traduire les codes)
         if (meta.entityType) {
+          const typeLabels: Record<string, string> = {
+            'person': 'Personne',
+            'organization': 'Organisation',
+            'company': 'Entreprise',
+            'group': 'Groupe',
+            'alias': 'Alias',
+            'other': 'Autre'
+          };
+          const typeLabel = typeLabels[meta.entityType] || meta.entityType;
           html += `<div class="field-label">Type</div>`;
-          html += `<div class="field-value">${meta.entityType}</div>`;
+          html += `<div class="field-value">${typeLabel}</div>`;
         }
         
         // Alias
@@ -737,6 +790,47 @@ export class PDFService {
         }
       }
       
+      // Description (pour les findings)
+      if (entry.description) {
+        html += `<div class="field-label">Description</div>`;
+        html += `<div class="field-value">${entry.description}</div>`;
+      }
+      
+      // Niveau de confiance
+      if (entry.confidence) {
+        const confidenceLabels: Record<string, string> = {
+          'confirmed': 'Confirmé',
+          'probable': 'Probable',
+          'possible': 'Possible',
+          'unknown': 'Inconnu'
+        };
+        const confidenceLabel = confidenceLabels[entry.confidence] || entry.confidence;
+        html += `<div class="field-label">Niveau de confiance</div>`;
+        html += `<div class="field-value"><span class="confidence confidence-${entry.confidence}">${confidenceLabel}</span></div>`;
+      }
+      
+      // Sources
+      if (entry.sources && entry.sources.length > 0) {
+        html += `<div class="field-label">Sources</div>`;
+        html += `<div class="field-value">`;
+        html += '<ul style="margin: 0; padding-left: 20px;">';
+        entry.sources.forEach((source: any) => {
+          if (typeof source === 'string') {
+            html += `<li>${source}</li>`;
+          } else {
+            let sourceText = '';
+            if (source.type) sourceText += `${source.type}: `;
+            if (source.value) sourceText += source.value;
+            if (source.url) sourceText += ` (<a href="${source.url}">${source.url}</a>)`;
+            if (source.date) sourceText += ` - ${new Date(source.date).toLocaleDateString('fr-BE')}`;
+            if (source.note) sourceText += ` - ${source.note}`;
+            html += `<li>${sourceText}</li>`;
+          }
+        });
+        html += '</ul>';
+        html += `</div>`;
+      }
+      
       // Rôle
       if (entry.role) {
         html += `<div class="field-label">Rôle</div>`;
@@ -749,38 +843,54 @@ export class PDFService {
         html += `<div class="field-value notes">${entry.notes}</div>`;
       }
       
+      // Pièces jointes dans le finding
+      if (entry.attachments && entry.attachments.length > 0) {
+        html += `<div class="attachments-section" style="margin-top: 20px;">`;
+        html += `<h5>📎 Pièces jointes (${entry.attachments.length})</h5>`;
+        
+        entry.attachments.forEach((attachmentUrl: string, idx: number) => {
+          // Les URLs contiennent déjà le domaine complet, on les utilise telles quelles
+          // Elles seront converties en base64 par convertImagesToBase64() plus tard
+          html += '<div class="attachment-container">';
+          html += `<img src="${attachmentUrl}" class="attachment-image" alt="Capture d'écran ${idx + 1}" />`;
+          html += `<div class="attachment-caption"><span class="attachment-number">#${idx + 1}</span>Capture d'écran - ${entityName}</div>`;
+          html += '</div>';
+        });
+        
+        html += '</div>';
+        html += '</div>';
+      }
+      
       html += '</div>';
     });
     
-    // Captures d'écran / Pièces jointes (en dehors de la boucle d'entités)
+    // Captures d'écran / Pièces jointes du module (en dehors de la boucle d'entités)
     if (attachments && attachments.length > 0) {
       html += `<div class="attachments-section">`;
-      html += `<h5>${this.getEmojiForLabel("Pièces jointes")}Pièces jointes (${attachments.length})</h5>`;
-      html += '<div class="attachments-grid">';
+      html += `<h5>Pièces jointes du module (${attachments.length})</h5>`;
       
-      attachments.forEach((attachment: any) => {
+      attachments.forEach((attachment: any, idx: number) => {
         // Construire l'URL complète de la pièce jointe
         const imageUrl = `${process.env.BACKEND_URL || 'http://localhost:4000'}/uploads/${attachment.storageKey}`;
         
-        html += '<div style="border: 1px solid #ddd; border-radius: 4px; overflow: hidden; margin-bottom: 10px;">';
-        html += `<img src="${imageUrl}" class="attachment-image" style="width: 100%; height: auto; display: block;" alt="${attachment.caption || 'Pièce jointe'}" />`;
+        html += '<div class="attachment-container">';
+        html += `<img src="${imageUrl}" class="attachment-image" alt="${attachment.caption || 'Pièce jointe'}" />`;
         
         if (attachment.caption) {
-          html += `<p style="padding: 8px; margin: 0; font-size: 12px; background: #f5f5f5;">${attachment.caption}</p>`;
+          html += `<div class="attachment-caption"><span class="attachment-number">#${idx + 1}</span>${attachment.caption}</div>`;
+        } else {
+          html += `<div class="attachment-caption"><span class="attachment-number">#${idx + 1}</span>Pièce jointe</div>`;
         }
         
         html += '</div>';
       });
       
       html += '</div>';
-      html += '</div>';
     }
-    
+
     html += '</div>';
     return html;
-  }
-
-  /** Renderer pour module Objectives */
+  }  /** Renderer pour module Objectives */
   private static renderObjectives(payload: any): string {
     let html = "";
     
@@ -1119,11 +1229,11 @@ export class PDFService {
   private static renderFindings(findings: any[]): string {
     let html = '<div class="findings-section">';
     
-    findings.forEach((finding: any) => {
+    findings.forEach((finding: any, index: number) => {
       html += '<div class="finding-card">';
       
-      // Titre
-      html += `<h4>${finding.label || "Finding"}</h4>`;
+      // Titre avec numérotation
+      html += `<h4><span class="finding-number">${index + 1}</span>${finding.label || "Finding"}</h4>`;
       
       // Description
       if (finding.description) {
@@ -1136,8 +1246,8 @@ export class PDFService {
       // Type d'entité (pour les profils)
       if (finding.type) {
         html += '<tr>';
-        html += `<td class="label-col">${this.getEmojiForLabel("Type d'entité")}Type d\'entité</td>`;
-        html += `<td>${finding.type}</td>`;
+        html += `<td class="label-col">Type d'entité</td>`;
+        html += `<td class="value-col">${finding.type}</td>`;
         html += '</tr>';
       }
       
@@ -1148,32 +1258,32 @@ export class PDFService {
         // Plateforme
         if (meta.platform) {
           html += '<tr>';
-          html += `<td class="label-col">${this.getEmojiForLabel("Plateforme")}Plateforme</td>`;
-          html += `<td>${meta.platform.toUpperCase()}</td>`;
+          html += `<td class="label-col">Plateforme</td>`;
+          html += `<td class="value-col">${meta.platform.toUpperCase()}</td>`;
           html += '</tr>';
         }
         
         // URL du profil
         if (meta.profileUrl) {
           html += '<tr>';
-          html += `<td class="label-col">${this.getEmojiForLabel("URL du profil")}URL du profil</td>`;
-          html += `<td><a href="${meta.profileUrl}">${meta.profileUrl}</a></td>`;
+          html += `<td class="label-col">URL du profil</td>`;
+          html += `<td class="value-col"><a href="${meta.profileUrl}">${meta.profileUrl}</a></td>`;
           html += '</tr>';
         }
         
         // Statut du compte
         if (meta.accountStatus) {
           html += '<tr>';
-          html += `<td class="label-col">${this.getEmojiForLabel("Statut du compte")}Statut du compte</td>`;
-          html += `<td>${meta.accountStatus}</td>`;
+          html += `<td class="label-col">Statut du compte</td>`;
+          html += `<td class="value-col">${meta.accountStatus}</td>`;
           html += '</tr>';
         }
         
         // Username / Nom du profil
         if (meta.username) {
           html += '<tr>';
-          html += `<td class="label-col">${this.getEmojiForLabel("Nom du profil / Username")}Nom du profil / Username</td>`;
-          html += `<td>${meta.username}</td>`;
+          html += `<td class="label-col">Nom du profil / Username</td>`;
+          html += `<td class="value-col">${meta.username}</td>`;
           html += '</tr>';
         }
         
@@ -1181,54 +1291,54 @@ export class PDFService {
         if (finding.confidence || meta.confidence) {
           const conf = finding.confidence || meta.confidence;
           html += '<tr>';
-          html += `<td class="label-col">${this.getEmojiForLabel("Niveau de confiance")}Niveau de confiance</td>`;
-          html += `<td><span class="confidence-badge confidence-${conf}">${conf}</span></td>`;
+          html += `<td class="label-col">Niveau de confiance</td>`;
+          html += `<td class="value-col"><span class="confidence-badge confidence-${conf}">${conf}</span></td>`;
           html += '</tr>';
         }
         
         // Statut de vérification
         if (meta.verified !== undefined) {
           html += '<tr>';
-          html += `<td class="label-col">${this.getEmojiForLabel("Statut de vérification")}Statut de vérification</td>`;
-          html += `<td>${meta.verified ? 'Vérifié' : 'Non vérifié'}</td>`;
+          html += `<td class="label-col">Statut de vérification</td>`;
+          html += `<td class="value-col">${meta.verified ? 'Vérifié' : 'Non vérifié'}</td>`;
           html += '</tr>';
         }
         
         // Date de naissance
         if (meta.dateOfBirth) {
           html += '<tr>';
-          html += `<td class="label-col">${this.getEmojiForLabel("Date de naissance")}Date de naissance</td>`;
-          html += `<td>${meta.dateOfBirth}</td>`;
+          html += `<td class="label-col">Date de naissance</td>`;
+          html += `<td class="value-col">${meta.dateOfBirth}</td>`;
           html += '</tr>';
         }
         
         // Statistiques de followers/abonnés
         if (meta.followersCount !== undefined) {
           html += '<tr>';
-          html += `<td class="label-col">${this.getEmojiForLabel("Abonnés")}Abonnés</td>`;
-          html += `<td>${meta.followersCount}</td>`;
+          html += `<td class="label-col">Abonnés</td>`;
+          html += `<td class="value-col">${meta.followersCount}</td>`;
           html += '</tr>';
         }
         if (meta.followingCount !== undefined) {
           html += '<tr>';
-          html += `<td class="label-col">${this.getEmojiForLabel("Abonnements")}Abonnements</td>`;
-          html += `<td>${meta.followingCount}</td>`;
+          html += `<td class="label-col">Abonnements</td>`;
+          html += `<td class="value-col">${meta.followingCount}</td>`;
           html += '</tr>';
         }
         
         // Date de création du compte
         if (meta.accountCreationDate) {
           html += '<tr>';
-          html += `<td class="label-col">${this.getEmojiForLabel("Compte créé le")}Compte créé le</td>`;
-          html += `<td>${meta.accountCreationDate}</td>`;
+          html += `<td class="label-col">Compte créé le</td>`;
+          html += `<td class="value-col">${meta.accountCreationDate}</td>`;
           html += '</tr>';
         }
         
         // Localisation
         if (meta.location) {
           html += '<tr>';
-          html += `<td class="label-col">${this.getEmojiForLabel("Localisation")}Localisation</td>`;
-          html += `<td>${meta.location}</td>`;
+          html += `<td class="label-col">Localisation</td>`;
+          html += `<td class="value-col">${meta.location}</td>`;
           html += '</tr>';
         }
         
@@ -1237,20 +1347,20 @@ export class PDFService {
           const contact = meta.contactInfo;
           if (contact.email) {
             html += '<tr>';
-            html += `<td class="label-col">${this.getEmojiForLabel("Email")}Email</td>`;
-            html += `<td>${contact.email}</td>`;
+            html += `<td class="label-col">Email</td>`;
+            html += `<td class="value-col">${contact.email}</td>`;
             html += '</tr>';
           }
           if (contact.phone) {
             html += '<tr>';
-            html += `<td class="label-col">${this.getEmojiForLabel("Téléphone")}Téléphone</td>`;
-            html += `<td>${contact.phone}</td>`;
+            html += `<td class="label-col">Téléphone</td>`;
+            html += `<td class="value-col">${contact.phone}</td>`;
             html += '</tr>';
           }
           if (contact.website) {
             html += '<tr>';
-            html += `<td class="label-col">${this.getEmojiForLabel("Site web")}Site web</td>`;
-            html += `<td><a href="${contact.website}">${contact.website}</a></td>`;
+            html += `<td class="label-col">Site web</td>`;
+            html += `<td class="value-col"><a href="${contact.website}">${contact.website}</a></td>`;
             html += '</tr>';
           }
         }
@@ -1261,29 +1371,29 @@ export class PDFService {
           
           if (pd.dateOfBirth) {
             html += '<tr>';
-            html += `<td class="label-col">${this.getEmojiForLabel("Date de naissance")}Date de naissance</td>`;
-            html += `<td>${pd.dateOfBirth}</td>`;
+            html += `<td class="label-col">Date de naissance</td>`;
+            html += `<td class="value-col">${pd.dateOfBirth}</td>`;
             html += '</tr>';
           }
           
           if (pd.nationalRegistryNumber) {
             html += '<tr>';
-            html += `<td class="label-col">${this.getEmojiForLabel("Numéro de Registre National")}Numéro de Registre National</td>`;
-            html += `<td>${pd.nationalRegistryNumber}</td>`;
+            html += `<td class="label-col">Numéro de Registre National</td>`;
+            html += `<td class="value-col">${pd.nationalRegistryNumber}</td>`;
             html += '</tr>';
           }
           
           if (pd.physicalAddress) {
             html += '<tr>';
-            html += `<td class="label-col">${this.getEmojiForLabel("Adresse physique")}Adresse physique</td>`;
-            html += `<td>${pd.physicalAddress}</td>`;
+            html += `<td class="label-col">Adresse physique</td>`;
+            html += `<td class="value-col">${pd.physicalAddress}</td>`;
             html += '</tr>';
           }
           
           if (pd.phoneNumbers && pd.phoneNumbers.length > 0) {
             html += '<tr>';
-            html += `<td class="label-col">${this.getEmojiForLabel("Téléphone")}Téléphones</td>`;
-            html += `<td>${pd.phoneNumbers.join(", ")}</td>`;
+            html += `<td class="label-col">Téléphones</td>`;
+            html += `<td class="value-col">${pd.phoneNumbers.join(", ")}</td>`;
             html += '</tr>';
           }
         }
@@ -1292,8 +1402,8 @@ export class PDFService {
       // Sources
       if (finding.sources && finding.sources.length > 0) {
         html += '<tr>';
-        html += `<td class="label-col">${this.getEmojiForLabel("Sources")}Sources</td>`;
-        html += '<td><ul class="sources-list">';
+        html += `<td class="label-col">Sources</td>`;
+        html += '<td class="value-col"><ul class="sources-list">';
         finding.sources.forEach((source: any) => {
           html += `<li>${source.type}: ${source.value}${source.note ? ` (${source.note})` : ""}</li>`;
         });
@@ -1306,12 +1416,14 @@ export class PDFService {
       // Pièces jointes (images) - en dehors du tableau
       if (finding.attachments && finding.attachments.length > 0) {
         html += `<div class="attachments-section">`;
-        html += `<h5>${this.getEmojiForLabel("Pièces jointes")}Pièces jointes (${finding.attachments.length})</h5>`;
-        html += '<div class="attachments-grid">';
-        finding.attachments.forEach((attachment: string) => {
-          html += `<img src="${attachment}" class="attachment-image" alt="Pièce jointe" />`;
+        html += `<h5>Pièces jointes (${finding.attachments.length})</h5>`;
+        const findingLabel = finding.label || "Finding";
+        finding.attachments.forEach((attachment: string, idx: number) => {
+          html += '<div class="attachment-container">';
+          html += `<img src="${attachment}" class="attachment-image" alt="Capture d'écran ${idx + 1}" />`;
+          html += `<div class="attachment-caption"><span class="attachment-number">#${idx + 1}</span>Capture d'écran - ${findingLabel}</div>`;
+          html += '</div>';
         });
-        html += '</div>';
         html += '</div>';
       }
       

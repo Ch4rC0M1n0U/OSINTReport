@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import * as mediaService from './media.service';
+import { prisma } from '@config/prisma';
 
 /**
  * Récupère l'URL de base du serveur depuis les headers de la requête.
@@ -31,7 +32,26 @@ export async function uploadScreenshot(req: Request, res: Response) {
       });
     }
 
-    const caseId = (req.query.caseId as string) || 'N/A';
+    // Récupérer le reportId/caseId depuis la query
+    const reportId = (req.query.caseId as string);
+    let caseNumber = 'N/A';
+    
+    // Si un reportId est fourni, récupérer le caseNumber du rapport
+    if (reportId && reportId !== 'N/A') {
+      try {
+        const report = await prisma.report.findUnique({
+          where: { id: reportId },
+          select: { caseNumber: true }
+        });
+        if (report && report.caseNumber) {
+          caseNumber = report.caseNumber;
+        }
+      } catch (error) {
+        // Si erreur (UUID invalide ou rapport inexistant), garder N/A
+        console.warn(`Impossible de récupérer le caseNumber pour reportId ${reportId}`);
+      }
+    }
+
     const investigatorName =
       (req.query.investigatorName as string) || (req as any).user?.email || 'Investigateur';
 
@@ -39,7 +59,7 @@ export async function uploadScreenshot(req: Request, res: Response) {
     const baseUrl = getServerBaseUrl(req);
 
     const result = await mediaService.processScreenshot(req.file, userId, {
-      caseId,
+      caseId: caseNumber, // Utiliser le caseNumber au lieu du reportId
       investigatorName,
     }, baseUrl);
 

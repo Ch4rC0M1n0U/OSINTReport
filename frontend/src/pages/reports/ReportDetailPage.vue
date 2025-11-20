@@ -708,6 +708,19 @@ function getClassificationInfo(classif: string) {
         
         <!-- Actions rapides -->
         <div class="flex items-center gap-2">
+          <!-- Bouton Publier (visible uniquement pour les brouillons) -->
+          <button 
+            v-if="report?.status === 'DRAFT'" 
+            class="btn btn-sm btn-success gap-1"
+            @click="handleChangeStatus('PUBLISHED')"
+            title="Publier ce rapport"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+            </svg>
+            Publier
+          </button>
+          
           <button v-if="!report?.validatedById" class="btn btn-sm btn-warning" @click="showOfficerValidationModal = true">
             ✅ Valider
           </button>
@@ -753,6 +766,29 @@ function getClassificationInfo(classif: string) {
                 <a @click="loadCorrelations" class="py-2 px-4 hover:bg-base-200 flex items-center gap-3 transition-colors">
                   <span class="text-lg">🔗</span>
                   <span class="font-medium">Voir corrélations</span>
+                </a>
+              </li>
+
+              <!-- Gestion du statut -->
+              <li class="bg-base-50 px-3 py-1 mt-2">
+                <span class="text-xs uppercase tracking-wider text-base-content/60 font-semibold">Statut du rapport</span>
+              </li>
+              <li v-if="report?.status !== 'PUBLISHED'" class="border-b border-base-200">
+                <a @click="handleChangeStatus('PUBLISHED')" class="py-2 px-4 hover:bg-base-200 flex items-center gap-3 transition-colors">
+                  <span class="text-lg">✅</span>
+                  <span class="font-medium">Publier</span>
+                </a>
+              </li>
+              <li v-if="report?.status !== 'DRAFT'" class="border-b border-base-200">
+                <a @click="handleChangeStatus('DRAFT')" class="py-2 px-4 hover:bg-base-200 flex items-center gap-3 transition-colors">
+                  <span class="text-lg">📝</span>
+                  <span class="font-medium">Repasser en brouillon</span>
+                </a>
+              </li>
+              <li v-if="report?.status !== 'ARCHIVED'" class="border-b border-base-200">
+                <a @click="handleChangeStatus('ARCHIVED')" class="py-2 px-4 hover:bg-base-200 flex items-center gap-3 transition-colors">
+                  <span class="text-lg">📦</span>
+                  <span class="font-medium">Archiver</span>
                 </a>
               </li>
 

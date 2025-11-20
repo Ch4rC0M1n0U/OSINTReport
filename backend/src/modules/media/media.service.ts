@@ -5,6 +5,30 @@ import * as crypto from 'crypto';
 import exifr from 'exifr';
 
 /**
+ * Détecte l'URL publique du backend
+ * Supporte Codespaces, production, et développement local
+ */
+export function getPublicBackendUrl(): string {
+  // 1. Codespaces (auto-détection via variable d'environnement)
+  if (process.env.CODESPACE_NAME) {
+    return `https://${process.env.CODESPACE_NAME}-4000.app.github.dev`;
+  }
+  
+  // 2. Variable d'environnement explicite
+  if (process.env.API_URL) {
+    return process.env.API_URL;
+  }
+  
+  // 3. Backend URL depuis .env
+  if (process.env.BACKEND_URL) {
+    return process.env.BACKEND_URL;
+  }
+  
+  // 4. Fallback localhost
+  return 'http://localhost:4000';
+}
+
+/**
  * Retourne la date/heure actuelle avec timezone locale (ISO 8601 complet)
  * Ex: "2025-10-06T07:45:30+02:00"
  */
@@ -416,8 +440,8 @@ export function generateSignedUrl(
     .update(`${filename}:${expiresAt}`)
     .digest('hex');
 
-  // Utiliser l'URL fournie, sinon fallback sur env, sinon localhost
-  const apiUrl = baseUrl || process.env.API_URL || 'http://localhost:4000';
+  // Utiliser l'URL fournie, sinon détecter automatiquement l'URL publique
+  const apiUrl = baseUrl || getPublicBackendUrl();
   return `${apiUrl}/api/media/screenshot/${filename}?signature=${signature}&expires=${expiresAt}`;
 }
 
