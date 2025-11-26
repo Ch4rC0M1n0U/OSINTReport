@@ -845,7 +845,7 @@ export class PDFService {
       
       // Pièces jointes dans le finding
       if (entry.attachments && entry.attachments.length > 0) {
-        html += `<div class="attachments-section" style="margin-top: 20px;">`;
+        html += `<div class="attachments-section" style="margin-top: 8px;">`;
         html += `<h5>📎 Pièces jointes (${entry.attachments.length})</h5>`;
         
         entry.attachments.forEach((attachmentUrl: string, idx: number) => {
@@ -1025,7 +1025,7 @@ export class PDFService {
     if (payload.screenshots && payload.screenshots.length > 0) {
       html += '<div class="screenshots">';
       html += '<h4>Captures d\'écran</h4>';
-      html += '<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 15px; margin-top: 10px;">';
+      html += '<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 8px; margin-top: 5px;">';
       payload.screenshots.forEach((screenshot: any) => {
         const imageUrl = typeof screenshot === 'string' ? screenshot : screenshot.url;
         const caption = typeof screenshot === 'object' && screenshot.caption ? screenshot.caption : '';
@@ -1451,17 +1451,17 @@ export class PDFService {
       RESTRICTED: {
         text: "RESTREINT",
         color: { r: 0, g: 0.5, b: 1 },
-        opacity: 0.3,
+        opacity: 0.08,
       },
       CONFIDENTIAL: {
         text: "CONFIDENTIEL",
         color: { r: 1, g: 0.5, b: 0 },
-        opacity: 0.4,
+        opacity: 0.12,
       },
       SECRET: {
         text: "SECRET",
         color: { r: 1, g: 0, b: 0 },
-        opacity: 0.5,
+        opacity: 0.15,
       },
     };
 
@@ -1481,7 +1481,7 @@ export class PDFService {
 
     for (const page of pages) {
       const { width, height } = page.getSize();
-      const fontSize = 80;
+      const fontSize = 60;
 
       // Calculer la position du texte en diagonale
       const textWidth = font.widthOfTextAtSize(config.text, fontSize);
