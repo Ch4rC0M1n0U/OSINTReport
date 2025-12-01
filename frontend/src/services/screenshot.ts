@@ -93,4 +93,32 @@ export const screenshotService = {
       throw new Error(response.data.message || 'Deletion failed');
     }
   },
+
+  /**
+   * Télécharge une image depuis une URL externe et la stocke localement
+   * Utile pour capturer les images WhatsApp/externes avant expiration
+   * @param url URL de l'image à télécharger
+   * @param options Options (caseId, investigatorName)
+   * @returns Métadonnées du screenshot avec URL signée locale
+   */
+  async downloadFromUrl(url: string, options: UploadScreenshotOptions = {}): Promise<Screenshot> {
+    const params = new URLSearchParams();
+    if (options.caseId) {
+      params.append('caseId', options.caseId);
+    }
+    if (options.investigatorName) {
+      params.append('investigatorName', options.investigatorName);
+    }
+
+    const queryString = params.toString();
+    const endpoint = queryString ? `/media/download-from-url?${queryString}` : '/media/download-from-url';
+
+    const response = await api.post<{ success: boolean; data: Screenshot }>(endpoint, { url });
+
+    if (!response.data.success) {
+      throw new Error('Download from URL failed');
+    }
+
+    return response.data.data;
+  },
 };

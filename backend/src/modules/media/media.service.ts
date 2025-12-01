@@ -588,3 +588,86 @@ export async function deleteScreenshot(
     await fs.unlink(metadataPath);
   }
 }
+
+/**
+ * Télécharge une image depuis une URL externe et la stocke localement
+ * Utile pour capturer les images WhatsApp/externes avant expiration
+ */
+export async function downloadImageFromUrl(
+  url: string,
+  userId: string,
+  metadata: ScreenshotMetadata,
+  baseUrl?: string
+): Promise<ProcessedScreenshot> {
+  const tempFilename = `${crypto.randomBytes(16).toString('hex')}.tmp`;
+  const tempPath = path.join(tempDir, tempFilename);
+
+  try {
+    console.log(`📥 Downloading image from URL: ${url}`);
+
+    // Télécharger l'image avec fetch
+    const response = await fetch(url, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+      },
+      signal: AbortSignal.timeout(30000), // Timeout 30s
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+
+    // Vérifier le type de contenu
+    const contentType = response.headers.get('content-type');
+    if (!contentType || !contentType.startsWith('image/')) {
+      throw new Error(`Type de contenu invalide: ${contentType}`);
+    }
+
+    // Vérifier la taille (max 10 MB pour éviter les abus)
+    const contentLength = response.headers.get('content-length');
+    if (contentLength && parseInt(contentLength) > 10 * 1024 * 1024) {
+      throw new Error('Image trop volumineuse (max 10 MB)');
+    }
+
+    // Télécharger dans un fichier temporaire
+    const buffer = Buffer.from(await response.arrayBuffer());
+    await fs.writeFile(tempPath, buffer);
+
+    console.log(`✅ Image downloaded: ${buffer.length} bytes`);
+
+    // Créer un objet de type Multer.File
+    const fakeFile: Express.Multer.File = {
+      fieldname: 'file',
+      originalname: url.split('/').pop()?.split('?')[0] || 'downloaded-image',
+      encoding: '7bit',
+      mimetype: contentType,
+      size: buffer.length,
+      destination: tempDir,
+      filename: tempFilename,
+      path: tempPath,
+      buffer: buffer,
+      stream: null as any,
+    };
+
+    // Utiliser la fonction processScreenshot existante
+    const result = await processScreenshot(fakeFile, userId, metadata, baseUrl);
+
+    // Nettoyer le fichier temporaire
+    try {
+      await fs.unlink(tempPath);
+    } catch (e) {
+      // Ignorer les erreurs de nettoyage
+    }
+
+    return result;
+  } catch (error: any) {
+    // Nettoyer en cas d'erreur
+    try {
+      await fs.unlink(tempPath);
+    } catch (e) {
+      // Ignorer
+    }
+
+    throw new Error(`Échec du téléchargement: ${error.message}`);
+  }
+}

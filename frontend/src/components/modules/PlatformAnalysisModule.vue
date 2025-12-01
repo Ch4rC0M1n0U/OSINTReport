@@ -10,6 +10,40 @@
         </span>
       </div>
       <div class="flex items-center gap-2">
+        <!-- Bouton Import avec sous-menu -->
+        <div v-if="!readonly" class="dropdown dropdown-end">
+          <label tabindex="0" class="btn btn-sm btn-outline gap-2">
+            <span>📥</span>
+            <span>Import</span>
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+            </svg>
+          </label>
+          <ul tabindex="0" class="dropdown-content z-[1] menu p-2 shadow-lg bg-base-100 rounded-box w-56 border border-base-300">
+            <li class="menu-title">
+              <span>Sources d'import</span>
+            </li>
+            <li>
+              <button @click="openElephantasticImport" class="gap-2">
+                <span>🐘</span>
+                <span>Elephantastic</span>
+              </button>
+            </li>
+            <li class="disabled">
+              <span class="gap-2 opacity-50">
+                <span>🔍</span>
+                <span>Maltego (bientôt)</span>
+              </span>
+            </li>
+            <li class="disabled">
+              <span class="gap-2 opacity-50">
+                <span>🕷️</span>
+                <span>SpiderFoot (bientôt)</span>
+              </span>
+            </li>
+          </ul>
+        </div>
+        
         <button
           v-if="!readonly"
           type="button"
@@ -146,6 +180,14 @@
       @close="closeModal"
       @save="handleSave"
     />
+    
+    <!-- Modal Import Elephantastic -->
+    <ElephantasticImportModal
+      :is-open="isElephantasticModalOpen"
+      :existing-profiles="existingProfiles"
+      @close="isElephantasticModalOpen = false"
+      @import="handleElephantasticImport"
+    />
   </div>
 </template>
 
@@ -155,6 +197,7 @@ import type { Finding } from '@/services/api/reports';
 import PlatformCard from './PlatformCard.vue';
 import PlatformEditModal from './PlatformEditModal.vue';
 import WysiwygEditor from '../shared/WysiwygEditor.vue';
+import ElephantasticImportModal from '../import/ElephantasticImportModal.vue';
 
 interface RichTextBlock {
   id: string;
@@ -186,6 +229,7 @@ const emit = defineEmits<{
 const findings = ref<Finding[]>([]);
 const richTextBlocks = ref<RichTextBlock[]>([]);
 const isModalOpen = ref(false);
+const isElephantasticModalOpen = ref(false);
 const editingProfile = ref<Finding | null>(null);
 const editingIndex = ref<number | null>(null);
 
@@ -267,6 +311,27 @@ function openCreateModal() {
   editingProfile.value = null;
   editingIndex.value = null;
   isModalOpen.value = true;
+}
+
+// Ouvrir modal import Elephantastic
+function openElephantasticImport() {
+  isElephantasticModalOpen.value = true;
+}
+
+// Gérer l'import Elephantastic
+async function handleElephantasticImport(importedFindings: Finding[]) {
+  if (importedFindings.length === 0) return;
+  
+  // Télécharger les images externes de chaque finding
+  const { downloadExternalImages } = await import('@/services/import/elephantastic');
+  
+  const findingsWithLocalImages = await Promise.all(
+    importedFindings.map(finding => downloadExternalImages(finding, props.reportId))
+  );
+  
+  // Ajouter les findings importés avec images locales
+  findings.value = [...findings.value, ...findingsWithLocalImages];
+  emitUpdate();
 }
 
 // Ouvrir modal édition

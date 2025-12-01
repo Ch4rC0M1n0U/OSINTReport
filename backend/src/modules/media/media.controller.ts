@@ -204,3 +204,80 @@ export async function deleteScreenshot(req: Request, res: Response) {
     });
   }
 }
+
+/**
+ * Télécharge une image depuis une URL externe et la stocke localement
+ * Utile pour capturer les images WhatsApp/externes avant expiration
+ */
+export async function downloadFromUrl(req: Request, res: Response) {
+  try {
+    const userId = (req as any).user?.id;
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        error: 'Non authentifié',
+      });
+    }
+
+    const { url } = req.body;
+    if (!url || typeof url !== 'string') {
+      return res.status(400).json({
+        success: false,
+        error: 'URL manquante',
+      });
+    }
+
+    // Vérifier que l'URL est valide
+    try {
+      new URL(url);
+    } catch {
+      return res.status(400).json({
+        success: false,
+        error: 'URL invalide',
+      });
+    }
+
+    const reportId = (req.query.caseId as string);
+    let caseNumber = 'N/A';
+    
+    if (reportId && reportId !== 'N/A') {
+      try {
+        const report = await prisma.report.findUnique({
+          where: { id: reportId },
+          select: { caseNumber: true }
+        });
+        if (report && report.caseNumber) {
+          caseNumber = report.caseNumber;
+        }
+      } catch (error) {
+        console.warn(`Impossible de récupérer le caseNumber pour reportId ${reportId}`);
+      }
+    }
+
+    const investigatorName =
+      (req.query.investigatorName as string) || (req as any).user?.email || 'Investigateur';
+
+    const baseUrl = getServerBaseUrl(req);
+
+    const result = await mediaService.downloadImageFromUrl(url, userId, {
+      caseId: caseNumber,
+      investigatorName,
+    }, baseUrl);
+
+    return res.json({
+      success: true,
+      data: {
+        filename: result.filename,
+        url: result.signedUrl,
+        expiresAt: result.expiresAt,
+        metadata: result.metadata,
+      },
+    });
+  } catch (error: any) {
+    console.error('Erreur téléchargement depuis URL:', error);
+    return res.status(500).json({
+      success: false,
+      error: `Erreur lors du téléchargement: ${error.message}`,
+    });
+  }
+}

@@ -52,6 +52,12 @@ router.use(checkMaintenanceMode);
 router.post('/upload', upload.single('file'), mediaController.uploadScreenshot);
 
 /**
+ * POST /api/media/download-from-url
+ * Télécharge une image depuis une URL externe et la stocke localement
+ */
+router.post('/download-from-url', mediaController.downloadFromUrl);
+
+/**
  * GET /api/media/screenshots/list
  * Liste des screenshots de l'utilisateur
  */

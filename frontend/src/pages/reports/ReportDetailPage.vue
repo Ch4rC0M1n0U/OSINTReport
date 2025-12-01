@@ -22,6 +22,7 @@ import LegalBasisSelector from "@/components/shared/LegalBasisSelector.vue";
 import { parseLegalBasis, LEGAL_ARTICLES, type LegalArticle } from "@/data/legal-basis";
 import LegalArticleDetailModal from "@/components/shared/LegalArticleDetailModal.vue";
 import LegalBasisDisplay from "@/components/shared/LegalBasisDisplay.vue";
+import ModuleTreeSidebar from "@/components/reports/ModuleTreeSidebar.vue";
 
 // Composants de modules
 import SummaryModule from "@/components/modules/SummaryModule.vue";
@@ -581,6 +582,27 @@ async function handleReorderModules() {
   }
 }
 
+// Nouvelle fonction pour le réordonnement depuis le TreeSidebar
+async function handleReorderModulesFromTree(moduleIds: string[]) {
+  try {
+    await reportsApi.reorderModules(reportId.value, moduleIds);
+    // Mettre à jour l'ordre local
+    const orderedModules: ReportModule[] = [];
+    for (const id of moduleIds) {
+      const module = modules.value.find(m => m.id === id);
+      if (module) orderedModules.push(module);
+    }
+    modules.value = orderedModules;
+  } catch (err: any) {
+    await modal.showError(
+      err.response?.data?.message || "Une erreur est survenue lors du réordonnement des modules.",
+      "Erreur de réordonnement"
+    );
+    console.error(err);
+    await loadReport();
+  }
+}
+
 function formatDate(date: string) {
   return new Intl.DateTimeFormat("fr-BE", {
     dateStyle: "medium",
@@ -814,124 +836,30 @@ function getClassificationInfo(classif: string) {
 
     <!-- Layout principal : Sidebar + Contenu -->
     <div class="flex flex-1 overflow-hidden">
-      <!-- Sidebar des modules (style OneNote) -->
+      <!-- Sidebar des modules (style arborescence) -->
       <div class="w-80 bg-base-100 border-r border-base-300 flex flex-col">
         <!-- Header de la sidebar -->
         <div class="px-4 py-3 border-b border-base-300 bg-base-200">
-          <div class="flex items-center justify-between mb-3">
-            <h3 class="font-bold text-lg flex items-center gap-2">
-              <span>📦</span>
-              <span>Modules</span>
-              <span class="text-sm font-normal text-base-content/60">({{ modules.length }})</span>
-            </h3>
-            <button class="btn btn-primary btn-xs" @click="openModuleDialog">
-              + Ajouter
-            </button>
-          </div>
-          
           <!-- Onglets : Modules / Infos / Entités -->
           <div class="tabs tabs-boxed tabs-xs">
-            <a class="tab" :class="{ 'tab-active': activeTab === 'modules' }" @click="activeTab = 'modules'">Modules</a>
-            <a class="tab" :class="{ 'tab-active': activeTab === 'info' }" @click="activeTab = 'info'">Infos</a>
-            <a class="tab" :class="{ 'tab-active': activeTab === 'entities' }" @click="activeTab = 'entities'">Entités</a>
+            <a class="tab" :class="{ 'tab-active': activeTab === 'modules' }" @click="activeTab = 'modules'">🌳 Modules</a>
+            <a class="tab" :class="{ 'tab-active': activeTab === 'info' }" @click="activeTab = 'info'">ℹ️ Infos</a>
+            <a class="tab" :class="{ 'tab-active': activeTab === 'entities' }" @click="activeTab = 'entities'">👥 Entités</a>
           </div>
         </div>
 
-        <!-- Liste des modules -->
-        <div v-show="activeTab === 'modules'" class="flex-1 overflow-y-auto">
-          <div v-if="modules.length === 0" class="p-4 text-center text-base-content/60 text-sm">
-            Aucun module.<br>Cliquez sur "+ Ajouter" pour commencer.
-          </div>
-          
-          <template v-else>
-            <!-- Boutons de sélection/désélection de tous -->
-            <div class="sticky top-0 z-10 bg-base-100 border-b border-base-200 p-2 space-y-1">
-              <div class="text-xs text-base-content/60 text-center mb-2">
-                {{ pdfModulesCount }}/{{ modules.length }} module(s) pour le PDF
-              </div>
-              <div class="flex gap-1">
-                <button
-                  @click="selectAllForPdf"
-                  class="btn btn-xs btn-outline btn-success flex-1 gap-1"
-                  :disabled="pdfModulesCount === modules.length"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-                  </svg>
-                  Tout
-                </button>
-                <button
-                  @click="deselectAllForPdf"
-                  class="btn btn-xs btn-outline btn-error flex-1 gap-1"
-                  :disabled="pdfModulesCount === 0"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                  Aucun
-                </button>
-              </div>
-            </div>
-            
-            <VueDraggable
-              v-model="modules"
-              item-key="id"
-              handle=".drag-handle"
-              @end="handleReorderModules"
-              class="divide-y divide-base-200"
-            >
-            <template #item="{ element: module }">
-              <div
-                class="group p-3 cursor-pointer transition-colors hover:bg-base-200"
-                :class="{ 'bg-primary/10 border-l-4 border-primary': selectedModuleId === module.id }"
-                @click="selectModule(module.id)"
-              >
-                <div class="flex items-start gap-2">
-                  <!-- Drag handle -->
-                  <div class="drag-handle cursor-move mt-1 opacity-50 hover:opacity-100">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
-                    </svg>
-                  </div>
-                  
-                  <div class="flex-1 min-w-0">
-                    <div class="flex items-center gap-2 mb-1">
-                      <span class="text-lg">{{ getModuleIcon(module.type) }}</span>
-                      <span class="font-semibold text-sm truncate">{{ module.title }}</span>
-                    </div>
-                    <div class="text-xs text-base-content/60 truncate">
-                      {{ MODULE_TYPE_METADATA[getModuleType(module)]?.label || module.type }}
-                    </div>
-                    <div v-if="module.entity" class="text-xs text-accent mt-1">
-                      📌 {{ module.entity.label }}
-                    </div>
-                  </div>
-                  
-                  <!-- Checkbox pour inclure dans le PDF (ne pas afficher pour sign_off) -->
-                  <div v-if="module.type !== 'sign_off'" class="flex items-center gap-1">
-                    <input
-                      type="checkbox"
-                      :checked="module.includeInPdf"
-                      @click.stop="toggleIncludeInPdf(module.id, !module.includeInPdf)"
-                      class="checkbox checkbox-sm"
-                      :title="module.includeInPdf ? 'Inclus dans le PDF' : 'Exclu du PDF'"
-                    />
-                    <span class="text-xs opacity-60" title="Inclure dans le PDF">📄</span>
-                  </div>
-                  
-                  <!-- Bouton supprimer -->
-                  <button
-                    class="btn btn-ghost btn-xs btn-circle opacity-0 group-hover:opacity-100 hover:text-error"
-                    @click.stop="handleDeleteModule(module.id)"
-                    title="Supprimer"
-                  >
-                    🗑️
-                  </button>
-                </div>
-              </div>
-            </template>
-          </VueDraggable>
-          </template>
+        <!-- Liste des modules (vue arborescente) -->
+        <div v-show="activeTab === 'modules'" class="flex-1 overflow-hidden">
+          <ModuleTreeSidebar
+            :modules="modules"
+            :selected-module-id="selectedModuleId"
+            :readonly="report?.isLocked"
+            @select="selectModule"
+            @delete="handleDeleteModule"
+            @toggle-pdf="toggleIncludeInPdf"
+            @reorder="handleReorderModulesFromTree"
+            @add="openModuleDialog"
+          />
         </div>
 
         <!-- Onglet Informations -->
